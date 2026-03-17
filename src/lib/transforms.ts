@@ -1,0 +1,495 @@
+﻿import type {
+  ContactValue,
+  PublicLink,
+  ResolvedFieldValue,
+  SmartsheetCell,
+  SmartsheetRow,
+  TransformConfig,
+  ViewFieldConfig,
+} from "@/lib/config/types";
+
+const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const EMAIL_TOKEN_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const PHONE_REGEX = /(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}/g;
+const URL_REGEX = /https?:\/\/[^\s,;]+/gi;
+
+interface TransformContext {
+  row: SmartsheetRow;
+  sourceCell: SmartsheetCell | null;
+}
+
+function uniqueStrings(values: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push(trimmed);
+  }
+
+  return unique;
+}
+
+function uniqueContacts(values: ContactValue[]) {
+  const seen = new Set<string>();
+  const unique: ContactValue[] = [];
+
+  for (const value of values) {
+    const email = value.email?.trim();
+    const name = value.name?.trim();
+    const key = `${email?.toLowerCase() ?? ""}|${name?.toLowerCase() ?? ""}`;
+    if (key === "|" || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push({ email, name });
+  }
+
+  return unique;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isContactValueArray(value: unknown): value is ContactValue[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (entry) =>
+        entry == null ||
+        (isObjectRecord(entry) &&
+          (typeof entry.email === "string" || typeof entry.name === "string"))
+    )
+  );
+}
+
+function parseContactObject(value: unknown): ContactValue[] {
+  if (!isObjectRecord(value)) {
+    return [];
+  }
+
+  if (value.objectType === "CONTACT") {
+    return [
+      {
+        email: typeof value.email === "string" ? value.email : undefined,
+        name: typeof value.name === "string" ? value.name : undefined,
+      },
+    ];
+  }
+
+  if (value.objectType === "MULTI_CONTACT") {
+    const entries = Array.isArray(value.value)
+      ? value.value
+      : Array.isArray(value.values)
+        ? value.values
+        : [];
+    return uniqueContacts(entries.flatMap((entry) => parseContactObject(entry)));
+  }
+
+  if (typeof value.email === "string" || typeof value.name === "string") {
+    return [
+      {
+        email: typeof value.email === "string" ? value.email : undefined,
+        name: typeof value.name === "string" ? value.name : undefined,
+      },
+    ];
+  }
+
+  return [];
+}
+
+function normalizeToStringList(value: unknown): string[] {
+  if (value === null || value === undefined) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => normalizeToStringList(entry));
+  }
+
+  if (isObjectRecord(value)) {
+    const contactValues = parseContactObject(value);
+    if (contactValues.length > 0) {
+      return contactValues.flatMap((entry) => [entry.name, entry.email].filter(Boolean) as string[]);
+    }
+
+    if (Array.isArray(value.values)) {
+      return value.values.flatMap((entry) => normalizeToStringList(entry));
+    }
+
+    if (Array.isArray(value.value)) {
+      return value.value.flatMap((entry) => normalizeToStringList(entry));
+    }
+
+    return Object.values(value).flatMap((entry) => normalizeToStringList(entry));
+  }
+
+  return [String(value)];
+}
+
+function splitTokens(value: unknown, delimiters?: string[]) {
+  const raw = normalizeToStringList(value);
+  const splitDelimiters = delimiters?.length ? delimiters : [",", ";", "\n"];
+
+  return uniqueStrings(
+    raw.flatMap((entry) => {
+      const parts = splitDelimiters.reduce<string[]>((segments, delimiter) => {
+        return segments.flatMap((segment) => segment.split(delimiter));
+      }, [entry]);
+      return parts.map((part) => part.trim()).filter(Boolean);
+    })
+  );
+}
+
+function extractEmails(value: unknown) {
+  const contacts = toContactList(value);
+  const contactEmails = contacts
+    .map((entry) => entry.email?.trim())
+    .filter((entry): entry is string => Boolean(entry));
+
+  if (contactEmails.length > 0) {
+    return uniqueStrings(contactEmails);
+  }
+
+  const matches = normalizeToStringList(value).flatMap((entry) => entry.match(EMAIL_REGEX) ?? []);
+  return uniqueStrings(matches);
+}
+
+function extractPhones(value: unknown) {
+  const matches = normalizeToStringList(value).flatMap((entry) => entry.match(PHONE_REGEX) ?? []);
+  return uniqueStrings(matches);
+}
+
+function extractUrls(value: unknown) {
+  const matches = normalizeToStringList(value).flatMap((entry) => entry.match(URL_REGEX) ?? []);
+  return uniqueStrings(matches.map((entry) => entry.replace(/[).,;!?]+$/, "")));
+}
+
+function extractNames(value: unknown) {
+  const contacts = toContactList(value);
+  const names = contacts
+    .map((entry) => entry.name?.trim())
+    .filter((entry): entry is string => Boolean(entry));
+
+  if (names.length > 0) {
+    return uniqueStrings(names);
+  }
+
+  return splitTokens(value).filter((token) => !EMAIL_TOKEN_REGEX.test(token) && !(token.match(PHONE_REGEX) ?? []).length);
+}
+
+export function toContactList(value: unknown): ContactValue[] {
+  if (value === null || value === undefined) {
+    return [];
+  }
+
+  if (isContactValueArray(value)) {
+    return uniqueContacts(value);
+  }
+
+  if (Array.isArray(value)) {
+    return uniqueContacts(value.flatMap((entry) => toContactList(entry)));
+  }
+
+  if (isObjectRecord(value)) {
+    const contacts = parseContactObject(value);
+    if (contacts.length > 0) {
+      return uniqueContacts(contacts);
+    }
+
+    if (Array.isArray(value.values)) {
+      return uniqueContacts(value.values.flatMap((entry) => toContactList(entry)));
+    }
+
+    if (Array.isArray(value.value)) {
+      return uniqueContacts(value.value.flatMap((entry) => toContactList(entry)));
+    }
+  }
+
+  const tokens = splitTokens(value);
+  return uniqueContacts(
+    tokens.map((token) => {
+      const email = token.match(EMAIL_REGEX)?.[0];
+      if (email) {
+        return { email };
+      }
+      return { name: token };
+    })
+  );
+}
+
+function formatDate(value: unknown, config?: TransformConfig) {
+  const dateCandidate = normalizeToStringList(value)[0];
+  if (!dateCandidate) {
+    return "";
+  }
+
+  const parsed = new Date(dateCandidate);
+  if (Number.isNaN(parsed.getTime())) {
+    return dateCandidate;
+  }
+
+  return new Intl.DateTimeFormat(config?.locale || "en-US", {
+    dateStyle: config?.dateStyle || "medium",
+    timeStyle: config?.timeStyle,
+  }).format(parsed);
+}
+
+function asText(value: unknown) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  if (Array.isArray(value)) {
+    return uniqueStrings(value.flatMap((entry) => normalizeToStringList(entry))).join(", ");
+  }
+  const contacts = toContactList(value);
+  if (contacts.length > 0) {
+    return contacts
+      .map((entry) => entry.name || entry.email || "")
+      .filter(Boolean)
+      .join(", ");
+  }
+  return normalizeToStringList(value).join(", ").trim();
+}
+
+export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
+  if (!cell) {
+    return null;
+  }
+
+  if (cell.columnType === "CONTACT_LIST") {
+    // Prefer the structured objectValue when the API returns it (more reliable than
+    // manually reconstructing from value + displayValue).
+    if (cell.objectValue) {
+      return toContactList(cell.objectValue);
+    }
+    return toContactList({
+      objectType: "CONTACT",
+      email: typeof cell.value === "string" ? cell.value : undefined,
+      name: cell.displayValue,
+    });
+  }
+
+  if (cell.columnType === "MULTI_CONTACT_LIST" && cell.objectValue) {
+    return toContactList(cell.objectValue);
+  }
+
+  if (cell.columnType === "MULTI_PICKLIST" && isObjectRecord(cell.objectValue) && Array.isArray(cell.objectValue.values)) {
+    return cell.objectValue.values;
+  }
+
+  if (cell.objectValue) {
+    return cell.objectValue;
+  }
+
+  return cell.value ?? cell.displayValue ?? null;
+}
+
+export function applyTransforms(value: unknown, transforms: TransformConfig[] | undefined, _context: TransformContext) {
+  let current = value;
+
+  for (const transform of transforms ?? []) {
+    switch (transform.op) {
+      case "trim":
+        current = Array.isArray(current)
+          ? normalizeToStringList(current).map((entry) => entry.trim())
+          : typeof current === "string"
+            ? current.trim()
+            : current;
+        break;
+      case "split":
+        current = splitTokens(current, transform.delimiters ?? (transform.delimiter ? [transform.delimiter] : undefined));
+        break;
+      case "extract_emails":
+        current = extractEmails(current);
+        break;
+      case "extract_phones":
+        current = extractPhones(current);
+        break;
+      case "dedupe":
+        current = isContactValueArray(current)
+          ? uniqueContacts(current)
+          : uniqueStrings(normalizeToStringList(current));
+        break;
+      case "filter_empty":
+        current = Array.isArray(current)
+          ? current.filter((entry) => normalizeToStringList(entry).some((valueEntry) => valueEntry.trim()))
+          : current;
+        break;
+      case "to_contact_list":
+        current = toContactList(current);
+        break;
+      case "contact_names":
+        current = extractNames(current);
+        break;
+      case "contact_emails":
+        current = extractEmails(current);
+        break;
+      case "join":
+        current = normalizeToStringList(current).join(transform.separator ?? ", ");
+        break;
+      case "lowercase":
+        current = Array.isArray(current)
+          ? normalizeToStringList(current).map((entry) => entry.toLowerCase())
+          : asText(current).toLowerCase();
+        break;
+      case "uppercase":
+        current = Array.isArray(current)
+          ? normalizeToStringList(current).map((entry) => entry.toUpperCase())
+          : asText(current).toUpperCase();
+        break;
+      case "format_date":
+        current = formatDate(current, transform);
+        break;
+      case "reset_to_source":
+        // Resets to the pre-transform source value if the current pipeline value is
+        // null or undefined. This is NOT multi-column coalescing — that is handled
+        // by source.coalesce[] in the field config.
+        current = current ?? value;
+        break;
+      case "coalesce":
+        // Deprecated alias for reset_to_source. Use reset_to_source in new configs.
+        current = current ?? value;
+        break;
+      case "url_from_value":
+        // Extracts URL-like tokens from the value. Use with render: { type: "link" }.
+        current = extractUrls(current);
+        break;
+      default:
+        current = current;
+        break;
+    }
+  }
+
+  return current;
+}
+
+function toEmailLinks(value: unknown): PublicLink[] {
+  const contacts = toContactList(value);
+  if (contacts.length > 0) {
+    const links = contacts
+      .filter((entry) => entry.email)
+      .map((entry) => ({
+        label: entry.name?.trim() || entry.email!.trim(),
+        href: `mailto:${entry.email!.trim()}`,
+      }));
+
+    if (links.length > 0) {
+      return links;
+    }
+  }
+
+  return extractEmails(value).map((email) => ({
+    label: email,
+    href: `mailto:${email}`,
+  }));
+}
+
+function normalizePhoneHref(phone: string) {
+  return phone.replace(/[^\d+]/g, "");
+}
+
+function toPhoneLinks(value: unknown): PublicLink[] {
+  return extractPhones(value).map((phone) => ({
+    label: phone,
+    href: `tel:${normalizePhoneHref(phone)}`,
+  }));
+}
+
+function toUrlLinks(value: unknown): PublicLink[] {
+  return extractUrls(value).map((entry) => ({
+    label: entry,
+    href: entry,
+  }));
+}
+
+function buildTextList(value: unknown) {
+  const contacts = toContactList(value);
+  if (contacts.length > 0) {
+    return uniqueStrings(contacts.map((entry) => entry.name || entry.email || "").filter(Boolean));
+  }
+
+  return uniqueStrings(normalizeToStringList(value).map((entry) => entry.trim()).filter(Boolean));
+}
+
+export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown): ResolvedFieldValue {
+  const renderType = field.render.type;
+  const emptyLabel = field.render.emptyLabel ?? "";
+  let textValue = "";
+  let sortValue: string | undefined;
+  let listValue: string[] = [];
+  let links: PublicLink[] = [];
+
+  switch (renderType) {
+    case "mailto":
+    case "mailto_list":
+      links = toEmailLinks(value);
+      listValue = links.map((entry) => entry.label);
+      textValue = listValue.join(", ");
+      break;
+    case "phone":
+    case "phone_list":
+      links = toPhoneLinks(value);
+      listValue = links.map((entry) => entry.label);
+      textValue = listValue.join(", ");
+      break;
+    case "link":
+      links = toUrlLinks(value);
+      listValue = links.map((entry) => entry.label);
+      textValue = listValue.join(", ");
+      break;
+    case "list":
+      listValue = buildTextList(value);
+      textValue = listValue.join(", ");
+      break;
+    case "multiline_text":
+      textValue = normalizeToStringList(value).join("\n").trim();
+      listValue = textValue ? textValue.split("\n").filter(Boolean) : [];
+      break;
+    case "date": {
+      const rawDateStr = normalizeToStringList(value)[0] ?? "";
+      if (rawDateStr) {
+        const parsed = new Date(rawDateStr);
+        sortValue = !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : rawDateStr;
+      }
+      textValue = formatDate(value);
+      listValue = textValue ? [textValue] : [];
+      break;
+    }
+    case "badge":
+      textValue = asText(value);
+      listValue = textValue ? [textValue] : [];
+      break;
+    case "hidden":
+      break;
+    default:
+      textValue = asText(value);
+      listValue = textValue ? [textValue] : [];
+      break;
+  }
+
+  const isEmpty = !textValue && links.length === 0 && listValue.length === 0;
+
+  return {
+    key: field.key,
+    label: field.label,
+    renderType,
+    textValue: isEmpty ? emptyLabel : textValue,
+    sortValue,
+    listValue: isEmpty && emptyLabel ? [emptyLabel] : listValue,
+    links,
+    isEmpty,
+    hideWhenEmpty: field.emptyBehavior === "hide",
+  };
+}
+

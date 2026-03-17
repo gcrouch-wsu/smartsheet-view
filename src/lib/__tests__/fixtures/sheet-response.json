@@ -1,0 +1,33 @@
+﻿{
+  "id": 7763577444192132,
+  "name": "GRAD Programs",
+  "columns": [
+    { "id": 100, "index": 0, "title": "Program Name", "type": "TEXT_NUMBER" },
+    {
+      "id": 101,
+      "index": 1,
+      "title": "Director Email",
+      "columnType": "CONTACT_LIST",
+      "options": ["Example"],
+      "locked": true
+    }
+  ],
+  "rows": [
+    {
+      "id": 501,
+      "cells": [
+        { "columnId": 100, "value": "Biological Sciences" },
+        {
+          "columnId": 101,
+          "value": "director@wsu.edu",
+          "displayValue": "Director Name",
+          "objectValue": {
+            "objectType": "CONTACT",
+            "email": "director@wsu.edu",
+            "name": "Director Name"
+          }
+        }
+      ]
+    }
+  ]
+}

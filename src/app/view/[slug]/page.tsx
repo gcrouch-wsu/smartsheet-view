@@ -1,0 +1,154 @@
+import Link from "next/link";
+import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
+import { PublicViewRenderer, formatLayoutLabel } from "@/components/public/ViewRenderer";
+import { ViewTabs } from "@/components/public/ViewTabs";
+import { LAYOUT_OPTIONS } from "@/lib/config/options";
+import type { LayoutType } from "@/lib/config/types";
+import { loadPublicPage } from "@/lib/public-view";
+import { notFound } from "next/navigation";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function buildHref(slug: string, viewId: string, layout: LayoutType, embed: boolean) {
+  const params = new URLSearchParams();
+  params.set("view", viewId);
+  params.set("layout", layout);
+  if (embed) {
+    params.set("embed", "1");
+  }
+  return `/view/${slug}?${params.toString()}`;
+}
+
+function formatTimestamp(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+export default async function PublicViewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const page = await loadPublicPage(slug);
+
+  if (!page) {
+    notFound();
+  }
+
+  const requestedView = firstValue(resolvedSearchParams.view);
+  const requestedLayout = firstValue(resolvedSearchParams.layout);
+  const embed = firstValue(resolvedSearchParams.embed) === "1";
+  const activeView =
+    page.views.find((view) => view.id === requestedView) ??
+    page.views.find((view) => view.id === page.defaultViewId) ??
+    page.views[0];
+
+  if (!activeView) {
+    notFound();
+  }
+
+  const layout = LAYOUT_OPTIONS.includes(requestedLayout as LayoutType)
+    ? (requestedLayout as LayoutType)
+    : activeView.layout;
+
+  const mainClassName = embed
+    ? "bg-transparent px-0 py-0"
+    : "min-h-screen px-4 py-6 sm:px-6 lg:px-8";
+  const containerClassName = embed ? "mx-auto max-w-none space-y-4" : "mx-auto max-w-7xl space-y-6";
+
+  return (
+    <main className={mainClassName}>
+      {embed && <EmbedHeightReporter />}
+      <div className={containerClassName}>
+        {!embed && (
+          <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div className="space-y-3">
+                <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
+                  Back to configured pages
+                </Link>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                    {page.source.label}
+                  </p>
+                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
+                    {page.title}
+                  </h1>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--wsu-muted)]">
+                    Live data from <span className="font-medium text-[color:var(--wsu-ink)]">{page.source.name}</span>.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                <p>
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                </p>
+                <a
+                  href={`/api/public/views/${slug}`}
+                  className="mt-3 inline-flex text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                >
+                  View JSON
+                </a>
+              </div>
+            </div>
+          </header>
+        )}
+
+        <section className={embed ? "space-y-3" : "space-y-4"}>
+          <ViewTabs
+            slug={slug}
+            views={page.views.map((view) => ({ id: view.id, label: view.label, rowCount: view.rowCount }))}
+            activeViewId={activeView.id}
+            layout={layout}
+            embed={embed}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+              {activeView.description && (
+                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {LAYOUT_OPTIONS.map((option) => {
+                const active = option === layout;
+                return (
+                  <Link
+                    key={option}
+                    href={buildHref(slug, activeView.id, option, embed)}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                      active
+                        ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                        : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                    }`}
+                  >
+                    {formatLayoutLabel(option)}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <PublicViewRenderer layout={layout} view={activeView} />
+        </section>
+      </div>
+    </main>
+  );
+}

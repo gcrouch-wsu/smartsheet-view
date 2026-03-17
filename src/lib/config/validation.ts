@@ -1,0 +1,453 @@
+import type {
+  FilterOperator,
+  LayoutType,
+  RenderType,
+  SourceConfig,
+  TransformConfig,
+  ViewConfig,
+  ViewFieldConfig,
+  ViewFilterConfig,
+  ViewPresentationConfig,
+  ViewSortConfig,
+} from "@/lib/config/types";
+
+export interface ValidationResult<T> {
+  success: boolean;
+  data?: T;
+  errors: string[];
+}
+
+const LAYOUT_TYPES: LayoutType[] = ["table", "cards", "list", "tabbed", "stacked", "accordion", "list_detail"];
+const RENDER_TYPES: RenderType[] = [
+  "text",
+  "multiline_text",
+  "list",
+  "mailto",
+  "mailto_list",
+  "phone",
+  "phone_list",
+  "link",
+  "date",
+  "badge",
+  "hidden",
+];
+const FILTER_OPERATORS: FilterOperator[] = [
+  "equals",
+  "not_equals",
+  "contains",
+  "not_contains",
+  "in",
+  "not_in",
+  "is_empty",
+  "not_empty",
+];
+const DATE_STYLES = ["full", "long", "medium", "short"] as const;
+const TRANSFORM_OPS = [
+  "trim",
+  "split",
+  "coalesce",
+  "reset_to_source",
+  "extract_emails",
+  "extract_phones",
+  "dedupe",
+  "filter_empty",
+  "to_contact_list",
+  "contact_names",
+  "contact_emails",
+  "join",
+  "lowercase",
+  "uppercase",
+  "format_date",
+  "url_from_value",
+] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asTrimmedString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function asOptionalString(value: unknown) {
+  const normalized = asTrimmedString(value);
+  return normalized || undefined;
+}
+
+function asOptionalNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function asBoolean(value: unknown, fallback = false) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function parseTransformConfig(input: unknown, path: string): ValidationResult<TransformConfig> {
+  const errors: string[] = [];
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+
+  const op = asTrimmedString(input.op);
+  if (!TRANSFORM_OPS.includes(op as (typeof TRANSFORM_OPS)[number])) {
+    errors.push(`${path}.op must be one of: ${TRANSFORM_OPS.join(", ")}.`);
+  }
+
+  const dateStyle = asOptionalString(input.dateStyle);
+  const timeStyle = asOptionalString(input.timeStyle);
+  if (dateStyle && !DATE_STYLES.includes(dateStyle as (typeof DATE_STYLES)[number])) {
+    errors.push(`${path}.dateStyle must be one of: ${DATE_STYLES.join(", ")}.`);
+  }
+  if (timeStyle && !DATE_STYLES.includes(timeStyle as (typeof DATE_STYLES)[number])) {
+    errors.push(`${path}.timeStyle must be one of: ${DATE_STYLES.join(", ")}.`);
+  }
+
+  const delimiters = Array.isArray(input.delimiters)
+    ? input.delimiters.map((entry) => asTrimmedString(entry)).filter(Boolean)
+    : undefined;
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          op,
+          delimiter: asOptionalString(input.delimiter),
+          delimiters,
+          separator: asOptionalString(input.separator),
+          locale: asOptionalString(input.locale),
+          dateStyle: dateStyle as TransformConfig["dateStyle"],
+          timeStyle: timeStyle as TransformConfig["timeStyle"],
+        },
+  };
+}
+
+function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewFieldConfig> {
+  const path = `fields[${index}]`;
+  const errors: string[] = [];
+
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+
+  const key = asTrimmedString(input.key);
+  const label = asTrimmedString(input.label);
+  if (!key) {
+    errors.push(`${path}.key is required.`);
+  }
+  if (!label) {
+    errors.push(`${path}.label is required.`);
+  }
+
+  const sourceInput = isRecord(input.source) ? input.source : {};
+  const coalesceTitles = Array.isArray(sourceInput.coalesce)
+    ? sourceInput.coalesce
+        .filter((entry) => isRecord(entry))
+        .map((entry) => ({
+          columnId: asOptionalNumber(entry.columnId),
+          columnTitle: asOptionalString(entry.columnTitle),
+        }))
+        .filter((entry) => typeof entry.columnId === "number" || Boolean(entry.columnTitle))
+    : [];
+
+  const renderInput = isRecord(input.render) ? input.render : {};
+  const renderType = asTrimmedString(renderInput.type);
+  if (!RENDER_TYPES.includes(renderType as RenderType)) {
+    errors.push(`${path}.render.type must be one of: ${RENDER_TYPES.join(", ")}.`);
+  }
+
+  const transforms: TransformConfig[] = [];
+  for (const [transformIndex, transform] of (Array.isArray(input.transforms) ? input.transforms : []).entries()) {
+    const result = parseTransformConfig(transform, `${path}.transforms[${transformIndex}]`);
+    errors.push(...result.errors);
+    if (result.data) {
+      transforms.push(result.data);
+    }
+  }
+
+  const source = {
+    columnId: asOptionalNumber(sourceInput.columnId),
+    columnTitle: asOptionalString(sourceInput.columnTitle),
+    preferredColumnId: asOptionalNumber(sourceInput.preferredColumnId),
+    preferredColumnTitle: asOptionalString(sourceInput.preferredColumnTitle),
+    fallbackColumnId: asOptionalNumber(sourceInput.fallbackColumnId),
+    fallbackColumnTitle: asOptionalString(sourceInput.fallbackColumnTitle),
+    coalesce: coalesceTitles.length > 0 ? coalesceTitles : undefined,
+  };
+
+  const hasSelector = [
+    source.columnId,
+    source.columnTitle,
+    source.preferredColumnId,
+    source.preferredColumnTitle,
+    source.fallbackColumnId,
+    source.fallbackColumnTitle,
+    ...(source.coalesce ?? []).flatMap((entry) => [entry.columnId, entry.columnTitle]),
+  ].some((value) => value !== undefined && value !== "");
+
+  if (!hasSelector) {
+    errors.push(`${path}.source must define at least one column selector.`);
+  }
+
+  const emptyBehavior = asOptionalString(input.emptyBehavior);
+  if (emptyBehavior && emptyBehavior !== "show" && emptyBehavior !== "hide") {
+    errors.push(`${path}.emptyBehavior must be "show" or "hide".`);
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          key,
+          label,
+          description: asOptionalString(input.description),
+          source,
+          transforms,
+          render: {
+            type: renderType as RenderType,
+            emptyLabel: asOptionalString(renderInput.emptyLabel),
+          },
+          emptyBehavior: emptyBehavior as ViewFieldConfig["emptyBehavior"],
+        },
+  };
+}
+
+function parseFilterConfig(input: unknown, index: number): ValidationResult<ViewFilterConfig> {
+  const path = `filters[${index}]`;
+  const errors: string[] = [];
+
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+
+  const op = asTrimmedString(input.op);
+  if (!FILTER_OPERATORS.includes(op as FilterOperator)) {
+    errors.push(`${path}.op must be one of: ${FILTER_OPERATORS.join(", ")}.`);
+  }
+
+  const columnId = asOptionalNumber(input.columnId);
+  const columnTitle = asOptionalString(input.columnTitle);
+  if (columnId === undefined && !columnTitle) {
+    errors.push(`${path} must define columnId or columnTitle.`);
+  }
+
+  const rawValue = input.value;
+  let value: ViewFilterConfig["value"] = undefined;
+  if (Array.isArray(rawValue)) {
+    value = rawValue.map((entry) => (typeof entry === "string" ? entry.trim() : entry));
+  } else if (rawValue !== undefined && rawValue !== null) {
+    value = typeof rawValue === "string" ? rawValue.trim() : (rawValue as ViewFilterConfig["value"]);
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length ? undefined : { columnId, columnTitle, op: op as FilterOperator, value },
+  };
+}
+
+function parseSortConfig(input: unknown, index: number): ValidationResult<ViewSortConfig> {
+  const path = `defaultSort[${index}]`;
+  const errors: string[] = [];
+
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+
+  const field = asTrimmedString(input.field);
+  const direction = asTrimmedString(input.direction);
+
+  if (!field) {
+    errors.push(`${path}.field is required.`);
+  }
+  if (direction !== "asc" && direction !== "desc") {
+    errors.push(`${path}.direction must be "asc" or "desc".`);
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length ? undefined : { field, direction: direction as ViewSortConfig["direction"] },
+  };
+}
+
+function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): ValidationResult<ViewPresentationConfig | undefined> {
+  if (input === undefined || input === null || input === "") {
+    return { success: true, errors: [], data: undefined };
+  }
+
+  if (!isRecord(input)) {
+    return { success: false, errors: ["presentation must be an object."] };
+  }
+
+  const errors: string[] = [];
+  const headingFieldKey = asOptionalString(input.headingFieldKey);
+  const summaryFieldKey = asOptionalString(input.summaryFieldKey);
+
+  if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
+    errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
+  }
+  if (summaryFieldKey && !fieldKeys.has(summaryFieldKey)) {
+    errors.push(`presentation.summaryFieldKey \"${summaryFieldKey}\" does not match any field key.`);
+  }
+
+  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey);
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey },
+  };
+}
+
+export function validateSourceConfig(input: unknown): ValidationResult<SourceConfig> {
+  const errors: string[] = [];
+
+  if (!isRecord(input)) {
+    return { success: false, errors: ["Source config must be an object."] };
+  }
+
+  const id = asTrimmedString(input.id);
+  const label = asTrimmedString(input.label);
+  const sourceType = asTrimmedString(input.sourceType);
+  const smartsheetId = asOptionalNumber(input.smartsheetId);
+  const fetchOptionsInput = isRecord(input.fetchOptions) ? input.fetchOptions : {};
+
+  if (!id) {
+    errors.push("Source id is required.");
+  }
+  if (!label) {
+    errors.push("Source label is required.");
+  }
+  if (sourceType !== "sheet" && sourceType !== "report") {
+    errors.push('sourceType must be "sheet" or "report".');
+  }
+  if (smartsheetId === undefined) {
+    errors.push("smartsheetId must be a number.");
+  }
+
+  const level = asOptionalNumber(fetchOptionsInput.level);
+  if (fetchOptionsInput.level !== undefined && level === undefined) {
+    errors.push("fetchOptions.level must be a number.");
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          id,
+          label,
+          sourceType: sourceType as SourceConfig["sourceType"],
+          smartsheetId: smartsheetId as number,
+          connectionKey: asOptionalString(input.connectionKey),
+          apiBaseUrl: asOptionalString(input.apiBaseUrl),
+          cacheTtlSeconds: asOptionalNumber(input.cacheTtlSeconds),
+          fetchOptions: {
+            includeObjectValue: asBoolean(fetchOptionsInput.includeObjectValue, true),
+            includeColumnOptions: asBoolean(fetchOptionsInput.includeColumnOptions, true),
+            level,
+          },
+        },
+  };
+}
+
+export function validateViewConfig(input: unknown, options?: { knownSourceIds?: string[] }): ValidationResult<ViewConfig> {
+  const errors: string[] = [];
+
+  if (!isRecord(input)) {
+    return { success: false, errors: ["View config must be an object."] };
+  }
+
+  const id = asTrimmedString(input.id);
+  const slug = asTrimmedString(input.slug);
+  const sourceId = asTrimmedString(input.sourceId);
+  const label = asTrimmedString(input.label);
+  const layout = asTrimmedString(input.layout);
+
+  if (!id) {
+    errors.push("View id is required.");
+  }
+  if (!slug) {
+    errors.push("View slug is required.");
+  }
+  if (!sourceId) {
+    errors.push("View sourceId is required.");
+  }
+  if (options?.knownSourceIds?.length && sourceId && !options.knownSourceIds.includes(sourceId)) {
+    errors.push(`sourceId \"${sourceId}\" does not match any known source.`);
+  }
+  if (!label) {
+    errors.push("View label is required.");
+  }
+  if (!LAYOUT_TYPES.includes(layout as LayoutType)) {
+    errors.push(`layout must be one of: ${LAYOUT_TYPES.join(", ")}.`);
+  }
+
+  const defaultSort: ViewSortConfig[] = [];
+  for (const [index, sort] of (Array.isArray(input.defaultSort) ? input.defaultSort : []).entries()) {
+    const result = parseSortConfig(sort, index);
+    errors.push(...result.errors);
+    if (result.data) {
+      defaultSort.push(result.data);
+    }
+  }
+
+  const filters: ViewFilterConfig[] = [];
+  for (const [index, filter] of (Array.isArray(input.filters) ? input.filters : []).entries()) {
+    const result = parseFilterConfig(filter, index);
+    errors.push(...result.errors);
+    if (result.data) {
+      filters.push(result.data);
+    }
+  }
+
+  const fields: ViewFieldConfig[] = [];
+  for (const [index, field] of (Array.isArray(input.fields) ? input.fields : []).entries()) {
+    const result = parseFieldConfig(field, index);
+    errors.push(...result.errors);
+    if (result.data) {
+      fields.push(result.data);
+    }
+  }
+
+  if (fields.length === 0) {
+    errors.push("View must define at least one field.");
+  }
+
+  const fieldKeys = new Set(fields.map((field) => field.key));
+  const presentationResult = parsePresentationConfig(input.presentation, fieldKeys);
+  errors.push(...presentationResult.errors);
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          id,
+          slug,
+          sourceId,
+          label,
+          description: asOptionalString(input.description),
+          layout: layout as LayoutType,
+          public: asBoolean(input.public),
+          tabOrder: asOptionalNumber(input.tabOrder),
+          filters,
+          defaultSort,
+          presentation: presentationResult.data,
+          fields,
+        },
+  };
+}

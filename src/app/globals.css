@@ -1,0 +1,53 @@
+﻿@import "tailwindcss";
+
+:root {
+  --wsu-crimson: #a60f2d;
+  --wsu-crimson-dark: #7f0c22;
+  --wsu-ink: #231f20;
+  --wsu-stone: #f4efe9;
+  --wsu-paper: #fffdfa;
+  --wsu-border: #d8cdc3;
+  --wsu-muted: #6b625b;
+  --background: #f6f1eb;
+  --foreground: #181413;
+}
+
+@theme inline {
+  --color-wsu-crimson: var(--wsu-crimson);
+  --color-wsu-crimson-dark: var(--wsu-crimson-dark);
+  --color-wsu-ink: var(--wsu-ink);
+  --color-wsu-stone: var(--wsu-stone);
+  --color-wsu-paper: var(--wsu-paper);
+  --color-wsu-border: var(--wsu-border);
+  --color-wsu-muted: var(--wsu-muted);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(166, 15, 45, 0.1), transparent 36%),
+    linear-gradient(180deg, #f9f4ef 0%, #f2ebe3 100%);
+}
+
+body {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(166, 15, 45, 0.18);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

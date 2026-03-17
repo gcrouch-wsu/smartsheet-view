@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { saveAdminViewConfig, AdminActionError } from "@/lib/admin-management";
+import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
+import { validateViewConfig } from "@/lib/config/validation";
+
+export async function GET() {
+  return NextResponse.json({ views: await listViewConfigs() });
+}
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as unknown;
+  const sources = await listSourceConfigs();
+  const result = validateViewConfig(body, { knownSourceIds: sources.map((source) => source.id) });
+
+  if (!result.success || !result.data) {
+    return NextResponse.json({ errors: result.errors }, { status: 400 });
+  }
+
+  try {
+    const view = await saveAdminViewConfig(result.data);
+    return NextResponse.json({ view }, { status: 201 });
+  } catch (error) {
+    if (error instanceof AdminActionError) {
+      return NextResponse.json(
+        { error: error.message, errors: error.errors, warnings: error.warnings },
+        { status: error.status }
+      );
+    }
+
+    throw error;
+  }
+}
