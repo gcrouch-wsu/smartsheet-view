@@ -290,7 +290,13 @@ export function ViewBuilder({
         method: "DELETE",
         credentials: FETCH_CREDENTIALS,
       });
-      const payload = (await response.json()) as { error?: string; errors?: string[] };
+      const text = await response.text();
+      let payload: { error?: string; errors?: string[] } = {};
+      try {
+        payload = (text ? JSON.parse(text) : {}) as { error?: string; errors?: string[] };
+      } catch {
+        payload = { error: "Delete failed. Server returned invalid response." };
+      }
 
       if (!response.ok) {
         const errs = payload.errors ?? [payload.error ?? "Unable to delete view."];

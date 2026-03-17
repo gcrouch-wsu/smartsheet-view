@@ -33,7 +33,7 @@ Edit `.env` with your Smartsheet and Admin credentials:
 - `SMARTSHEET_API_TOKEN`: Your Smartsheet API token.
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`: Initial admin username.
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`: Initial admin password.
-- `DATABASE_URL` (Optional): Connect to Postgres for durable user management on Vercel.
+- `DATABASE_URL` (Optional): Connect to Postgres for durable admin users and config (sources/views) on Vercel. When set, sources and views are stored in Postgres instead of config files, enabling create/edit/delete on serverless deployments.
 
 ### 3. Run Development Server
 ```bash
@@ -46,7 +46,7 @@ npm run dev
 2. Configure environment variables in the Vercel project settings.
 3. Deploy. The build uses `npm ci` and `npm run build` as defined in `vercel.json`.
 
-**Note:** For Vercel deployments, it is recommended to set `DATABASE_URL` to ensure admin user accounts are persisted across builds.
+**Note:** For Vercel deployments, set `DATABASE_URL` to persist admin users and enable full config management (create, edit, delete sources and views). Without it, the filesystem is read-only and config changes will not persist.
 
 ## Project Structure
 
