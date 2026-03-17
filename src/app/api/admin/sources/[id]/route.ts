@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveSourceConfig } from "@/lib/config/admin-store";
 import { deleteAdminSource, AdminActionError } from "@/lib/admin-management";
 import { getSourceConfigById } from "@/lib/config/store";
@@ -8,11 +9,16 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const source = await getSourceConfigById(id);
 
   if (!source) {
-    return NextResponse.json({ error: `Source \"${id}\" was not found.` }, { status: 404 });
+    return NextResponse.json({ error: `Source "${id}" was not found.` }, { status: 404 });
   }
 
   return NextResponse.json({ source });
@@ -22,6 +28,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const result = validateSourceConfig({ ...body, id });
@@ -38,6 +49,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
 
   try {

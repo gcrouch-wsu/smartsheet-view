@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { requireAdminPageAccess } from "@/lib/admin-page";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
 
 export default async function ViewsIndexPage() {
+  await requireAdminPageAccess("/admin/views");
   const [sources, views] = await Promise.all([listSourceConfigs(), listViewConfigs()]);
   const sourceMap = new Map(sources.map((source) => [source.id, source.label]));
 
@@ -22,7 +24,7 @@ export default async function ViewsIndexPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">{view.public ? "Published" : "Draft"}</p>
                 <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{view.label}</h3>
                 <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Slug: /view/{view.slug}?view={view.id}</p>
-                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Source: {sourceMap.get(view.sourceId) ?? view.sourceId} � Layout: {view.layout}</p>
+                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Source: {sourceMap.get(view.sourceId) ?? view.sourceId} · Layout: {view.layout}</p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <Link href={`/admin/views/${view.id}`} className="inline-flex items-center rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">Edit</Link>

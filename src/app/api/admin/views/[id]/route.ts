@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveAdminViewConfig, deleteAdminView, AdminActionError } from "@/lib/admin-management";
 import { getViewConfigById, listSourceConfigs } from "@/lib/config/store";
 import { validateViewConfig } from "@/lib/config/validation";
@@ -7,11 +8,16 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const view = await getViewConfigById(id);
 
   if (!view) {
-    return NextResponse.json({ error: `View \"${id}\" was not found.` }, { status: 404 });
+    return NextResponse.json({ error: `View "${id}" was not found.` }, { status: 404 });
   }
 
   return NextResponse.json({ view });
@@ -21,6 +27,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const sources = await listSourceConfigs();
@@ -49,6 +60,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
 
   try {

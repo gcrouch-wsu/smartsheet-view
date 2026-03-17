@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { AdminActionError, updateAdminViewPublication } from "@/lib/admin-management";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const body = ((await request.json().catch(() => null)) ?? {}) as { public?: boolean };
 

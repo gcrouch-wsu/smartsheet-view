@@ -1,43 +1,111 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ADMIN_PASSWORD_POLICY_MESSAGE,
   ADMIN_PASSWORD_ENV_VAR,
+  ADMIN_SESSION_COOKIE_NAME,
+  ADMIN_SESSION_SECRET_ENV_VAR,
   ADMIN_USERNAME_ENV_VAR,
-  authorizeAdminRequest,
+  authorizeAdminSession,
+  createAdminSessionToken,
+  getAdminConfigurationError,
+  getAdminSessionCookieSettings,
+  normalizeAdminNextPath,
+  readAdminSessionToken,
+  validateAdminPassword,
 } from "@/lib/admin-auth";
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("authorizeAdminRequest", () => {
-  it("fails closed when admin credentials are not configured", () => {
+describe("admin auth helpers", () => {
+  it("fails closed when bootstrap credentials are not configured", () => {
     vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "");
     vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "");
 
-    expect(authorizeAdminRequest(null)).toEqual({
+    expect(getAdminConfigurationError()).toBe(
+      `Admin authentication is not configured. Set ${ADMIN_USERNAME_ENV_VAR} and ${ADMIN_PASSWORD_ENV_VAR}.`,
+    );
+  });
+
+  it("enforces the admin password policy", () => {
+    expect(validateAdminPassword("short")).toBe(ADMIN_PASSWORD_POLICY_MESSAGE);
+    expect(validateAdminPassword("nocaps123!")).toBe(ADMIN_PASSWORD_POLICY_MESSAGE);
+    expect(validateAdminPassword("NoSpecial123")).toBe(ADMIN_PASSWORD_POLICY_MESSAGE);
+    expect(validateAdminPassword("Strong!123")).toBeNull();
+  });
+
+  it("creates and validates signed admin sessions", async () => {
+    vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "owner");
+    vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "Strong!123");
+
+    const sessionToken = await createAdminSessionToken({
+      userId: "bootstrap-env-admin",
+      username: "owner",
+      role: "owner",
+      source: "env",
+      version: "env:owner",
+    });
+
+    await expect(authorizeAdminSession(sessionToken)).resolves.toEqual({ ok: true });
+    await expect(readAdminSessionToken(sessionToken)).resolves.toMatchObject({
+      ok: true,
+      payload: expect.objectContaining({ username: "owner", role: "owner" }),
+    });
+    await expect(authorizeAdminSession(`${sessionToken}tampered`)).resolves.toMatchObject({
       ok: false,
-      status: 503,
-      message: `Admin authentication is not configured. Set ${ADMIN_USERNAME_ENV_VAR} and ${ADMIN_PASSWORD_ENV_VAR}.`,
+      status: 401,
     });
   });
 
-  it("rejects missing or invalid basic auth credentials", () => {
-    vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "admin");
-    vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "secret");
+  it("rejects expired admin sessions", async () => {
+    vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "owner");
+    vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "Strong!123");
 
-    const result = authorizeAdminRequest("Basic bad-value");
+    const sessionToken = await createAdminSessionToken(
+      {
+        userId: "bootstrap-env-admin",
+        username: "owner",
+        role: "owner",
+        source: "env",
+        version: "env:owner",
+      },
+      Date.now() - 1_000,
+    );
 
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe(401);
-    expect(result.headers?.["WWW-Authenticate"]).toContain("Basic realm=");
+    await expect(authorizeAdminSession(sessionToken)).resolves.toEqual({
+      ok: false,
+      status: 401,
+      message: "Session expired. Sign in again.",
+    });
   });
 
-  it("accepts correct basic auth credentials", () => {
-    vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "admin");
-    vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "secret");
+  it("accepts an explicit session secret when provided", async () => {
+    vi.stubEnv(ADMIN_USERNAME_ENV_VAR, "owner");
+    vi.stubEnv(ADMIN_PASSWORD_ENV_VAR, "Strong!123");
+    vi.stubEnv(ADMIN_SESSION_SECRET_ENV_VAR, "session-secret");
 
-    const header = `Basic ${Buffer.from("admin:secret").toString("base64")}`;
+    const sessionToken = await createAdminSessionToken({
+      userId: "bootstrap-env-admin",
+      username: "owner",
+      role: "owner",
+      source: "env",
+      version: "env:owner",
+    });
 
-    expect(authorizeAdminRequest(header)).toEqual({ ok: true });
+    await expect(readAdminSessionToken(sessionToken)).resolves.toMatchObject({ ok: true });
+  });
+
+  it("returns safe cookie settings and admin-only redirect paths", () => {
+    expect(getAdminSessionCookieSettings()).toMatchObject({
+      httpOnly: true,
+      maxAge: expect.any(Number),
+      path: "/",
+      sameSite: "lax",
+    });
+    expect(ADMIN_SESSION_COOKIE_NAME).toBe("smartsheets_view_admin_session");
+    expect(normalizeAdminNextPath("/admin/views")).toBe("/admin/views");
+    expect(normalizeAdminNextPath("/admin/sign-in")).toBe("/admin");
+    expect(normalizeAdminNextPath("/view/test")).toBe("/admin");
   });
 });

@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveAdminViewConfig, AdminActionError } from "@/lib/admin-management";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
 import { validateViewConfig } from "@/lib/config/validation";
 
 export async function GET() {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   return NextResponse.json({ views: await listViewConfigs() });
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const body = (await request.json().catch(() => null)) as unknown;
   const sources = await listSourceConfigs();
   const result = validateViewConfig(body, { knownSourceIds: sources.map((source) => source.id) });

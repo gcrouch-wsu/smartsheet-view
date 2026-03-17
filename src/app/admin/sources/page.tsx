@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { requireAdminPageAccess } from "@/lib/admin-page";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
 
 export default async function SourcesIndexPage() {
+  await requireAdminPageAccess("/admin/sources");
   const [sources, views] = await Promise.all([listSourceConfigs(), listViewConfigs()]);
   const viewsBySource = views.reduce<Map<string, number>>((map, view) => {
     map.set(view.sourceId, (map.get(view.sourceId) ?? 0) + 1);
@@ -24,7 +26,7 @@ export default async function SourcesIndexPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">{source.sourceType}</p>
                 <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{source.label}</h3>
-                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">ID: {source.id} � Smartsheet {source.smartsheetId}</p>
+                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">ID: {source.id} · Smartsheet {source.smartsheetId}</p>
                 <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Views attached: {viewsBySource.get(source.id) ?? 0}</p>
               </div>
               <Link href={`/admin/sources/${source.id}`} className="inline-flex items-center rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">Edit</Link>

@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveSourceConfig } from "@/lib/config/admin-store";
 import { listSourceConfigs } from "@/lib/config/store";
 import { validateSourceConfig } from "@/lib/config/validation";
 
 export async function GET() {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   return NextResponse.json({ sources: await listSourceConfigs() });
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const body = (await request.json().catch(() => null)) as unknown;
   const result = validateSourceConfig(body);
 

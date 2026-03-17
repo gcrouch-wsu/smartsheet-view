@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/admin-api";
 import { getSourceConfigById } from "@/lib/config/store";
 import { getSmartsheetSchema, testSourceConnection } from "@/lib/smartsheet";
 import { validateSourceConfig } from "@/lib/config/validation";
@@ -19,7 +20,7 @@ async function resolveSourceInput(id: string, request?: Request) {
 
   const source = await getSourceConfigById(id);
   if (!source) {
-    return { error: `Source \"${id}\" was not found.` };
+    return { error: `Source "${id}" was not found.` };
   }
   return { source };
 }
@@ -28,6 +29,11 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const resolved = await resolveSourceInput(id);
   if ("errors" in resolved) {
@@ -50,6 +56,11 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminApiAccess();
+  if (auth.response) {
+    return auth.response;
+  }
+
   const { id } = await params;
   const resolved = await resolveSourceInput(id, request);
   if ("errors" in resolved) {

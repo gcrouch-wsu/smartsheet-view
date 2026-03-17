@@ -1,21 +1,33 @@
 "use client";
 
-/**
- * Logout for HTTP Basic auth. Navigate to a dedicated logout endpoint that
- * returns 401, prompting the browser to clear cached credentials.
- */
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 export function AdminLogoutButton() {
-  function handleLogout() {
-    window.location.replace("/api/admin/logout");
+  const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleLogout() {
+    setIsPending(true);
+
+    try {
+      await fetch("/api/admin/session", {
+        method: "DELETE",
+      });
+    } finally {
+      router.replace("/admin/sign-in");
+      router.refresh();
+    }
   }
 
   return (
     <button
       type="button"
       onClick={handleLogout}
+      disabled={isPending}
       className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-rose-300 hover:text-rose-700"
     >
-      Log out
+      {isPending ? "Signing out..." : "Log out"}
     </button>
   );
 }

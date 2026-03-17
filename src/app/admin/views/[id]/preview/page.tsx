@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicViewRenderer, formatLayoutLabel } from "@/components/public/ViewRenderer";
+import { requireAdminPageAccess } from "@/lib/admin-page";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
 import { loadAdminViewPreview } from "@/lib/public-view";
@@ -19,6 +20,7 @@ export default async function ViewPreviewPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
+  await requireAdminPageAccess(`/admin/views/${id}/preview`);
   const resolvedSearchParams = await searchParams;
   const preview = await loadAdminViewPreview(id);
 
