@@ -7,11 +7,11 @@ import { useToast } from "@/components/admin/Toast";
 import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
-import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS } from "@/lib/config/options";
+import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { ThemeEditor } from "./ThemeEditor";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
-import type { SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
+import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
 import type { ResolvedView } from "@/lib/config/types";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 
