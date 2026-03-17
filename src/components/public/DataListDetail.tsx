@@ -33,10 +33,24 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
   const summary = getRowSummaryField(view, activeRow, heading?.key);
   const bodyFields = getVisibleRowFields(activeRow, [heading?.key ?? "", summary?.key ?? ""]);
 
+  const dividerStyle = view.presentation?.rowDividerStyle ?? "default";
+  const listDividerClass =
+    dividerStyle === "none" ? "" : dividerStyle === "subtle" ? "divide-y divide-[color:var(--wsu-border)]/40" : "divide-y divide-[color:var(--wsu-border)]/70";
+  const cardBorderClass =
+    dividerStyle === "none" ? "border-0" : dividerStyle === "subtle" ? "border border-[color:var(--wsu-border)]/40" : "border border-[color:var(--wsu-border)]";
+  const rowDividerClass = (rowIndex: number) =>
+    rowIndex > 0
+      ? dividerStyle === "none"
+        ? "pt-4"
+        : dividerStyle === "subtle"
+          ? "border-t border-[color:var(--wsu-border)]/40 pt-4"
+          : "border-t border-[color:var(--wsu-border)] pt-4"
+      : "";
+
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
-        <ul className="divide-y divide-[color:var(--wsu-border)]/70">
+      <aside className={`overflow-hidden rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}>
+        <ul className={listDividerClass}>
           {view.rows.map((row) => {
             const rowHeading = getRowHeadingField(view, row);
             const rowSummary = getRowSummaryField(view, row, rowHeading?.key);
@@ -75,10 +89,7 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
             {getCardLayoutRows(view, activeRow).map((fields, rowIndex) => (
-              <div
-                key={rowIndex}
-                className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)] pt-4" : ""}
-              >
+              <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                 <div className="flex flex-wrap gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>

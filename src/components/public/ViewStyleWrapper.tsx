@@ -54,5 +54,10 @@ export function ViewStyleWrapper({
     cssVars["--wsu-muted"] = tokens.mutedColor;
   }
 
+  // Apply page background so custom/theme backgroundColor overrides the global html gradient
+  if (tokens.backgroundColor) {
+    cssVars.backgroundColor = tokens.backgroundColor;
+  }
+
   return <div style={cssVars as React.CSSProperties}>{children}</div>;
 }

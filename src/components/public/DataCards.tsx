@@ -19,6 +19,18 @@ export function DataCards({ view }: { view: ResolvedView }) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
 
+  const dividerStyle = view.presentation?.rowDividerStyle ?? "default";
+  const cardBorderClass =
+    dividerStyle === "none" ? "border-0" : dividerStyle === "subtle" ? "border border-[color:var(--wsu-border)]/40" : "border border-[color:var(--wsu-border)]";
+  const rowDividerClass = (rowIndex: number) =>
+    rowIndex > 0
+      ? dividerStyle === "none"
+        ? "mt-4 pt-4"
+        : dividerStyle === "subtle"
+          ? "mt-4 border-t border-[color:var(--wsu-border)]/40 pt-4"
+          : "mt-4 border-t border-[color:var(--wsu-border)] pt-4"
+      : "";
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {view.rows.map((row) => {
@@ -29,13 +41,10 @@ export function DataCards({ view }: { view: ResolvedView }) {
             <article
               key={row.id}
               id={`row-${row.id}`}
-              className="scroll-mt-24 rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
+              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
               {customRows.map((fields, rowIndex) => (
-                <div
-                  key={rowIndex}
-                  className={rowIndex > 0 ? "mt-4 border-t border-[color:var(--wsu-border)] pt-4" : ""}
-                >
+                <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                   <div className="flex flex-wrap gap-4">
                     {fields.map((field) => (
                       <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
@@ -57,7 +66,7 @@ export function DataCards({ view }: { view: ResolvedView }) {
           <article
             key={row.id}
             id={`row-${row.id}`}
-            className="scroll-mt-24 rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
+            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
           >
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="border-b border-[color:var(--wsu-border)] pb-4">

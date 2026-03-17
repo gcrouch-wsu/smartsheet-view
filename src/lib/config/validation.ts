@@ -2,6 +2,7 @@ import type {
   FilterOperator,
   LayoutType,
   RenderType,
+  RowDividerStyle,
   SourceConfig,
   TransformConfig,
   ViewConfig,
@@ -301,6 +302,15 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const summaryFieldKey = asOptionalString(input.summaryFieldKey);
   const indexFieldKey = asOptionalString(input.indexFieldKey);
   const hideRowBadge = asBoolean(input.hideRowBadge, false);
+  const rowDividerStyle = asOptionalString(input.rowDividerStyle);
+  const validDividerStyles = ["none", "default", "subtle"];
+  const dividerStyle = rowDividerStyle && validDividerStyles.includes(rowDividerStyle) ? rowDividerStyle : undefined;
+  const hideHeaderBackLink = asBoolean(input.hideHeaderBackLink, false);
+  const hideHeaderSourceLabel = asBoolean(input.hideHeaderSourceLabel, false);
+  const hideHeaderPageTitle = asBoolean(input.hideHeaderPageTitle, false);
+  const hideHeaderLiveDataText = asBoolean(input.hideHeaderLiveDataText, false);
+  const hideHeaderInfoBox = asBoolean(input.hideHeaderInfoBox, false);
+  const hideViewTitleSection = asBoolean(input.hideViewTitleSection, false);
 
   if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
     errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
@@ -331,14 +341,59 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
     }
   }
 
-  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey || indexFieldKey || hideRowBadge || (cardLayout && cardLayout.length > 0));
+  const hasPresentation = Boolean(
+    headingFieldKey ||
+      summaryFieldKey ||
+      indexFieldKey ||
+      hideRowBadge ||
+      dividerStyle ||
+      (cardLayout && cardLayout.length > 0) ||
+      hideHeaderBackLink ||
+      hideHeaderSourceLabel ||
+      hideHeaderPageTitle ||
+      hideHeaderLiveDataText ||
+      hideHeaderInfoBox ||
+      hideViewTitleSection
+  );
 
   return {
     success: errors.length === 0,
     errors,
-    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey, indexFieldKey, hideRowBadge, cardLayout },
+    data:
+      errors.length || !hasPresentation
+        ? undefined
+        : {
+            headingFieldKey,
+            summaryFieldKey,
+            indexFieldKey,
+            hideRowBadge,
+            cardLayout,
+            rowDividerStyle: dividerStyle as RowDividerStyle,
+            hideHeaderBackLink,
+            hideHeaderSourceLabel,
+            hideHeaderPageTitle,
+            hideHeaderLiveDataText,
+            hideHeaderInfoBox,
+            hideViewTitleSection,
+          },
   };
 }
+
+const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
+  "backgroundColor",
+  "cardBackground",
+  "accentColor",
+  "textColor",
+  "mutedColor",
+  "borderColor",
+  "fontFamily",
+  "headingFontFamily",
+  "borderRadius",
+  "cardShadow",
+  "badgeBg",
+  "badgeText",
+  "primaryColor",
+];
 
 function parseStyleConfig(input: unknown): ValidationResult<ViewStyleConfig | undefined> {
   if (input === undefined || input === null || input === "") {
@@ -349,16 +404,18 @@ function parseStyleConfig(input: unknown): ValidationResult<ViewStyleConfig | un
     return { success: false, errors: ["style must be an object."] };
   }
 
-  const primaryColor = asOptionalString(input.primaryColor);
-  const accentColor = asOptionalString(input.accentColor);
-  const borderRadius = asOptionalString(input.borderRadius);
-
-  const hasStyle = Boolean(primaryColor || accentColor || borderRadius);
+  const style: ViewStyleConfig = {};
+  for (const key of STYLE_KEYS) {
+    const value = asOptionalString((input as Record<string, unknown>)[key]);
+    if (value) {
+      (style as Record<string, string>)[key] = value;
+    }
+  }
 
   return {
     success: true,
     errors: [],
-    data: hasStyle ? { primaryColor, accentColor, borderRadius } : undefined,
+    data: Object.keys(style).length > 0 ? style : undefined,
   };
 }
 

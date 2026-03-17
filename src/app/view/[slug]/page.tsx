@@ -6,6 +6,7 @@ import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewTabs } from "@/components/public/ViewTabs";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
+import { mergeThemeTokens } from "@/lib/config/themes";
 import { loadPublicPage } from "@/lib/public-view";
 import { notFound } from "next/navigation";
 
@@ -71,46 +72,54 @@ export default async function PublicViewPage({
     : "min-h-screen px-4 py-6 sm:px-6 lg:px-8";
   const containerClassName = embed ? "mx-auto max-w-none space-y-4" : "mx-auto max-w-7xl space-y-6";
 
+  const tokens = mergeThemeTokens(activeView.themePresetId ?? "wsu_crimson", activeView.style);
+  const mainStyle = !embed && tokens.backgroundColor ? { backgroundColor: tokens.backgroundColor } : undefined;
+
   return (
-    <main className={mainClassName}>
+    <main className={mainClassName} style={mainStyle}>
       {embed && <EmbedHeightReporter />}
       <div className={containerClassName}>
+        <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
         {!embed && (
           <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="space-y-3">
-                <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
-                  Back to configured pages
-                </Link>
+                {!activeView.presentation?.hideHeaderBackLink && (
+                  <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
+                    Back to configured pages
+                  </Link>
+                )}
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                    {page.source.label}
-                  </p>
-                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
-                    {page.title}
-                  </h1>
-                  <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--wsu-muted)]">
-                    Live data from <span className="font-medium text-[color:var(--wsu-ink)]">{page.source.name}</span>.
-                  </p>
+                  {!activeView.presentation?.hideHeaderSourceLabel && (
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                      {page.source.label}
+                    </p>
+                  )}
+                  {!activeView.presentation?.hideHeaderPageTitle && (
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
+                      {page.title}
+                    </h1>
+                  )}
+                  {!activeView.presentation?.hideHeaderLiveDataText && (
+                    <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--wsu-muted)]">
+                      Live data from <span className="font-medium text-[color:var(--wsu-ink)]">{page.source.name}</span>.
+                    </p>
+                  )}
                 </div>
               </div>
-              <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                <p>
-                  <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                </p>
-                <p className="mt-2">
-                  <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
-                </p>
-                <p className="mt-2">
-                  <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
-                </p>
-                <a
-                  href={`/api/public/views/${slug}`}
-                  className="mt-3 inline-flex text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-                >
-                  View JSON
-                </a>
-              </div>
+              {!activeView.presentation?.hideHeaderInfoBox && (
+                <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                  <p>
+                    <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                  </p>
+                  <p className="mt-2">
+                    <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                  </p>
+                  <p className="mt-2">
+                    <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                  </p>
+                </div>
+              )}
             </div>
           </header>
         )}
@@ -125,12 +134,14 @@ export default async function PublicViewPage({
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
-              {activeView.description && (
-                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
-              )}
-            </div>
+            {!activeView.presentation?.hideViewTitleSection && (
+              <div>
+                <h2 className="text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+                {activeView.description && (
+                  <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
+                )}
+              </div>
+            )}
             {!activeView.fixedLayout && (
               <div className="flex flex-wrap gap-2">
                 {LAYOUT_OPTIONS.map((option) => {
@@ -153,10 +164,9 @@ export default async function PublicViewPage({
             )}
           </div>
 
-          <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           <ViewWithSearchAndIndex view={activeView} layout={layout} embed={embed} />
-        </ViewStyleWrapper>
         </section>
+        </ViewStyleWrapper>
       </div>
     </main>
   );

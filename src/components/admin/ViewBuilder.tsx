@@ -756,19 +756,6 @@ export function ViewBuilder({
               ))}
             </select>
           </label>
-          <label className="space-y-2 text-sm">
-            <span className="font-medium text-[color:var(--wsu-ink)]">A-Z index field key</span>
-            <select
-              value={view.presentation?.indexFieldKey ?? ""}
-              onChange={(event) => update("presentation", { ...view.presentation, indexFieldKey: event.target.value })}
-              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 min-h-[44px]"
-            >
-              <option value="">Same as heading if blank</option>
-              {view.fields.map((f) => (
-                <option key={f.key} value={f.key}>{f.label || f.key}</option>
-              ))}
-            </select>
-          </label>
 
           {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
             <div className="space-y-3 md:col-span-2">
@@ -840,15 +827,48 @@ export function ViewBuilder({
                           </button>
                         </div>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         {row.fieldKeys.map((key, keyIndex) => {
                           const field = view.fields.find((f) => f.key === key);
+                          const keys = row.fieldKeys;
                           return (
                             <span
                               key={key}
                               className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-xs font-medium text-[color:var(--wsu-ink)] border border-[color:var(--wsu-border)]"
                             >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (keyIndex <= 0) return;
+                                  const next = [...(view.presentation?.cardLayout ?? [])];
+                                  const nextKeys = [...keys];
+                                  [nextKeys[keyIndex - 1], nextKeys[keyIndex]] = [nextKeys[keyIndex]!, nextKeys[keyIndex - 1]!];
+                                  next[rowIndex] = { fieldKeys: nextKeys };
+                                  update("presentation", { ...view.presentation, cardLayout: next });
+                                }}
+                                disabled={keyIndex === 0}
+                                className="text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)] disabled:opacity-40"
+                                title="Move left"
+                              >
+                                ←
+                              </button>
                               {field?.label ?? key}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (keyIndex >= keys.length - 1) return;
+                                  const next = [...(view.presentation?.cardLayout ?? [])];
+                                  const nextKeys = [...keys];
+                                  [nextKeys[keyIndex], nextKeys[keyIndex + 1]] = [nextKeys[keyIndex + 1]!, nextKeys[keyIndex]!];
+                                  next[rowIndex] = { fieldKeys: nextKeys };
+                                  update("presentation", { ...view.presentation, cardLayout: next });
+                                }}
+                                disabled={keyIndex === keys.length - 1}
+                                className="text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)] disabled:opacity-40"
+                                title="Move right"
+                              >
+                                →
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -861,6 +881,7 @@ export function ViewBuilder({
                                   update("presentation", { ...view.presentation, cardLayout: next.length > 0 ? next : undefined });
                                 }}
                                 className="ml-1 text-[color:var(--wsu-muted)] hover:text-rose-600"
+                                title="Remove from row"
                               >
                                 ×
                               </button>
@@ -905,6 +926,28 @@ export function ViewBuilder({
             </div>
           )}
 
+          {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
+            <div className="space-y-2 md:col-span-2">
+              <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Row dividers</span>
+              <p className="text-xs text-[color:var(--wsu-muted)]">Divider between rows/cards. None hides borders; subtle uses a lighter line.</p>
+              <div className="flex flex-wrap gap-2">
+                {(["default", "subtle", "none"] as const).map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => update("presentation", { ...view.presentation, rowDividerStyle: style })}
+                    className={`min-h-[36px] rounded-full border px-4 py-2 text-sm font-medium ${
+                      (view.presentation?.rowDividerStyle ?? "default") === style
+                        ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5 text-[color:var(--wsu-crimson)]"
+                        : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)]"
+                    }`}
+                  >
+                    {style === "none" ? "None" : style === "subtle" ? "Subtle" : "Default"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
@@ -914,6 +957,68 @@ export function ViewBuilder({
             />
             <span className="font-medium text-[color:var(--wsu-ink)]">Hide row badge</span>
           </label>
+
+          <div className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Header (public view)</span>
+            <p className="text-xs text-[color:var(--wsu-muted)]">Hide elements in the top card to reduce repetition (e.g. when the page title and view label are the same).</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderBackLink ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderBackLink: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Back link</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderSourceLabel ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderSourceLabel: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Source label</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderPageTitle ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderPageTitle: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Page title</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderLiveDataText ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderLiveDataText: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Live data text</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderInfoBox ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderInfoBox: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Info box (Active view, Rows, Refreshed)</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideViewTitleSection ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTitleSection: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>View title (h2 + description below tabs)</span>
+              </label>
+            </div>
+          </div>
+
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
@@ -1181,6 +1286,24 @@ export function ViewBuilder({
                         className="rounded border-[color:var(--wsu-border)] text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
                       />
                       <span>Hide label</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]">
+                      <input
+                        type="checkbox"
+                        checked={(field.emptyBehavior ?? "show") === "hide"}
+                        onChange={(e) => updateField(index, { ...field, emptyBehavior: e.target.checked ? "hide" : "show" })}
+                        className="rounded border-[color:var(--wsu-border)] text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
+                      />
+                      <span>Hide when empty</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]" title="Field used for A-Z index and search">
+                      <input
+                        type="checkbox"
+                        checked={view.presentation?.indexFieldKey === field.key}
+                        onChange={(e) => update("presentation", { ...view.presentation, indexFieldKey: e.target.checked ? field.key : undefined })}
+                        className="rounded border-[color:var(--wsu-border)] text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
+                      />
+                      <span>A-Z index</span>
                     </label>
                   </div>
                 </div>

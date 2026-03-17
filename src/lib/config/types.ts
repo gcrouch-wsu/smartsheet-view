@@ -98,6 +98,8 @@ export interface CardLayoutRow {
   fieldKeys: string[];
 }
 
+export type RowDividerStyle = "none" | "default" | "subtle";
+
 export interface ViewPresentationConfig {
   /** Field used as the main heading in cards, accordions, etc. */
   headingFieldKey?: string;
@@ -109,6 +111,15 @@ export interface ViewPresentationConfig {
   hideRowBadge?: boolean;
   /** Custom layout for card-like views: rows of field keys. When set, overrides heading/summary/remaining. */
   cardLayout?: CardLayoutRow[];
+  /** Divider between rows/cards. "none" hides, "default" is standard border, "subtle" is lighter. */
+  rowDividerStyle?: RowDividerStyle;
+  /** Header chrome: hide elements to reduce clutter. */
+  hideHeaderBackLink?: boolean;
+  hideHeaderSourceLabel?: boolean;
+  hideHeaderPageTitle?: boolean;
+  hideHeaderLiveDataText?: boolean;
+  hideHeaderInfoBox?: boolean;
+  hideViewTitleSection?: boolean;
 }
 
 export interface ViewStyleConfig {

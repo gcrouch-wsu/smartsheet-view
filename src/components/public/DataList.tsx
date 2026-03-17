@@ -19,9 +19,13 @@ export function DataList({ view }: { view: ResolvedView }) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
 
+  const dividerStyle = view.presentation?.rowDividerStyle ?? "default";
+  const listDividerClass =
+    dividerStyle === "none" ? "" : dividerStyle === "subtle" ? "divide-y divide-[color:var(--wsu-border)]/40" : "divide-y divide-[color:var(--wsu-border)]/70";
+
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
-      <ul className="divide-y divide-[color:var(--wsu-border)]/70">
+      <ul className={listDividerClass}>
         {view.rows.map((row) => {
           const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
 
@@ -29,11 +33,17 @@ export function DataList({ view }: { view: ResolvedView }) {
             return (
               <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24 px-5 py-5">
                 <div className="space-y-4">
-                  {customRows.map((fields, rowIndex) => (
-                    <div
-                      key={rowIndex}
-                      className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)] pt-4" : ""}
-                    >
+                  {customRows.map((fields, rowIndex) => {
+                    const rowDividerClass =
+                      rowIndex > 0
+                        ? dividerStyle === "none"
+                          ? "pt-4"
+                          : dividerStyle === "subtle"
+                            ? "border-t border-[color:var(--wsu-border)]/40 pt-4"
+                            : "border-t border-[color:var(--wsu-border)] pt-4"
+                        : "";
+                    return (
+                    <div key={rowIndex} className={rowDividerClass}>
                       <div className="flex flex-wrap gap-4">
                         {fields.map((field) => (
                           <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
@@ -42,7 +52,8 @@ export function DataList({ view }: { view: ResolvedView }) {
                         ))}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </li>
             );

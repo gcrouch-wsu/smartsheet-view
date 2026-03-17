@@ -37,6 +37,18 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
   const summary = getRowSummaryField(view, activeRow, heading?.key);
   const bodyFields = getVisibleRowFields(activeRow, [heading?.key ?? "", summary?.key ?? ""]);
 
+  const dividerStyle = view.presentation?.rowDividerStyle ?? "default";
+  const cardBorderClass =
+    dividerStyle === "none" ? "border-0" : dividerStyle === "subtle" ? "border border-[color:var(--wsu-border)]/40" : "border border-[color:var(--wsu-border)]";
+  const rowDividerClass = (rowIndex: number) =>
+    rowIndex > 0
+      ? dividerStyle === "none"
+        ? "pt-4"
+        : dividerStyle === "subtle"
+          ? "border-t border-[color:var(--wsu-border)]/40 pt-4"
+          : "border-t border-[color:var(--wsu-border)] pt-4"
+      : "";
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -63,7 +75,7 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
         })}
       </div>
 
-      <article className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
+      <article className={`rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}>
         <div className="border-b border-[color:var(--wsu-border)] pb-4">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
           <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
@@ -72,10 +84,7 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
             {getCardLayoutRows(view, activeRow).map((fields, rowIndex) => (
-              <div
-                key={rowIndex}
-                className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)] pt-4" : ""}
-              >
+              <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                 <div className="flex flex-wrap gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
