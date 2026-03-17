@@ -364,8 +364,8 @@ export function ViewBuilder({
     setLastAppliedTemplateId(templateId);
     setActiveTab("fields");
     setErrors([]);
-    setNotice("Template applied. Map each field to a column.");
-    toast.addToast("Template applied. Map fields to columns.", "info");
+    setNotice("Layout applied. Select columns above to add them to the view.");
+    toast.addToast("Layout applied. Select columns to add them.", "info");
   }
 
   async function duplicateView() {
@@ -601,9 +601,9 @@ export function ViewBuilder({
         {activeTab === "setup" && (
           <div id="tabpanel-setup" role="tabpanel" aria-labelledby="tab-setup" className="mt-6 space-y-6">
             <div>
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Start from template</h3>
-              <p className="mb-2 text-sm text-[color:var(--wsu-muted)]">Templates set both the layout and starter field slots (Name, Role, Email, etc.). Pick one to begin.</p>
-              <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">Then go to the Fields tab: load columns from your source, check the columns to include, and map any unmapped slots.</p>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Layout presets</h3>
+              <p className="mb-2 text-sm text-[color:var(--wsu-muted)]">Pick a layout (table, cards, accordion, etc.). Then go to the Fields tab and select which columns to include.</p>
+              <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">The Arrange section will show only the columns you select—reorder them there.</p>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {VIEW_TEMPLATES.map((template) => (
                   <button
@@ -1064,6 +1064,11 @@ export function ViewBuilder({
             <div className="mt-6">
               <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Arrange</h2>
               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Reorder columns for display. Order here = display order in the view.</p>
+              {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
+                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+                  To control field layout <em>within</em> each card (rows, side-by-side), go to <strong>Setup</strong> → <strong>Custom card layout</strong> and enable it.
+                </p>
+              )}
               <div className="mt-4 space-y-3">
           {view.fields.length === 0 ? (
             <p className="text-sm text-[color:var(--wsu-muted)]">Select columns above to add them here, then reorder.</p>
@@ -1077,9 +1082,16 @@ export function ViewBuilder({
                   isUnmapped ? "border-amber-400 bg-amber-50/50" : "border-[color:var(--wsu-border)] bg-white"
                 }`}
               >
-                <div>
-                  <p className="font-medium text-[color:var(--wsu-ink)]">{field.label || field.key || "Unnamed"}</p>
-                  <p className="text-sm text-[color:var(--wsu-muted)]">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={field.label}
+                      onChange={(e) => updateField(index, { ...field, label: e.target.value })}
+                      placeholder={field.key || "Display name"}
+                      className="min-w-0 flex-1 rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium"
+                    />
+                  </div>
+                  <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
                     Smartsheet: {field.source.columnTitle ?? field.source.columnId ?? (isUnmapped ? "—" : "—")}
                     {isUnmapped && (
                       <span className="ml-2 text-amber-600 font-medium">Map this field to a column</span>
@@ -1160,6 +1172,15 @@ export function ViewBuilder({
                         className="text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
                       />
                       <span>Summary</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]">
+                      <input
+                        type="checkbox"
+                        checked={field.hideLabel ?? false}
+                        onChange={(e) => updateField(index, { ...field, hideLabel: e.target.checked })}
+                        className="rounded border-[color:var(--wsu-border)] text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
+                      />
+                      <span>Hide label</span>
                     </label>
                   </div>
                 </div>

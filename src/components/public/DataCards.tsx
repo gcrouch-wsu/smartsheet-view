@@ -6,7 +6,9 @@ import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      {!field.hideLabel && (
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      )}
       <FieldValue field={field} stacked />
     </div>
   );
@@ -59,12 +61,18 @@ export function DataCards({ view }: { view: ResolvedView }) {
           >
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="border-b border-[color:var(--wsu-border)] pb-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">
-                  {heading.label}
-                </p>
-                <div className="mt-2 text-lg font-semibold text-[color:var(--wsu-ink)]">
-                  <FieldValue field={heading} />
-                </div>
+                {!heading.hideLabel ? (
+                  <>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                    <div className="mt-2 text-lg font-semibold text-[color:var(--wsu-ink)]">
+                      <FieldValue field={heading} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-lg font-semibold text-[color:var(--wsu-ink)]">
+                    <FieldValue field={heading} />
+                  </div>
+                )}
                 {summary && (
                   <div className="mt-2 text-sm text-[color:var(--wsu-muted)]">
                     <FieldValue field={summary} />

@@ -1,4 +1,4 @@
-import type { LayoutType, ViewConfig, ViewFieldConfig } from "@/lib/config/types";
+import type { LayoutType, ViewConfig } from "@/lib/config/types";
 
 export interface ViewTemplateDefinition {
   id: string;
@@ -6,56 +6,6 @@ export interface ViewTemplateDefinition {
   description: string;
   layout: LayoutType;
 }
-
-const DIRECTORY_FIELDS: ViewFieldConfig[] = [
-  {
-    key: "name",
-    label: "Name",
-    source: { columnTitle: "Name" },
-    transforms: [{ op: "trim" }],
-    render: { type: "text" },
-  },
-  {
-    key: "role",
-    label: "Role",
-    source: { columnTitle: "Role" },
-    transforms: [{ op: "trim" }],
-    render: { type: "badge" },
-    emptyBehavior: "hide",
-  },
-  {
-    key: "email",
-    label: "Email",
-    source: { columnTitle: "Email" },
-    transforms: [{ op: "trim" }],
-    render: { type: "mailto" },
-    emptyBehavior: "hide",
-  },
-  {
-    key: "phone",
-    label: "Phone",
-    source: { columnTitle: "Phone" },
-    transforms: [{ op: "trim" }],
-    render: { type: "phone" },
-    emptyBehavior: "hide",
-  },
-  {
-    key: "location",
-    label: "Location",
-    source: { columnTitle: "Location" },
-    transforms: [{ op: "trim" }],
-    render: { type: "text" },
-    emptyBehavior: "hide",
-  },
-  {
-    key: "notes",
-    label: "Notes",
-    source: { columnTitle: "Notes" },
-    transforms: [{ op: "trim" }],
-    render: { type: "multiline_text" },
-    emptyBehavior: "hide",
-  },
-];
 
 export const VIEW_TEMPLATES: ViewTemplateDefinition[] = [
   {
@@ -96,15 +46,7 @@ export const VIEW_TEMPLATES: ViewTemplateDefinition[] = [
   },
 ];
 
-function cloneFields() {
-  return DIRECTORY_FIELDS.map((field) => ({
-    ...field,
-    source: { ...field.source },
-    transforms: field.transforms?.map((transform) => ({ ...transform })),
-    render: { ...field.render },
-  }));
-}
-
+/** Apply a template: sets layout only. Fields come from the columns you select in the Fields tab. */
 export function applyViewTemplate(current: ViewConfig, templateId: string): ViewConfig {
   const template = VIEW_TEMPLATES.find((entry) => entry.id === templateId);
   if (!template) {
@@ -114,11 +56,12 @@ export function applyViewTemplate(current: ViewConfig, templateId: string): View
   return {
     ...current,
     layout: template.layout,
-    defaultSort: [{ field: "name", direction: "asc" }],
+    defaultSort: [],
     presentation: {
-      headingFieldKey: "name",
-      summaryFieldKey: "role",
+      ...current.presentation,
+      headingFieldKey: current.presentation?.headingFieldKey ?? "",
+      summaryFieldKey: current.presentation?.summaryFieldKey ?? "",
     },
-    fields: cloneFields(),
+    fields: current.fields,
   };
 }

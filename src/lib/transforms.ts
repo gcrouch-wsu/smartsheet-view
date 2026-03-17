@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   ContactValue,
   PublicLink,
   ResolvedFieldValue,
@@ -482,7 +482,7 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
 
   return {
     key: field.key,
-    label: field.label,
+    label: field.label || field.key,
     renderType,
     textValue: isEmpty ? emptyLabel : textValue,
     sortValue,
@@ -490,6 +490,7 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     links,
     isEmpty,
     hideWhenEmpty: field.emptyBehavior === "hide",
+    hideLabel: field.hideLabel,
   };
 }
 

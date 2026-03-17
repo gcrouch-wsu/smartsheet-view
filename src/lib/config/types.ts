@@ -76,6 +76,8 @@ export interface ViewFieldConfig {
   render: ViewFieldRender;
   emptyBehavior?: "show" | "hide";
   description?: string;
+  /** When true, hide the label in card/list layouts—show only the value. Use when the value is self-explanatory (e.g. a name field). */
+  hideLabel?: boolean;
 }
 
 export interface ViewFilterConfig {
@@ -218,6 +220,7 @@ export interface ResolvedFieldValue {
   links: PublicLink[];
   isEmpty: boolean;
   hideWhenEmpty: boolean;
+  hideLabel?: boolean;
 }
 
 export interface ResolvedViewRow {

@@ -6,7 +6,9 @@ import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      {!field.hideLabel && (
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      )}
       <FieldValue field={field} stacked />
     </div>
   );

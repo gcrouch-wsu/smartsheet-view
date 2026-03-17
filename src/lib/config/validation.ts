@@ -140,12 +140,9 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
   }
 
   const key = asTrimmedString(input.key);
-  const label = asTrimmedString(input.label);
+  const label = asTrimmedString(input.label) ?? "";
   if (!key) {
     errors.push(`${path}.key is required.`);
-  }
-  if (!label) {
-    errors.push(`${path}.label is required.`);
   }
 
   const sourceInput = isRecord(input.source) ? input.source : {};
@@ -207,6 +204,8 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
     errors.push(`${path}.emptyBehavior must be "show" or "hide".`);
   }
 
+  const hideLabel = input.hideLabel === true || input.hideLabel === "true";
+
   return {
     success: errors.length === 0,
     errors,
@@ -223,6 +222,7 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
             emptyLabel: asOptionalString(renderInput.emptyLabel),
           },
           emptyBehavior: emptyBehavior as ViewFieldConfig["emptyBehavior"],
+          hideLabel: hideLabel || undefined,
         },
   };
 }

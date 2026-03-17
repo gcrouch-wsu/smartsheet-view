@@ -9,7 +9,9 @@ import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      {!field.hideLabel && (
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      )}
       <FieldValue field={field} stacked />
     </div>
   );
@@ -88,7 +90,9 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                {!heading.hideLabel && (
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                )}
                 <FieldValue field={heading} stacked />
               </div>
             )}
