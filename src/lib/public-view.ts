@@ -192,6 +192,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[]): ResolvedView {
     layout: view.layout,
     presentation: view.presentation,
     style: view.style,
+    fixedLayout: view.fixedLayout,
     rowCount: sortedRows.length,
     fields: view.fields
       .filter((field) => field.render.type !== "hidden")

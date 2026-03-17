@@ -46,3 +46,19 @@ export function getRowHeadingText(view: ResolvedView, row: ResolvedViewRow) {
   const text = heading ? describeResolvedField(heading) : "";
   return text || `Row ${row.id}`;
 }
+
+/** Field used for A-Z index. Uses indexFieldKey if set, else headingFieldKey, else first field. */
+export function getIndexField(view: ResolvedView, row: ResolvedViewRow) {
+  const key = view.presentation?.indexFieldKey ?? view.presentation?.headingFieldKey;
+  const preferred = key ? row.fieldMap[key] : undefined;
+  if (preferred && fieldCanRender(preferred)) {
+    return preferred;
+  }
+  return getRowHeadingField(view, row);
+}
+
+export function getIndexText(view: ResolvedView, row: ResolvedViewRow) {
+  const field = getIndexField(view, row);
+  const text = field ? describeResolvedField(field) : "";
+  return text || `Row ${row.id}`;
+}

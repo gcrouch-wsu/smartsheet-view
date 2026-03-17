@@ -294,6 +294,8 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const errors: string[] = [];
   const headingFieldKey = asOptionalString(input.headingFieldKey);
   const summaryFieldKey = asOptionalString(input.summaryFieldKey);
+  const indexFieldKey = asOptionalString(input.indexFieldKey);
+  const hideRowBadge = asBoolean(input.hideRowBadge, false);
 
   if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
     errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
@@ -301,13 +303,16 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   if (summaryFieldKey && !fieldKeys.has(summaryFieldKey)) {
     errors.push(`presentation.summaryFieldKey \"${summaryFieldKey}\" does not match any field key.`);
   }
+  if (indexFieldKey && !fieldKeys.has(indexFieldKey)) {
+    errors.push(`presentation.indexFieldKey \"${indexFieldKey}\" does not match any field key.`);
+  }
 
-  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey);
+  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey || indexFieldKey || hideRowBadge);
 
   return {
     success: errors.length === 0,
     errors,
-    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey },
+    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey, indexFieldKey, hideRowBadge },
   };
 }
 
@@ -472,6 +477,7 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
           defaultSort,
           presentation: presentationResult.data,
           style: styleResult.data,
+          fixedLayout: asBoolean(input.fixedLayout),
           fields,
         },
   };

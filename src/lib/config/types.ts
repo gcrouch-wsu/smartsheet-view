@@ -88,8 +88,14 @@ export interface ViewSortConfig {
 }
 
 export interface ViewPresentationConfig {
+  /** Field used as the main heading in cards, accordions, etc. */
   headingFieldKey?: string;
+  /** Field shown as subtitle under the heading. */
   summaryFieldKey?: string;
+  /** Field used for A-Z index and search. Defaults to heading if not set. */
+  indexFieldKey?: string;
+  /** Hide the "Row N" badge in stacked/tabbed layouts. */
+  hideRowBadge?: boolean;
 }
 
 export interface ViewStyleConfig {
@@ -111,6 +117,8 @@ export interface ViewConfig {
   defaultSort?: ViewSortConfig[];
   presentation?: ViewPresentationConfig;
   style?: ViewStyleConfig;
+  /** When true, hide the layout switcher; only use the view's default layout. */
+  fixedLayout?: boolean;
   fields: ViewFieldConfig[];
 }
 
@@ -202,6 +210,7 @@ export interface ResolvedView {
   layout: LayoutType;
   presentation?: ViewPresentationConfig;
   style?: ViewStyleConfig;
+  fixedLayout?: boolean;
   rowCount: number;
   fields: ResolvedViewField[];
   rows: ResolvedViewRow[];

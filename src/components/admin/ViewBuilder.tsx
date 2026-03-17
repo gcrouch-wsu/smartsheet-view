@@ -94,6 +94,16 @@ export function ViewBuilder({
     }));
   }
 
+  function moveField(fromIndex: number, direction: "up" | "down") {
+    const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= view.fields.length) return;
+    setView((current) => {
+      const next = [...current.fields];
+      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
+      return { ...current, fields: next };
+    });
+  }
+
   function updateFilter(index: number, nextFilter: ViewFilterConfig) {
     setView((current) => ({
       ...current,
@@ -349,6 +359,33 @@ export function ViewBuilder({
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
           </label>
+          <label className="space-y-2 text-sm">
+            <span className="font-medium text-[color:var(--wsu-ink)]">A-Z index field key</span>
+            <input
+              value={view.presentation?.indexFieldKey ?? ""}
+              onChange={(event) => update("presentation", { ...view.presentation, indexFieldKey: event.target.value })}
+              placeholder="Same as heading if blank"
+              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
+            />
+          </label>
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={view.presentation?.hideRowBadge ?? false}
+              onChange={(event) => update("presentation", { ...view.presentation, hideRowBadge: event.target.checked })}
+              className="rounded border-[color:var(--wsu-border)]"
+            />
+            <span className="font-medium text-[color:var(--wsu-ink)]">Hide row badge</span>
+          </label>
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={view.fixedLayout ?? false}
+              onChange={(event) => update("fixedLayout", event.target.checked)}
+              className="rounded border-[color:var(--wsu-border)]"
+            />
+            <span className="font-medium text-[color:var(--wsu-ink)]">Fixed layout only</span>
+          </label>
         </div>
 
         <div className="mt-6">
@@ -547,21 +584,62 @@ export function ViewBuilder({
           </button>
         </div>
 
+        <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+          Order = display order. Use ↑↓ to reorder. Remove to exclude a column from the view.
+        </p>
         <div className="mt-4 space-y-4">
           {view.fields.map((field, index) => (
             <article key={`${field.key || "field"}-${index}`} className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white p-5">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold text-[color:var(--wsu-ink)]">Field {index + 1}</h3>
                   <p className="text-sm text-[color:var(--wsu-muted)]">Source: {sourceMap.get(view.sourceId) ?? view.sourceId}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => update("fields", view.fields.filter((_, fieldIndex) => fieldIndex !== index))}
-                  className="rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700"
-                >
-                  Remove field
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "up")}
+                    disabled={index === 0}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "down")}
+                    disabled={index === view.fields.length - 1}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "up")}
+                    disabled={index === 0}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move left"
+                  >
+                    ◀
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "down")}
+                    disabled={index === view.fields.length - 1}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move right"
+                  >
+                    ▶
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update("fields", view.fields.filter((_, fieldIndex) => fieldIndex !== index))}
+                    className="rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700"
+                  >
+                    Remove field
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
-import { describeResolvedField, getRowHeadingText } from "@/components/public/layout-utils";
+import { describeResolvedField, getIndexText } from "@/components/public/layout-utils";
 import type { LayoutType, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -23,7 +23,7 @@ function getSearchableText(view: ResolvedView, row: ResolvedViewRow): string {
 }
 
 function getIndexLetter(view: ResolvedView, row: ResolvedViewRow): string {
-  const text = getRowHeadingText(view, row);
+  const text = getIndexText(view, row);
   const first = text.trim().charAt(0).toUpperCase();
   if (/[A-Z]/.test(first)) return first;
   if (/[0-9]/.test(first)) return "#";

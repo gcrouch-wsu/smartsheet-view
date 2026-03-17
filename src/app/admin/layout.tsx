@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { AdminLogoutButton } from "./AdminLogoutButton";
+
+export const dynamic = "force-dynamic";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
@@ -26,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link href="/admin/views/new" className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]">
                 New view
               </Link>
+              <AdminLogoutButton />
             </div>
           </div>
           <nav className="mt-5 flex flex-wrap gap-2">

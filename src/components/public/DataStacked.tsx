@@ -37,9 +37,11 @@ export function DataStacked({ view }: { view: ResolvedView }) {
                   </div>
                 )}
               </div>
-              <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                Row {row.id}
-              </div>
+              {!view.presentation?.hideRowBadge && (
+                <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                  Row {row.id}
+                </div>
+              )}
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {bodyFields.map((field) => (

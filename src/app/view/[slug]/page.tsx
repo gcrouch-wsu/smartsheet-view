@@ -128,24 +128,26 @@ export default async function PublicViewPage({
                 <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {LAYOUT_OPTIONS.map((option) => {
-                const active = option === layout;
-                return (
-                  <Link
-                    key={option}
-                    href={buildHref(slug, activeView.id, option, embed)}
-                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                      active
-                        ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-                        : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-                    }`}
-                  >
-                    {formatLayoutLabel(option)}
-                  </Link>
-                );
-              })}
-            </div>
+            {!activeView.fixedLayout && (
+              <div className="flex flex-wrap gap-2">
+                {LAYOUT_OPTIONS.map((option) => {
+                  const active = option === layout;
+                  return (
+                    <Link
+                      key={option}
+                      href={buildHref(slug, activeView.id, option, embed)}
+                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                        active
+                          ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                          : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                      }`}
+                    >
+                      {formatLayoutLabel(option)}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <ViewStyleWrapper style={activeView.style}>
