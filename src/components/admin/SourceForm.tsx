@@ -219,16 +219,20 @@ export function SourceForm({
               value={form.id}
               disabled={!isNew}
               onChange={(event) => update("id", event.target.value)}
+              placeholder="e.g. grad-programs"
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 disabled:bg-[color:var(--wsu-stone)]"
             />
+            <p className="text-xs text-[color:var(--wsu-muted)]">Unique, URL-safe identifier. Set once at creation; cannot be changed.</p>
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Label</span>
             <input
               value={form.label}
               onChange={(event) => update("label", event.target.value)}
+              placeholder="e.g. Graduate Programs"
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
+            <p className="text-xs text-[color:var(--wsu-muted)]">Display name shown in the admin UI. Editable anytime.</p>
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Source type</span>
@@ -247,8 +251,10 @@ export function SourceForm({
               type="number"
               value={form.smartsheetId || ""}
               onChange={(event) => update("smartsheetId", Number(event.target.value) || 0)}
+              placeholder="From sheet/report URL"
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
+            <p className="text-xs text-[color:var(--wsu-muted)]">Numeric ID from the Smartsheet URL: app.smartsheet.com/sheets/XXXXXXXX or .../reports/XXXXXXXX</p>
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Connection key</span>

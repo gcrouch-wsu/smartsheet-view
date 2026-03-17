@@ -11,6 +11,7 @@ import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { ThemeEditor } from "./ThemeEditor";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
+import { slugify } from "@/lib/utils";
 import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
 import type { ResolvedView } from "@/lib/config/types";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
@@ -79,25 +80,27 @@ function columnToField(col: SmartsheetColumn, displayName?: string): ViewFieldCo
 }
 
 function buildInitialView(view: ViewConfig | null, sources: SourceConfig[]): ViewConfig {
-  return (
-    view ?? {
-      id: "",
-      slug: "",
-      sourceId: sources[0]?.id ?? "",
-      label: "",
-      description: "",
-      layout: "table",
-      public: false,
-      tabOrder: 1,
-      presentation: {
-        headingFieldKey: "",
-        summaryFieldKey: "",
-      },
-      filters: [],
-      defaultSort: [],
-      fields: [],
-    }
-  );
+  if (view) return view;
+  const firstSource = sources[0];
+  const label = firstSource?.label ?? "";
+  const slug = slugify(label);
+  return {
+    id: slug,
+    slug,
+    sourceId: firstSource?.id ?? "",
+    label,
+    description: "",
+    layout: "table",
+    public: false,
+    tabOrder: 1,
+    presentation: {
+      headingFieldKey: "",
+      summaryFieldKey: "",
+    },
+    filters: [],
+    defaultSort: [],
+    fields: [],
+  };
 }
 
 function parseOptionalNumber(value: string) {
@@ -406,11 +409,17 @@ export function ViewBuilder({
     setPreviewError("");
     setPreviewData(null);
     try {
+      const previewBody = {
+        ...view,
+        id: view.id || "preview",
+        slug: view.slug || "preview",
+        label: view.label || "Preview",
+      };
       const response = await fetch("/api/admin/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: FETCH_CREDENTIALS,
-        body: JSON.stringify(view),
+        body: JSON.stringify(previewBody),
       });
       const payload = (await response.json()) as {
         rows?: ResolvedView["rows"];
@@ -418,9 +427,14 @@ export function ViewBuilder({
         warnings?: string[];
         rowCount?: number;
         error?: string;
+        errors?: string[];
       };
       if (!response.ok || !payload.rows || !payload.fields) {
-        setPreviewError(payload.error ?? "Preview failed.");
+        const errMsg =
+          Array.isArray(payload.errors) && payload.errors.length > 0
+            ? payload.errors.join(" ")
+            : payload.error ?? "Preview failed.";
+        setPreviewError(errMsg);
         return;
       }
       const resolvedView: ResolvedView = {
@@ -456,11 +470,17 @@ export function ViewBuilder({
     }
     const timer = setTimeout(() => {
       setLivePreviewLoading(true);
+      const previewBody = {
+        ...view,
+        id: view.id || "preview",
+        slug: view.slug || "preview",
+        label: view.label || "Preview",
+      };
       fetch("/api/admin/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: FETCH_CREDENTIALS,
-        body: JSON.stringify(view),
+        body: JSON.stringify(previewBody),
       })
         .then((r) => r.json())
         .then((payload: { rows?: ResolvedView["rows"]; fields?: ResolvedView["fields"]; warnings?: string[]; rowCount?: number }) => {
@@ -605,6 +625,62 @@ export function ViewBuilder({
 
             <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm">
+            <span className="font-medium text-[color:var(--wsu-ink)]">Source</span>
+            <select
+              value={view.sourceId}
+              onChange={(event) => {
+                const sourceId = event.target.value;
+                const source = sources.find((s) => s.id === sourceId);
+                setView((prev) => ({
+                  ...prev,
+                  sourceId,
+                  label: prev.label || (source?.label ?? ""),
+                  slug: prev.slug || (source?.label ? slugify(source.label) : prev.slug),
+                  id: isNew && !prev.id ? (source?.label ? slugify(source.label) : prev.id) : prev.id,
+                }));
+              }}
+              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
+            >
+              {sources.map((source) => (
+                <option key={source.id} value={source.id}>{source.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-[color:var(--wsu-muted)]">Label, slug, and ID auto-fill from the source when empty.</p>
+          </label>
+          <label className="space-y-2 text-sm">
+            <span className="font-medium text-[color:var(--wsu-ink)]">Label</span>
+            <input
+              value={view.label}
+              onChange={(event) => {
+                const label = event.target.value;
+                setView((prev) => ({
+                  ...prev,
+                  label,
+                  slug: prev.slug || slugify(label),
+                  id: isNew && !prev.id ? slugify(label) : prev.id,
+                }));
+              }}
+              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
+            />
+            <p className="text-xs text-[color:var(--wsu-muted)]">Display name. Slug and ID auto-derive when empty.</p>
+          </label>
+          <label className="space-y-2 text-sm">
+            <span className="font-medium text-[color:var(--wsu-ink)]">Slug</span>
+            <input
+              value={view.slug}
+              onChange={(event) => {
+                const slug = event.target.value;
+                setView((prev) => ({
+                  ...prev,
+                  slug,
+                  id: isNew && !prev.id ? slug : prev.id,
+                }));
+              }}
+              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
+            />
+            <p className="text-xs text-[color:var(--wsu-muted)]">URL path (e.g. /view/graduate-programs). ID syncs when empty.</p>
+          </label>
+          <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">View ID</span>
             <input
               value={view.id}
@@ -612,34 +688,7 @@ export function ViewBuilder({
               onChange={(event) => update("id", event.target.value)}
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 disabled:bg-[color:var(--wsu-stone)]"
             />
-          </label>
-          <label className="space-y-2 text-sm">
-            <span className="font-medium text-[color:var(--wsu-ink)]">Slug</span>
-            <input
-              value={view.slug}
-              onChange={(event) => update("slug", event.target.value)}
-              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
-            />
-          </label>
-          <label className="space-y-2 text-sm">
-            <span className="font-medium text-[color:var(--wsu-ink)]">Label</span>
-            <input
-              value={view.label}
-              onChange={(event) => update("label", event.target.value)}
-              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
-            />
-          </label>
-          <label className="space-y-2 text-sm">
-            <span className="font-medium text-[color:var(--wsu-ink)]">Source</span>
-            <select
-              value={view.sourceId}
-              onChange={(event) => update("sourceId", event.target.value)}
-              className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
-            >
-              {sources.map((source) => (
-                <option key={source.id} value={source.id}>{source.label}</option>
-              ))}
-            </select>
+            <p className="text-xs text-[color:var(--wsu-muted)]">Unique identifier. Set once at creation; cannot be changed.</p>
           </label>
           <label className="space-y-2 text-sm md:col-span-2">
             <span className="font-medium text-[color:var(--wsu-ink)]">Description</span>

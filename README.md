@@ -40,6 +40,19 @@ Edit `.env` with your Smartsheet and Admin credentials:
 npm run dev
 ```
 
+### 4. Admin: Creating a Source
+
+Go to **Admin → Sources** and click **Create source**. You’ll configure:
+
+| Field | Purpose |
+|-------|---------|
+| **Source ID** | Internal identifier for this app. Must be unique, URL-safe (no spaces or special characters). Used in URLs and when linking views. Set once at creation and cannot be changed. Example: `grad-programs` |
+| **Label** | Display name shown in the admin UI. Can include spaces and punctuation. Can be changed anytime. Example: `Graduate Programs` |
+| **Source type** | Choose **Sheet** or **Report** to match your Smartsheet asset. |
+| **Smartsheet ID** | The numeric ID from Smartsheet. Find it in the sheet/report URL: `https://app.smartsheet.com/sheets/XXXXXXXXXXXXXXX` or `.../reports/XXXXXXXXXXXXXXX` — the long number is the ID. |
+
+After saving, use **Test connection** to verify the Smartsheet API can reach the sheet or report. Then create **Views** that select columns and define how data is displayed.
+
 ## Vercel Deployment
 
 1. Push to GitHub and connect the repository in Vercel.
