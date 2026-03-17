@@ -29,5 +29,3 @@ npm run dev
 - `src/lib/` – Smartsheet client, transforms, filters, config
 - `config/sources/` – Source definitions (JSON)
 - `config/views/` – View definitions (JSON)
-
-See `PROJECT_SPEC.md` and `claude_review.md` for full documentation.
