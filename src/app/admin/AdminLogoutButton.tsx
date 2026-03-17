@@ -1,14 +1,12 @@
 "use client";
 
 /**
- * Logout for HTTP Basic auth. Browsers cache Basic credentials; navigating to
- * a URL with invalid credentials causes the browser to clear the cache and
- * show the login prompt again.
+ * Logout for HTTP Basic auth. Navigate to a dedicated logout endpoint that
+ * returns 401, prompting the browser to clear cached credentials.
  */
 export function AdminLogoutButton() {
   function handleLogout() {
-    const { protocol, host } = window.location;
-    window.location.href = `${protocol}//logout:logout@${host}/admin`;
+    window.location.replace("/api/admin/logout");
   }
 
   return (

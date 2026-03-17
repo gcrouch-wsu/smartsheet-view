@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
-import type { SourceConfig, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
+import type { SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
+import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 
 function createEmptyTransform(): TransformConfig {
   return { op: "trim" };
@@ -16,7 +17,7 @@ function createEmptyField(): ViewFieldConfig {
     key: "",
     label: "",
     source: { columnTitle: "" },
-    transforms: [],
+    transforms: [{ op: "trim" }],
     render: { type: "text" },
   };
 }
@@ -33,6 +34,24 @@ function createEmptySort(): ViewSortConfig {
   return {
     field: "",
     direction: "asc",
+  };
+}
+
+function columnToKey(col: SmartsheetColumn): string {
+  return col.title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "") || `col_${col.id}`;
+}
+
+function columnToField(col: SmartsheetColumn, displayName?: string): ViewFieldConfig {
+  return {
+    key: columnToKey(col),
+    label: displayName ?? col.title,
+    source: { columnTitle: col.title, columnId: col.id },
+    transforms: [{ op: "trim" }],
+    render: { type: "text" },
   };
 }
 
@@ -53,7 +72,7 @@ function buildInitialView(view: ViewConfig | null, sources: SourceConfig[]): Vie
       },
       filters: [],
       defaultSort: [],
-      fields: [createEmptyField()],
+      fields: [],
     }
   );
 }
@@ -66,6 +85,8 @@ function parseOptionalNumber(value: string) {
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
+
+const FETCH_CREDENTIALS: RequestCredentials = "include";
 
 export function ViewBuilder({
   initialView,
@@ -81,6 +102,9 @@ export function ViewBuilder({
   const [view, setView] = useState<ViewConfig>(() => buildInitialView(initialView, sources));
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string>("");
+  const [schema, setSchema] = useState<SmartsheetSchemaSummary | null>(null);
+  const [schemaError, setSchemaError] = useState<string>("");
+  const [schemaLoading, setSchemaLoading] = useState(false);
   const sourceMap = useMemo(() => new Map(sources.map((source) => [source.id, source.label])), [sources]);
 
   function update<K extends keyof ViewConfig>(key: K, value: ViewConfig[K]) {
@@ -118,6 +142,69 @@ export function ViewBuilder({
     }));
   }
 
+  const fetchSchema = useCallback(async () => {
+    if (!view.sourceId) {
+      setSchemaError("Select a source first.");
+      return;
+    }
+    setSchemaLoading(true);
+    setSchemaError("");
+    setSchema(null);
+    try {
+      const response = await fetch(`/api/admin/sources/${view.sourceId}/schema`, {
+        method: "GET",
+        credentials: FETCH_CREDENTIALS,
+      });
+      const payload = (await response.json()) as {
+        schema?: SmartsheetSchemaSummary;
+        error?: string;
+        errors?: string[];
+      };
+      if (!response.ok || !payload.schema) {
+        setSchemaError(payload.errors?.join(" ") || payload.error || "Unable to fetch schema.");
+        return;
+      }
+      setSchema(payload.schema);
+    } finally {
+      setSchemaLoading(false);
+    }
+  }, [view.sourceId]);
+
+  useEffect(() => {
+    setSchema(null);
+    setSchemaError("");
+  }, [view.sourceId]);
+
+  function toggleColumnIncluded(col: SmartsheetColumn) {
+    const match = view.fields.find(
+      (f) => f.source.columnTitle === col.title || f.source.columnId === col.id
+    );
+    if (match) {
+      setView((current) => ({
+        ...current,
+        fields: current.fields.filter(
+          (f) => f.source.columnTitle !== col.title && f.source.columnId !== col.id
+        ),
+      }));
+    } else {
+      setView((current) => ({
+        ...current,
+        fields: [...current.fields, columnToField(col, col.title)],
+      }));
+    }
+  }
+
+  function isColumnIncluded(col: SmartsheetColumn): boolean {
+    const key = columnToKey(col);
+    return view.fields.some((f) => f.key === key || f.source.columnTitle === col.title || f.source.columnId === col.id);
+  }
+
+  function getFieldForColumn(col: SmartsheetColumn): ViewFieldConfig | undefined {
+    return view.fields.find(
+      (f) => f.key === columnToKey(col) || f.source.columnTitle === col.title || f.source.columnId === col.id
+    );
+  }
+
   async function saveView() {
     setErrors([]);
     setNotice("");
@@ -129,6 +216,7 @@ export function ViewBuilder({
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: FETCH_CREDENTIALS,
       body: JSON.stringify(view),
     });
     const payload = (await response.json()) as { errors?: string[]; error?: string; warnings?: string[]; view?: ViewConfig };
@@ -159,6 +247,7 @@ export function ViewBuilder({
     setNotice("");
     const response = await fetch(`/api/admin/views/${viewId}`, {
       method: "DELETE",
+      credentials: FETCH_CREDENTIALS,
     });
     const payload = (await response.json()) as { error?: string; errors?: string[] };
 
@@ -182,6 +271,7 @@ export function ViewBuilder({
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: FETCH_CREDENTIALS,
       body: JSON.stringify({ public: nextPublic }),
     });
     const payload = (await response.json()) as { error?: string; errors?: string[]; warnings?: string[]; view?: ViewConfig };
@@ -274,6 +364,28 @@ export function ViewBuilder({
             </ul>
           </div>
         )}
+
+        <div className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">1. Template</h3>
+          <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">Choose a layout pattern for the view.</p>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {VIEW_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => applyTemplate(template.id)}
+                className={`rounded-[1.5rem] border p-4 text-left transition ${
+                  view.layout === template.layout
+                    ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5"
+                    : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]"
+                }`}
+              >
+                <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">{template.label}</p>
+                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">{template.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm">
@@ -449,21 +561,126 @@ export function ViewBuilder({
 
       <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
         <div>
-          <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Templates</h2>
-          <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Apply a reusable starter pattern, then adjust the mappings for the current source.</p>
+          <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">2. Columns & 3. Display names</h2>
+          <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Load columns from the source, then select which to include and set their display names.</p>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {VIEW_TEMPLATES.map((template) => (
-            <button
-              key={template.id}
-              type="button"
-              onClick={() => applyTemplate(template.id)}
-              className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white p-4 text-left transition hover:border-[color:var(--wsu-crimson)]"
-            >
-              <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">{template.label}</p>
-              <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">{template.description}</p>
-            </button>
-          ))}
+        {!view.sourceId ? (
+          <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Select a source above, then load columns.</p>
+        ) : (
+          <>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void fetchSchema()}
+                disabled={schemaLoading}
+                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium hover:border-[color:var(--wsu-crimson)] disabled:opacity-50"
+              >
+                {schemaLoading ? "Loading…" : schema ? "Reload columns" : "Load columns"}
+              </button>
+              {schema && (
+                <span className="text-sm text-[color:var(--wsu-muted)]">
+                  {schema.columns.length} columns from {schema.name}
+                </span>
+              )}
+            </div>
+            {schemaError && (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{schemaError}</p>
+            )}
+            {schema && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm font-medium text-[color:var(--wsu-ink)]">Select columns to include and edit display names:</p>
+                <div className="max-h-64 space-y-2 overflow-y-auto rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
+                  {schema.columns.map((col) => {
+                    const included = isColumnIncluded(col);
+                    const field = getFieldForColumn(col);
+                    return (
+                      <div key={col.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[color:var(--wsu-border)]/60 bg-[color:var(--wsu-stone)]/20 p-3">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={included}
+                            onChange={() => toggleColumnIncluded(col)}
+                            className="rounded border-[color:var(--wsu-border)]"
+                          />
+                          <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{col.title}</span>
+                        </label>
+                        {included && (
+                          <div className="flex flex-1 items-center gap-2 min-w-0">
+                            <span className="text-sm text-[color:var(--wsu-muted)]">Display name:</span>
+                            <input
+                              value={field?.label ?? col.title}
+                              onChange={(event) => {
+                                const nextLabel = event.target.value;
+                                const idx = view.fields.findIndex(
+                                  (f) => f.source.columnTitle === col.title || f.source.columnId === col.id
+                                );
+                                if (idx >= 0 && view.fields[idx]) {
+                                  updateField(idx, { ...view.fields[idx], label: nextLabel });
+                                }
+                              }}
+                              placeholder={col.title}
+                              className="min-w-0 flex-1 rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
+        <div>
+          <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">4. Arrange</h2>
+          <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Reorder columns for display. Order here = display order in the view.</p>
+        </div>
+        <div className="mt-4 space-y-3">
+          {view.fields.length === 0 ? (
+            <p className="text-sm text-[color:var(--wsu-muted)]">Select columns above to add them here, then reorder.</p>
+          ) : (
+            view.fields.map((field, index) => (
+              <div
+                key={`${field.key}-${index}`}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4"
+              >
+                <div>
+                  <p className="font-medium text-[color:var(--wsu-ink)]">{field.label || field.key || "Unnamed"}</p>
+                  <p className="text-sm text-[color:var(--wsu-muted)]">Smartsheet: {field.source.columnTitle ?? field.source.columnId ?? "—"}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "up")}
+                    disabled={index === 0}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveField(index, "down")}
+                    disabled={index === view.fields.length - 1}
+                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
+                    title="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update("fields", view.fields.filter((_, i) => i !== index))}
+                    className="rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -566,294 +783,6 @@ export function ViewBuilder({
             </div>
           ))}
           {(view.defaultSort ?? []).length === 0 && <p className="text-sm text-[color:var(--wsu-muted)]">No sort configured.</p>}
-        </div>
-      </section>
-
-      <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Fields</h2>
-            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Map Smartsheet columns to rendered public fields.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => update("fields", [...view.fields, createEmptyField()])}
-            className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium"
-          >
-            Add field
-          </button>
-        </div>
-
-        <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
-          Order = display order. Use ↑↓ to reorder. Remove to exclude a column from the view.
-        </p>
-        <div className="mt-4 space-y-4">
-          {view.fields.map((field, index) => (
-            <article key={`${field.key || "field"}-${index}`} className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-[color:var(--wsu-ink)]">Field {index + 1}</h3>
-                  <p className="text-sm text-[color:var(--wsu-muted)]">Source: {sourceMap.get(view.sourceId) ?? view.sourceId}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => moveField(index, "up")}
-                    disabled={index === 0}
-                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
-                    title="Move up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveField(index, "down")}
-                    disabled={index === view.fields.length - 1}
-                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
-                    title="Move down"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveField(index, "up")}
-                    disabled={index === 0}
-                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
-                    title="Move left"
-                  >
-                    ◀
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveField(index, "down")}
-                    disabled={index === view.fields.length - 1}
-                    className="rounded-full border border-[color:var(--wsu-border)] px-3 py-1.5 text-sm disabled:opacity-40"
-                    title="Move right"
-                  >
-                    ▶
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update("fields", view.fields.filter((_, fieldIndex) => fieldIndex !== index))}
-                    className="rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700"
-                  >
-                    Remove field
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <input
-                  value={field.key}
-                  onChange={(event) => updateField(index, { ...field, key: event.target.value })}
-                  placeholder="Field key"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  value={field.label}
-                  onChange={(event) => updateField(index, { ...field, label: event.target.value })}
-                  placeholder="Field label"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <select
-                  value={field.render.type}
-                  onChange={(event) => updateField(index, { ...field, render: { ...field.render, type: event.target.value as ViewFieldConfig["render"]["type"] } })}
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                >
-                  {RENDER_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-                <input
-                  value={field.source.columnTitle ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, columnTitle: event.target.value } })}
-                  placeholder="Column title"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  type="number"
-                  value={field.source.columnId ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, columnId: parseOptionalNumber(event.target.value) } })}
-                  placeholder="Column ID"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  value={field.source.preferredColumnTitle ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, preferredColumnTitle: event.target.value } })}
-                  placeholder="Preferred column title"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  type="number"
-                  value={field.source.preferredColumnId ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, preferredColumnId: parseOptionalNumber(event.target.value) } })}
-                  placeholder="Preferred column ID"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  value={field.source.fallbackColumnTitle ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, fallbackColumnTitle: event.target.value } })}
-                  placeholder="Fallback column title"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  type="number"
-                  value={field.source.fallbackColumnId ?? ""}
-                  onChange={(event) => updateField(index, { ...field, source: { ...field.source, fallbackColumnId: parseOptionalNumber(event.target.value) } })}
-                  placeholder="Fallback column ID"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <input
-                  value={(field.source.coalesce ?? []).map((entry) => entry.columnTitle).filter(Boolean).join(", ")}
-                  onChange={(event) => updateField(index, {
-                    ...field,
-                    source: {
-                      ...field.source,
-                      coalesce: event.target.value
-                        .split(",")
-                        .map((entry) => entry.trim())
-                        .filter(Boolean)
-                        .map((entry) => ({ columnTitle: entry })),
-                    },
-                  })}
-                  placeholder="Coalesce column titles"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 xl:col-span-2"
-                />
-                <input
-                  value={field.render.emptyLabel ?? ""}
-                  onChange={(event) => updateField(index, { ...field, render: { ...field.render, emptyLabel: event.target.value } })}
-                  placeholder="Empty label"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                />
-                <select
-                  value={field.emptyBehavior ?? "show"}
-                  onChange={(event) => updateField(index, { ...field, emptyBehavior: event.target.value as ViewFieldConfig["emptyBehavior"] })}
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                >
-                  <option value="show">show empty values</option>
-                  <option value="hide">hide when empty</option>
-                </select>
-                <input
-                  value={field.description ?? ""}
-                  onChange={(event) => updateField(index, { ...field, description: event.target.value })}
-                  placeholder="Optional description"
-                  className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 xl:col-span-3"
-                />
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Transforms</h4>
-                  <button
-                    type="button"
-                    onClick={() => updateField(index, { ...field, transforms: [...(field.transforms ?? []), createEmptyTransform()] })}
-                    className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium"
-                  >
-                    Add transform
-                  </button>
-                </div>
-                {(field.transforms ?? []).map((transform, transformIndex) => (
-                  <div key={`${transform.op}-${transformIndex}`} className="grid gap-3 rounded-2xl border border-[color:var(--wsu-border)]/70 bg-[color:var(--wsu-stone)]/35 p-4 md:grid-cols-3 xl:grid-cols-6">
-                    <select
-                      value={transform.op}
-                      onChange={(event) => {
-                        const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                          entryIndex === transformIndex ? { ...entry, op: event.target.value } : entry
-                        );
-                        updateField(index, { ...field, transforms: nextTransforms });
-                      }}
-                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                    >
-                      {TRANSFORM_OPTIONS.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                    <input
-                      value={transform.delimiter ?? ""}
-                      onChange={(event) => {
-                        const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                          entryIndex === transformIndex ? { ...entry, delimiter: event.target.value } : entry
-                        );
-                        updateField(index, { ...field, transforms: nextTransforms });
-                      }}
-                      placeholder="Delimiter"
-                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                    />
-                    <input
-                      value={transform.separator ?? ""}
-                      onChange={(event) => {
-                        const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                          entryIndex === transformIndex ? { ...entry, separator: event.target.value } : entry
-                        );
-                        updateField(index, { ...field, transforms: nextTransforms });
-                      }}
-                      placeholder="Separator"
-                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                    />
-                    <input
-                      value={(transform.delimiters ?? []).join(", ")}
-                      onChange={(event) => {
-                        const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                          entryIndex === transformIndex
-                            ? {
-                                ...entry,
-                                delimiters: event.target.value.split(",").map((token) => token.trim()).filter(Boolean),
-                              }
-                            : entry
-                        );
-                        updateField(index, { ...field, transforms: nextTransforms });
-                      }}
-                      placeholder="Delimiters"
-                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                    />
-                    <input
-                      value={transform.locale ?? ""}
-                      onChange={(event) => {
-                        const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                          entryIndex === transformIndex ? { ...entry, locale: event.target.value } : entry
-                        );
-                        updateField(index, { ...field, transforms: nextTransforms });
-                      }}
-                      placeholder="Locale"
-                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                    />
-                    <div className="grid grid-cols-[1fr_1fr_auto] gap-3 xl:col-span-2">
-                      <input
-                        value={transform.dateStyle ?? ""}
-                        onChange={(event) => {
-                          const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                            entryIndex === transformIndex ? { ...entry, dateStyle: event.target.value as TransformConfig["dateStyle"] } : entry
-                          );
-                          updateField(index, { ...field, transforms: nextTransforms });
-                        }}
-                        placeholder="dateStyle"
-                        className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                      />
-                      <input
-                        value={transform.timeStyle ?? ""}
-                        onChange={(event) => {
-                          const nextTransforms = (field.transforms ?? []).map((entry, entryIndex) =>
-                            entryIndex === transformIndex ? { ...entry, timeStyle: event.target.value as TransformConfig["timeStyle"] } : entry
-                          );
-                          updateField(index, { ...field, transforms: nextTransforms });
-                        }}
-                        placeholder="timeStyle"
-                        className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => updateField(index, { ...field, transforms: (field.transforms ?? []).filter((_, entryIndex) => entryIndex !== transformIndex) })}
-                        className="rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {(field.transforms ?? []).length === 0 && <p className="text-sm text-[color:var(--wsu-muted)]">No transforms configured.</p>}
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 

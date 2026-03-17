@@ -8,12 +8,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  return new NextResponse(result.message, {
-    status: result.status,
-    headers: result.headers,
+  // Return 401/503 with WWW-Authenticate so the browser shows the login prompt
+  const body = result.message ?? "Authentication required.";
+  return new NextResponse(body, {
+    status: result.status ?? 401,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      ...(result.headers ?? {}),
+    },
   });
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*", "/api/admin", "/api/admin/:path*"],
+  matcher: [
+    "/admin",
+    "/admin/",
+    "/admin/:path*",
+    "/api/admin",
+    "/api/admin/:path*",
+  ],
 };

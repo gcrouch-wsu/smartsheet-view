@@ -69,6 +69,7 @@ export function SourceForm({
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(form),
     });
     const payload = (await response.json()) as { errors?: string[]; source?: SourceConfig; error?: string };
@@ -99,6 +100,7 @@ export function SourceForm({
     setNotice("");
     const response = await fetch(`/api/admin/sources/${sourceId}`, {
       method: "DELETE",
+      credentials: "include",
     });
     const payload = (await response.json()) as { error?: string; errors?: string[] };
 
@@ -120,6 +122,7 @@ export function SourceForm({
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(form),
     });
     const payload = (await response.json()) as {
