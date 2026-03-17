@@ -25,7 +25,7 @@ export function DataTable({ view }: { view: ResolvedView }) {
           </thead>
           <tbody>
             {view.rows.map((row) => (
-              <tr key={row.id} className="border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0">
+              <tr key={row.id} id={`row-${row.id}`} className="border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0 scroll-mt-24">
                 {row.fields.map((field) => (
                   <td key={`${row.id}-${field.key}`} className="px-4 py-4 text-sm">
                     <FieldValue field={field} />

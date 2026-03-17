@@ -18,7 +18,8 @@ export function DataCards({ view }: { view: ResolvedView }) {
         return (
           <article
             key={row.id}
-            className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
+            id={`row-${row.id}`}
+            className="scroll-mt-24 rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
           >
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="border-b border-[color:var(--wsu-border)] pb-4">

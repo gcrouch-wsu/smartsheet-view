@@ -37,6 +37,7 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
           return (
             <button
               key={row.id}
+              id={`row-${row.id}`}
               type="button"
               onClick={() => setActiveRowId(row.id)}
               className={`rounded-full border px-4 py-2 text-sm font-medium transition ${

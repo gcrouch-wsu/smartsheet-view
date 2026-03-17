@@ -193,9 +193,12 @@ export function ViewBuilder({
   }
 
   const previewHref = !isNew && view.id ? `/admin/views/${view.id}/preview` : null;
-  const publicHref = view.public ? `/view/${view.slug}?view=${view.id}` : null;
-  const embedSnippet = publicHref
-    ? `<iframe src="${publicHref}&embed=1" style="width:100%;border:0;min-height:640px;" loading="lazy"></iframe>`
+  const publicPath = view.public ? `/view/${view.slug}?view=${view.id}` : null;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const publicHref = publicPath ? `${origin}${publicPath}` : null;
+  const embedHref = publicPath ? `${origin}${publicPath}&embed=1` : null;
+  const embedSnippet = embedHref
+    ? `<iframe src="${embedHref}" style="width:100%;border:0;min-height:640px;" loading="lazy"></iframe>`
     : "Publish the view to generate an embed snippet.";
 
   return (
@@ -346,6 +349,55 @@ export function ViewBuilder({
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
           </label>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">View style</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="space-y-2 text-sm">
+              <span className="font-medium text-[color:var(--wsu-ink)]">Primary color</span>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={view.style?.primaryColor ?? "#a60f2d"}
+                  onChange={(event) => update("style", { ...view.style, primaryColor: event.target.value })}
+                  className="h-10 w-14 cursor-pointer rounded-xl border border-[color:var(--wsu-border)]"
+                />
+                <input
+                  value={view.style?.primaryColor ?? ""}
+                  onChange={(event) => update("style", { ...view.style, primaryColor: event.target.value })}
+                  placeholder="#a60f2d"
+                  className="flex-1 rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 font-mono text-sm"
+                />
+              </div>
+            </label>
+            <label className="space-y-2 text-sm">
+              <span className="font-medium text-[color:var(--wsu-ink)]">Accent / border color</span>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={view.style?.accentColor ?? "#d8cdc3"}
+                  onChange={(event) => update("style", { ...view.style, accentColor: event.target.value })}
+                  className="h-10 w-14 cursor-pointer rounded-xl border border-[color:var(--wsu-border)]"
+                />
+                <input
+                  value={view.style?.accentColor ?? ""}
+                  onChange={(event) => update("style", { ...view.style, accentColor: event.target.value })}
+                  placeholder="#d8cdc3"
+                  className="flex-1 rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 font-mono text-sm"
+                />
+              </div>
+            </label>
+            <label className="space-y-2 text-sm">
+              <span className="font-medium text-[color:var(--wsu-ink)]">Border radius</span>
+              <input
+                value={view.style?.borderRadius ?? ""}
+                onChange={(event) => update("style", { ...view.style, borderRadius: event.target.value })}
+                placeholder="1.75rem"
+                className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 font-mono text-sm"
+              />
+            </label>
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
-import { PublicViewRenderer, formatLayoutLabel } from "@/components/public/ViewRenderer";
+import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
+import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
+import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewTabs } from "@/components/public/ViewTabs";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
@@ -146,7 +148,9 @@ export default async function PublicViewPage({
             </div>
           </div>
 
-          <PublicViewRenderer layout={layout} view={activeView} />
+          <ViewStyleWrapper style={activeView.style}>
+          <ViewWithSearchAndIndex view={activeView} layout={layout} embed={embed} />
+        </ViewStyleWrapper>
         </section>
       </div>
     </main>

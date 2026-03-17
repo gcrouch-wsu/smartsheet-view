@@ -32,7 +32,7 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
             const active = row.id === activeRow.id;
 
             return (
-              <li key={row.id}>
+              <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24">
                 <button
                   type="button"
                   onClick={() => setActiveRowId(row.id)}

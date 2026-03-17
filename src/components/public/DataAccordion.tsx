@@ -18,8 +18,9 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
         return (
           <details
             key={row.id}
+            id={`row-${row.id}`}
             open={index === 0}
-            className="group overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
+            className="group scroll-mt-24 overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>

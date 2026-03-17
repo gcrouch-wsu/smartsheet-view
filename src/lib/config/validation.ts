@@ -9,6 +9,7 @@ import type {
   ViewFilterConfig,
   ViewPresentationConfig,
   ViewSortConfig,
+  ViewStyleConfig,
 } from "@/lib/config/types";
 
 export interface ValidationResult<T> {
@@ -310,6 +311,28 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   };
 }
 
+function parseStyleConfig(input: unknown): ValidationResult<ViewStyleConfig | undefined> {
+  if (input === undefined || input === null || input === "") {
+    return { success: true, errors: [], data: undefined };
+  }
+
+  if (!isRecord(input)) {
+    return { success: false, errors: ["style must be an object."] };
+  }
+
+  const primaryColor = asOptionalString(input.primaryColor);
+  const accentColor = asOptionalString(input.accentColor);
+  const borderRadius = asOptionalString(input.borderRadius);
+
+  const hasStyle = Boolean(primaryColor || accentColor || borderRadius);
+
+  return {
+    success: true,
+    errors: [],
+    data: hasStyle ? { primaryColor, accentColor, borderRadius } : undefined,
+  };
+}
+
 export function validateSourceConfig(input: unknown): ValidationResult<SourceConfig> {
   const errors: string[] = [];
 
@@ -428,7 +451,8 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
 
   const fieldKeys = new Set(fields.map((field) => field.key));
   const presentationResult = parsePresentationConfig(input.presentation, fieldKeys);
-  errors.push(...presentationResult.errors);
+  const styleResult = parseStyleConfig(input.style);
+  errors.push(...presentationResult.errors, ...styleResult.errors);
 
   return {
     success: errors.length === 0,
@@ -447,6 +471,7 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
           filters,
           defaultSort,
           presentation: presentationResult.data,
+          style: styleResult.data,
           fields,
         },
   };

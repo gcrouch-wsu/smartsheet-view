@@ -92,6 +92,12 @@ export interface ViewPresentationConfig {
   summaryFieldKey?: string;
 }
 
+export interface ViewStyleConfig {
+  primaryColor?: string;
+  accentColor?: string;
+  borderRadius?: string;
+}
+
 export interface ViewConfig {
   id: string;
   slug: string;
@@ -104,6 +110,7 @@ export interface ViewConfig {
   filters?: ViewFilterConfig[];
   defaultSort?: ViewSortConfig[];
   presentation?: ViewPresentationConfig;
+  style?: ViewStyleConfig;
   fields: ViewFieldConfig[];
 }
 
@@ -194,6 +201,7 @@ export interface ResolvedView {
   description?: string;
   layout: LayoutType;
   presentation?: ViewPresentationConfig;
+  style?: ViewStyleConfig;
   rowCount: number;
   fields: ResolvedViewField[];
   rows: ResolvedViewRow[];
