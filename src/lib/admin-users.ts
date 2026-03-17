@@ -162,16 +162,19 @@ export function getManagedAdminStorageMode(): ManagedAdminStorageMode {
 }
 
 function getDatabasePool() {
-  const connectionString = getDatabaseUrl();
+  let connectionString = getDatabaseUrl();
   if (!connectionString) {
     throw new Error(`${DATABASE_URL_ENV_VAR} is not set.`);
   }
 
   if (!globalForDb.__smartsheetsViewAdminPool) {
+    const withoutSslmode = connectionString.replace(/([?&])sslmode=[^&]*/g, (_, p) => (p === "?" ? "?" : "")).replace(/\?$/, "");
+    connectionString = withoutSslmode + (withoutSslmode.includes("?") ? "&" : "?") + "sslmode=no-verify";
     globalForDb.__smartsheetsViewAdminPool = new Pool({
       connectionString,
       max: 2,
       connectionTimeoutMillis: 10_000,
+      ssl: { rejectUnauthorized: false },
     });
   }
 
