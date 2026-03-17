@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { describeResolvedField, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields } from "@/components/public/layout-utils";
-import type { ResolvedView } from "@/lib/config/types";
+import { describeResolvedField, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+
+function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
+  return (
+    <div key={`${rowId}-${field.key}`} className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      <FieldValue field={field} stacked />
+    </div>
+  );
+}
 
 export function DataListDetail({ view }: { view: ResolvedView }) {
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
@@ -61,20 +70,36 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
           <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
           {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
-            <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
-              <FieldValue field={heading} stacked />
-            </div>
-          )}
-          {bodyFields.map((field) => (
-            <div key={`${activeRow.id}-${field.key}`} className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
-              <FieldValue field={field} stacked />
-            </div>
-          ))}
-        </div>
+        {hasCustomCardLayout(view) ? (
+          <div className="mt-5 space-y-4">
+            {getCardLayoutRows(view, activeRow).map((fields, rowIndex) => (
+              <div
+                key={rowIndex}
+                className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)] pt-4" : ""}
+              >
+                <div className="flex flex-wrap gap-4">
+                  {fields.map((field) => (
+                    <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
+                      <FieldBlock rowId={activeRow.id} field={field} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                <FieldValue field={heading} stacked />
+              </div>
+            )}
+            {bodyFields.map((field) => (
+              <FieldBlock key={`${activeRow.id}-${field.key}`} rowId={activeRow.id} field={field} />
+            ))}
+          </div>
+        )}
       </article>
     </div>
   );

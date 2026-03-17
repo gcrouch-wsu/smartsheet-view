@@ -91,6 +91,11 @@ export interface ViewSortConfig {
   direction: "asc" | "desc";
 }
 
+export interface CardLayoutRow {
+  /** Field keys in this row; multiple fields render side-by-side. */
+  fieldKeys: string[];
+}
+
 export interface ViewPresentationConfig {
   /** Field used as the main heading in cards, accordions, etc. */
   headingFieldKey?: string;
@@ -100,6 +105,8 @@ export interface ViewPresentationConfig {
   indexFieldKey?: string;
   /** Hide the "Row N" badge in stacked/tabbed layouts. */
   hideRowBadge?: boolean;
+  /** Custom layout for card-like views: rows of field keys. When set, overrides heading/summary/remaining. */
+  cardLayout?: CardLayoutRow[];
 }
 
 export interface ViewStyleConfig {

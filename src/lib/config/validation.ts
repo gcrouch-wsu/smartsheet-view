@@ -312,12 +312,31 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
     errors.push(`presentation.indexFieldKey \"${indexFieldKey}\" does not match any field key.`);
   }
 
-  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey || indexFieldKey || hideRowBadge);
+  let cardLayout: ViewPresentationConfig["cardLayout"];
+  if (Array.isArray(input.cardLayout)) {
+    cardLayout = [];
+    for (let i = 0; i < input.cardLayout.length; i++) {
+      const row = input.cardLayout[i];
+      if (!Array.isArray(row?.fieldKeys)) {
+        errors.push(`presentation.cardLayout[${i}].fieldKeys must be an array.`);
+      } else {
+        const keys = row.fieldKeys.filter((k: unknown) => typeof k === "string").map((k: string) => k.trim()).filter(Boolean);
+        for (const key of keys) {
+          if (!fieldKeys.has(key)) {
+            errors.push(`presentation.cardLayout[${i}] references unknown field key \"${key}\".`);
+          }
+        }
+        cardLayout.push({ fieldKeys: keys });
+      }
+    }
+  }
+
+  const hasPresentation = Boolean(headingFieldKey || summaryFieldKey || indexFieldKey || hideRowBadge || (cardLayout && cardLayout.length > 0));
 
   return {
     success: errors.length === 0,
     errors,
-    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey, indexFieldKey, hideRowBadge },
+    data: errors.length || !hasPresentation ? undefined : { headingFieldKey, summaryFieldKey, indexFieldKey, hideRowBadge, cardLayout },
   };
 }
 

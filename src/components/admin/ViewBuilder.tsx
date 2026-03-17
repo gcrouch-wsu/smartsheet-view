@@ -9,6 +9,7 @@ import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
+import { ThemeEditor } from "./ThemeEditor";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import type { SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
 import type { ResolvedView } from "@/lib/config/types";
@@ -235,33 +236,39 @@ export function ViewBuilder({
     setNotice("");
     setIsSaving(true);
 
-    const endpoint = isNew ? "/api/admin/views" : `/api/admin/views/${initialView?.id ?? view.id}`;
-    const method = isNew ? "POST" : "PUT";
-    const response = await fetch(endpoint, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: FETCH_CREDENTIALS,
-      body: JSON.stringify(view),
-    });
-    const payload = (await response.json()) as { errors?: string[]; error?: string; warnings?: string[]; view?: ViewConfig };
+    try {
+      const endpoint = isNew ? "/api/admin/views" : `/api/admin/views/${initialView?.id ?? view.id}`;
+      const method = isNew ? "POST" : "PUT";
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: FETCH_CREDENTIALS,
+        body: JSON.stringify(view),
+      });
+      const payload = (await response.json()) as { errors?: string[]; error?: string; warnings?: string[]; view?: ViewConfig };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        const errs = payload.errors ?? payload.warnings ?? [payload.error ?? "Unable to save view."];
+        setErrors(errs);
+        toast.addToast(errs[0] ?? "Unable to save view.", "error");
+        return;
+      }
+
+      const saved = payload.view ?? view;
+      setView(saved);
+      setNotice("View saved.");
+      toast.addToast("View saved.", "success");
+      router.replace(`/admin/views/${saved.id}`);
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Save failed.";
+      setErrors([msg]);
+      toast.addToast(msg, "error");
+    } finally {
       setIsSaving(false);
-      const errs = payload.errors ?? payload.warnings ?? [payload.error ?? "Unable to save view."];
-      setErrors(errs);
-      toast.addToast(errs[0] ?? "Unable to save view.", "error");
-      return;
     }
-
-    setIsSaving(false);
-    const saved = payload.view ?? view;
-    setView(saved);
-    setNotice("View saved.");
-    toast.addToast("View saved.", "success");
-    router.replace(`/admin/views/${saved.id}`);
-    router.refresh();
   }
 
   async function deleteView() {
@@ -277,24 +284,31 @@ export function ViewBuilder({
     setErrors([]);
     setNotice("");
     setIsDeleting(true);
-    const response = await fetch(`/api/admin/views/${viewId}`, {
-      method: "DELETE",
-      credentials: FETCH_CREDENTIALS,
-    });
-    const payload = (await response.json()) as { error?: string; errors?: string[] };
 
-    if (!response.ok) {
+    try {
+      const response = await fetch(`/api/admin/views/${viewId}`, {
+        method: "DELETE",
+        credentials: FETCH_CREDENTIALS,
+      });
+      const payload = (await response.json()) as { error?: string; errors?: string[] };
+
+      if (!response.ok) {
+        const errs = payload.errors ?? [payload.error ?? "Unable to delete view."];
+        setErrors(Array.isArray(errs) ? errs : [errs]);
+        toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to delete view.", "error");
+        return;
+      }
+
+      toast.addToast("View deleted.", "success");
+      router.push("/admin/views");
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Delete failed.";
+      setErrors([msg]);
+      toast.addToast(msg, "error");
+    } finally {
       setIsDeleting(false);
-      const errs = payload.errors ?? [payload.error ?? "Unable to delete view."];
-      setErrors(Array.isArray(errs) ? errs : [errs]);
-      toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to delete view.", "error");
-      return;
     }
-
-    setIsDeleting(false);
-    toast.addToast("View deleted.", "success");
-    router.push("/admin/views");
-    router.refresh();
   }
 
   async function togglePublish(nextPublic: boolean) {
@@ -304,29 +318,36 @@ export function ViewBuilder({
     }
 
     setIsPublishing(true);
-    const response = await fetch(`/api/admin/views/${initialView?.id ?? view.id}/publish`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: FETCH_CREDENTIALS,
-      body: JSON.stringify({ public: nextPublic }),
-    });
-    const payload = (await response.json()) as { error?: string; errors?: string[]; warnings?: string[]; view?: ViewConfig };
 
-    if (!response.ok || !payload.view) {
+    try {
+      const response = await fetch(`/api/admin/views/${initialView?.id ?? view.id}/publish`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: FETCH_CREDENTIALS,
+        body: JSON.stringify({ public: nextPublic }),
+      });
+      const payload = (await response.json()) as { error?: string; errors?: string[]; warnings?: string[]; view?: ViewConfig };
+
+      if (!response.ok || !payload.view) {
+        const errs = payload.errors ?? payload.warnings ?? [payload.error ?? "Unable to update publication state."];
+        setErrors(errs);
+        toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to update publication state.", "error");
+        return;
+      }
+
+      setView(payload.view);
+      setNotice(nextPublic ? "View published." : "View unpublished.");
+      toast.addToast(nextPublic ? "View published." : "View unpublished.", "success");
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Publish failed.";
+      setErrors([msg]);
+      toast.addToast(msg, "error");
+    } finally {
       setIsPublishing(false);
-      const errs = payload.errors ?? payload.warnings ?? [payload.error ?? "Unable to update publication state."];
-      setErrors(errs);
-      toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to update publication state.", "error");
-      return;
     }
-
-    setIsPublishing(false);
-    setView(payload.view);
-    setNotice(nextPublic ? "View published." : "View unpublished.");
-    toast.addToast(nextPublic ? "View published." : "View unpublished.", "success");
-    router.refresh();
   }
 
   function applyTemplate(templateId: string) {
@@ -371,6 +392,8 @@ export function ViewBuilder({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string>("");
   const [previewViewport, setPreviewViewport] = useState<"full" | "768" | "375">("full");
+  const [livePreview, setLivePreview] = useState<{ resolvedView: ResolvedView; warnings: string[] } | null>(null);
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
 
   const fetchPreview = useCallback(async () => {
     setPreviewLoading(true);
@@ -418,6 +441,49 @@ export function ViewBuilder({
       void fetchPreview();
     }
   }, [activeTab, fetchPreview]);
+
+  useEffect(() => {
+    if (activeTab !== "setup" && activeTab !== "fields") return;
+    if (!view.sourceId || view.fields.length === 0) {
+      setLivePreview(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setLivePreviewLoading(true);
+      fetch("/api/admin/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: FETCH_CREDENTIALS,
+        body: JSON.stringify(view),
+      })
+        .then((r) => r.json())
+        .then((payload: { rows?: ResolvedView["rows"]; fields?: ResolvedView["fields"]; warnings?: string[]; rowCount?: number }) => {
+          if (payload.rows && payload.fields) {
+            setLivePreview({
+              resolvedView: {
+                id: view.id,
+                label: view.label,
+                description: view.description,
+                layout: view.layout,
+                presentation: view.presentation,
+                style: view.style,
+                themePresetId: view.themePresetId,
+                fixedLayout: view.fixedLayout,
+                rowCount: payload.rowCount ?? payload.rows.length,
+                fields: payload.fields,
+                rows: payload.rows,
+              },
+              warnings: payload.warnings ?? [],
+            });
+          } else {
+            setLivePreview(null);
+          }
+        })
+        .catch(() => setLivePreview(null))
+        .finally(() => setLivePreviewLoading(false));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [activeTab, view]);
 
   const previewHref = !isNew && view.id ? `/admin/views/${view.id}/preview` : null;
 
@@ -510,7 +576,8 @@ export function ViewBuilder({
           <div id="tabpanel-setup" role="tabpanel" aria-labelledby="tab-setup" className="mt-6 space-y-6">
             <div>
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Start from template</h3>
-              <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">Choose a layout pattern. You will map fields to columns in the Fields tab.</p>
+              <p className="mb-2 text-sm text-[color:var(--wsu-muted)]">Templates set both the layout and starter field slots (Name, Role, Email, etc.). Pick one to begin.</p>
+              <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">Then go to the Fields tab: load columns from your source, check the columns to include, and map any unmapped slots.</p>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {VIEW_TEMPLATES.map((template) => (
                   <button
@@ -578,7 +645,8 @@ export function ViewBuilder({
             />
           </label>
             <div className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Layout</span>
+              <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Layout (override)</span>
+              <p className="text-xs text-[color:var(--wsu-muted)]">Override the template layout if you want the same fields in a different arrangement (e.g. cards instead of table).</p>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {LAYOUT_OPTIONS.map((layout) => (
                   <button
@@ -607,12 +675,13 @@ export function ViewBuilder({
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Heading field key</span>
+            <p className="text-xs text-[color:var(--wsu-muted)]">Main title for cards and accordions. Can also be set in the Fields tab.</p>
             <select
               value={view.presentation?.headingFieldKey ?? ""}
               onChange={(event) => update("presentation", { ...view.presentation, headingFieldKey: event.target.value })}
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 min-h-[44px]"
             >
-              <option value="">—</option>
+              <option value="">Default (First field)</option>
               {view.fields.map((f) => (
                 <option key={f.key} value={f.key}>{f.label || f.key}</option>
               ))}
@@ -620,12 +689,13 @@ export function ViewBuilder({
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Summary field key</span>
+            <p className="text-xs text-[color:var(--wsu-muted)]">Sub-heading or secondary text. Can also be set in the Fields tab.</p>
             <select
               value={view.presentation?.summaryFieldKey ?? ""}
               onChange={(event) => update("presentation", { ...view.presentation, summaryFieldKey: event.target.value })}
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 min-h-[44px]"
             >
-              <option value="">—</option>
+              <option value="">Default (Second field)</option>
               {view.fields.map((f) => (
                 <option key={f.key} value={f.key}>{f.label || f.key}</option>
               ))}
@@ -644,6 +714,142 @@ export function ViewBuilder({
               ))}
             </select>
           </label>
+
+          {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
+            <div className="space-y-3 md:col-span-2">
+              <div>
+                <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Custom card layout</span>
+                <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Define rows and which fields appear in each. Multiple fields in a row appear side-by-side.</p>
+              </div>
+              <label className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={(view.presentation?.cardLayout?.length ?? 0) > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      update("presentation", { ...view.presentation, cardLayout: view.fields.length > 0 ? [{ fieldKeys: [view.fields[0]!.key] }] : [] });
+                    } else {
+                      update("presentation", { ...view.presentation, cardLayout: undefined });
+                    }
+                  }}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Use custom layout</span>
+              </label>
+              {(view.presentation?.cardLayout?.length ?? 0) > 0 && (
+                <div className="space-y-3">
+                  {view.presentation!.cardLayout!.map((row, rowIndex) => (
+                    <div key={rowIndex} className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Row {rowIndex + 1}</span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = [...(view.presentation?.cardLayout ?? [])];
+                              const prev = next[rowIndex - 1];
+                              if (prev) {
+                                [next[rowIndex - 1], next[rowIndex]] = [next[rowIndex], prev];
+                                update("presentation", { ...view.presentation, cardLayout: next });
+                              }
+                            }}
+                            disabled={rowIndex === 0}
+                            className="rounded border border-[color:var(--wsu-border)] px-2 py-1 text-xs disabled:opacity-40"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = [...(view.presentation?.cardLayout ?? [])];
+                              const nxt = next[rowIndex + 1];
+                              if (nxt) {
+                                [next[rowIndex], next[rowIndex + 1]] = [nxt, next[rowIndex]];
+                                update("presentation", { ...view.presentation, cardLayout: next });
+                              }
+                            }}
+                            disabled={rowIndex === (view.presentation?.cardLayout?.length ?? 0) - 1}
+                            className="rounded border border-[color:var(--wsu-border)] px-2 py-1 text-xs disabled:opacity-40"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = (view.presentation?.cardLayout ?? []).filter((_, i) => i !== rowIndex);
+                              update("presentation", { ...view.presentation, cardLayout: next.length > 0 ? next : undefined });
+                            }}
+                            className="rounded border border-rose-200 px-2 py-1 text-xs text-rose-700"
+                          >
+                            Remove row
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {row.fieldKeys.map((key, keyIndex) => {
+                          const field = view.fields.find((f) => f.key === key);
+                          return (
+                            <span
+                              key={key}
+                              className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-xs font-medium text-[color:var(--wsu-ink)] border border-[color:var(--wsu-border)]"
+                            >
+                              {field?.label ?? key}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = [...(view.presentation?.cardLayout ?? [])];
+                                  const nextKeys = next[rowIndex]!.fieldKeys.filter((_, i) => i !== keyIndex);
+                                  next[rowIndex] = { fieldKeys: nextKeys };
+                                  if (nextKeys.length === 0) {
+                                    next.splice(rowIndex, 1);
+                                  }
+                                  update("presentation", { ...view.presentation, cardLayout: next.length > 0 ? next : undefined });
+                                }}
+                                className="ml-1 text-[color:var(--wsu-muted)] hover:text-rose-600"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const key = e.target.value;
+                            if (!key) return;
+                            const next = [...(view.presentation?.cardLayout ?? [])];
+                            const nextKeys = [...(next[rowIndex]?.fieldKeys ?? []), key];
+                            next[rowIndex] = { fieldKeys: nextKeys };
+                            update("presentation", { ...view.presentation, cardLayout: next });
+                            e.target.value = "";
+                          }}
+                          className="rounded border border-[color:var(--wsu-border)] bg-white px-2 py-1 text-xs min-h-[32px]"
+                        >
+                          <option value="">Add field</option>
+                          {view.fields
+                            .filter((f) => !row.fieldKeys.includes(f.key))
+                            .map((f) => (
+                              <option key={f.key} value={f.key}>{f.label || f.key}</option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...(view.presentation?.cardLayout ?? []), { fieldKeys: [] }];
+                      update("presentation", { ...view.presentation, cardLayout: next });
+                    }}
+                    className="rounded border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium"
+                  >
+                    Add row
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
@@ -664,40 +870,7 @@ export function ViewBuilder({
           </label>
         </div>
 
-            <div>
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Theme</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {BUILT_IN_THEMES.map((theme) => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => update("themePresetId", theme.id)}
-                    className={`min-h-[44px] rounded-2xl border p-4 text-left transition ${
-                      (view.themePresetId ?? "wsu_crimson") === theme.id
-                        ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5"
-                        : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">{theme.label}</p>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Accent color override:</p>
-              <div className="mt-2 flex gap-2">
-                <input
-                  type="color"
-                  value={view.style?.accentColor ?? (BUILT_IN_THEMES.find((t) => t.id === (view.themePresetId ?? "wsu_crimson"))?.tokens.accentColor ?? "#a60f2d")}
-                  onChange={(event) => update("style", { ...view.style, accentColor: event.target.value })}
-                  className="h-10 w-14 cursor-pointer rounded-xl border border-[color:var(--wsu-border)]"
-                />
-                <input
-                  value={view.style?.accentColor ?? ""}
-                  onChange={(event) => update("style", { ...view.style, accentColor: event.target.value })}
-                  placeholder="Override accent"
-                  className="flex-1 rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 font-mono text-sm"
-                />
-              </div>
-            </div>
+          <ThemeEditor view={view} update={update} />
 
             <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
               <p><span className="font-semibold text-[color:var(--wsu-ink)]">Publication state:</span> {view.public ? "Published" : "Draft"}</p>
@@ -728,15 +901,40 @@ export function ViewBuilder({
                 className="mt-2 w-full rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-3 py-2 font-mono text-xs text-[color:var(--wsu-ink)]"
               />
             </div>
+
+            {(livePreview || livePreviewLoading) && view.sourceId && view.fields.length > 0 && (
+              <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
+                <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">Live preview</p>
+                <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Updates as you edit (1s delay)</p>
+                {livePreviewLoading ? (
+                  <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Loading…</p>
+                ) : livePreview ? (
+                  <div className="mt-3 max-h-64 overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
+                    <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                      <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
+                    </ViewStyleWrapper>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "fields" && (
           <div id="tabpanel-fields" role="tabpanel" aria-labelledby="tab-fields" className="mt-6 space-y-6">
+            <div className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
+              <p className="font-medium text-[color:var(--wsu-ink)]">Steps:</p>
+              <ol className="mt-1 list-decimal list-inside space-y-1">
+                <li>Select a source in Setup, then click <strong>Load columns</strong> below.</li>
+                <li>Check each column you want in the view; edit display names as needed.</li>
+                <li>Use the Arrange section to reorder fields (up/down) or remove ones you don&apos;t need.</li>
+                <li>Switch to Preview to see the result.</li>
+              </ol>
+            </div>
             <div>
               <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Columns & display names</h2>
-          <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Load columns from the source, then select which to include and set their display names.</p>
-        </div>
+              <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Load columns from the source, then select which to include and set their display names.</p>
+            </div>
         {!view.sourceId ? (
           <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Select a source above, then load columns.</p>
         ) : (
@@ -831,19 +1029,84 @@ export function ViewBuilder({
                     {isUnmapped && (
                       <span className="ml-2 text-amber-600 font-medium">Map this field to a column</span>
                     )}
-                    {field.source.columnType && (
+                  {field.source.columnType && (
                       <span className="ml-1.5 rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-[10px] font-mono">{field.source.columnType}</span>
                     )}
                   </p>
-                  {field.transforms && field.transforms.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {field.transforms.map((t, i) => (
-                        <span key={i} className="rounded-full bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-xs font-medium text-[color:var(--wsu-muted)]">
-                          {t.op}
-                        </span>
-                      ))}
+
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                      <span>Render as</span>
+                      <select
+                        value={field.render.type}
+                        onChange={(e) => updateField(index, { ...field, render: { ...field.render, type: e.target.value as RenderType } })}
+                        className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                      >
+                        {RENDER_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Transforms</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {field.transforms?.map((t, ti) => (
+                          <span key={ti} className="group relative flex items-center gap-1 rounded-full bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[10px] font-medium text-[color:var(--wsu-muted)]">
+                            {t.op}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...(field.transforms ?? [])];
+                                next.splice(ti, 1);
+                                updateField(index, { ...field, transforms: next });
+                              }}
+                              className="text-[color:var(--wsu-muted)] hover:text-rose-600"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (!e.target.value) return;
+                            const next = [...(field.transforms ?? []), { op: e.target.value }];
+                            updateField(index, { ...field, transforms: next });
+                            e.target.value = "";
+                          }}
+                          className="rounded-full border border-[color:var(--wsu-border)] bg-white px-2 py-0.5 text-[10px] font-medium"
+                        >
+                          <option value="">+ Add</option>
+                          {TRANSFORM_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]">
+                      <input
+                        type="radio"
+                        name={`heading-${view.id}`}
+                        checked={view.presentation?.headingFieldKey === field.key}
+                        onChange={() => update("presentation", { ...view.presentation, headingFieldKey: field.key })}
+                        className="text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
+                      />
+                      <span>Heading</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]">
+                      <input
+                        type="radio"
+                        name={`summary-${view.id}`}
+                        checked={view.presentation?.summaryFieldKey === field.key}
+                        onChange={() => update("presentation", { ...view.presentation, summaryFieldKey: field.key })}
+                        className="text-[color:var(--wsu-crimson)] focus:ring-[color:var(--wsu-crimson)] h-3 w-3"
+                      />
+                      <span>Summary</span>
+                    </label>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -878,6 +1141,22 @@ export function ViewBuilder({
           )}
               </div>
             </div>
+
+            {(livePreview || livePreviewLoading) && view.sourceId && view.fields.length > 0 && (
+              <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
+                <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">Live preview</p>
+                <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Updates as you map columns and reorder (1s delay)</p>
+                {livePreviewLoading ? (
+                  <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Loading…</p>
+                ) : livePreview ? (
+                  <div className="mt-3 max-h-80 overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
+                    <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                      <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
+                    </ViewStyleWrapper>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         )}
 
@@ -947,19 +1226,36 @@ export function ViewBuilder({
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
-                  <input
-                    value={Array.isArray(filter.value) ? filter.value.join(", ") : String(filter.value ?? "")}
-                    onChange={(event) => {
-                      const raw = event.target.value;
-                      const value =
-                        filter.op === "in" || filter.op === "not_in"
-                          ? raw.split(",").map((s) => s.trim()).filter(Boolean)
-                          : raw;
-                      updateFilter(index, { ...filter, value });
-                    }}
-                    placeholder={filter.op === "in" || filter.op === "not_in" ? "Comma-separated values" : "Value"}
-                    className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
-                  />
+                  {schema && filter.columnId && schema.columns.find((c) => c.id === filter.columnId)?.options ? (
+                    <select
+                      value={String(filter.value ?? "")}
+                      onChange={(event) => updateFilter(index, { ...filter, value: event.target.value })}
+                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 min-h-[44px]"
+                    >
+                      <option value="">Select value</option>
+                      {schema.columns
+                        .find((c) => c.id === filter.columnId)
+                        ?.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={Array.isArray(filter.value) ? filter.value.join(", ") : String(filter.value ?? "")}
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        const value =
+                          filter.op === "in" || filter.op === "not_in"
+                            ? raw.split(",").map((s) => s.trim()).filter(Boolean)
+                            : raw;
+                        updateFilter(index, { ...filter, value });
+                      }}
+                      placeholder={filter.op === "in" || filter.op === "not_in" ? "Comma-separated values" : "Value"}
+                      className="rounded-xl border border-[color:var(--wsu-border)] px-3 py-2"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => update("filters", (view.filters ?? []).filter((_, filterIndex) => filterIndex !== index))}

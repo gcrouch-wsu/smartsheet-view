@@ -62,3 +62,25 @@ export function getIndexText(view: ResolvedView, row: ResolvedViewRow) {
   const text = field ? describeResolvedField(field) : "";
   return text || `Row ${row.id}`;
 }
+
+/** When cardLayout is set, returns fields grouped by row. Each row is an array of ResolvedFieldValue. Skips empty rows. */
+export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): ResolvedFieldValue[][] {
+  const layout = view.presentation?.cardLayout;
+  if (!layout || layout.length === 0) {
+    return [];
+  }
+
+  return layout
+    .map((layoutRow) =>
+      layoutRow.fieldKeys
+        .map((key) => row.fieldMap[key])
+        .filter((f): f is ResolvedFieldValue => f != null && fieldCanRender(f))
+    )
+    .filter((fields) => fields.length > 0);
+}
+
+/** Whether the view uses custom card layout. */
+export function hasCustomCardLayout(view: ResolvedView): boolean {
+  const layout = view.presentation?.cardLayout;
+  return Boolean(layout && layout.length > 0);
+}

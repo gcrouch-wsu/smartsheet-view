@@ -1,7 +1,16 @@
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { describeResolvedField, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields } from "@/components/public/layout-utils";
-import type { ResolvedView } from "@/lib/config/types";
+import { describeResolvedField, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+
+function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
+  return (
+    <div key={`${rowId}-${field.key}`} className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+      <FieldValue field={field} stacked />
+    </div>
+  );
+}
 
 export function DataAccordion({ view }: { view: ResolvedView }) {
   if (view.rows.length === 0) {
@@ -11,6 +20,51 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
   return (
     <div className="space-y-3">
       {view.rows.map((row, index) => {
+        const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+
+        if (customRows.length > 0) {
+          const firstRowFields = customRows[0] ?? [];
+          const summaryField = firstRowFields[1] ?? firstRowFields[0];
+          return (
+            <details
+              key={row.id}
+              id={`row-${row.id}`}
+              open={index === 0}
+              className="group scroll-mt-24 overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]"
+            >
+              <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
+                <div>
+                  <p className="text-lg font-semibold text-[color:var(--wsu-ink)]">
+                    {firstRowFields[0] ? describeResolvedField(firstRowFields[0]) : getRowHeadingText(view, row)}
+                  </p>
+                  {summaryField && summaryField.key !== firstRowFields[0]?.key && (
+                    <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summaryField) || summaryField.label}</p>
+                  )}
+                </div>
+                <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
+                  {index === 0 ? "Open" : "Expand"}
+                </span>
+              </summary>
+              <div className="border-t border-[color:var(--wsu-border)] px-5 py-5">
+                {customRows.map((fields, rowIndex) => (
+                  <div
+                    key={rowIndex}
+                    className={rowIndex > 0 ? "mt-4 border-t border-[color:var(--wsu-border)] pt-4" : ""}
+                  >
+                    <div className="flex flex-wrap gap-4">
+                      {fields.map((field) => (
+                        <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
+                          <FieldBlock rowId={row.id} field={field} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          );
+        }
+
         const heading = getRowHeadingField(view, row);
         const summary = getRowSummaryField(view, row, heading?.key);
         const bodyFields = getVisibleRowFields(row, [heading?.key ?? "", summary?.key ?? ""]);
@@ -46,10 +100,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                   </div>
                 )}
                 {bodyFields.map((field) => (
-                  <div key={`${row.id}-${field.key}`} className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
-                    <FieldValue field={field} stacked />
-                  </div>
+                  <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
                 ))}
               </div>
             </div>
