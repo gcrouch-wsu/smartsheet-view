@@ -59,9 +59,12 @@ export default async function PublicViewPage({
     notFound();
   }
 
-  const layout = LAYOUT_OPTIONS.includes(requestedLayout as LayoutType)
-    ? (requestedLayout as LayoutType)
-    : activeView.layout;
+  const layout =
+    activeView.fixedLayout
+      ? activeView.layout
+      : LAYOUT_OPTIONS.includes(requestedLayout as LayoutType)
+        ? (requestedLayout as LayoutType)
+        : activeView.layout;
 
   const mainClassName = embed
     ? "bg-transparent px-0 py-0"
@@ -150,7 +153,7 @@ export default async function PublicViewPage({
             )}
           </div>
 
-          <ViewStyleWrapper style={activeView.style}>
+          <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           <ViewWithSearchAndIndex view={activeView} layout={layout} embed={embed} />
         </ViewStyleWrapper>
         </section>

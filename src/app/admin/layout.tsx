@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminToastWrapper } from "@/components/admin/AdminToastWrapper";
 import { getCurrentAdminAuthResult } from "@/lib/admin-users";
 import { AdminLogoutButton } from "./AdminLogoutButton";
 
@@ -57,7 +58,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             ))}
           </nav>
         </header>
-        {children}
+        <AdminToastWrapper>{children}</AdminToastWrapper>
       </div>
     </main>
   );

@@ -27,6 +27,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });
   }
 
+  result.data.public = false;
+
   try {
     const view = await saveAdminViewConfig(result.data);
     return NextResponse.json({ view }, { status: 201 });

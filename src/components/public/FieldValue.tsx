@@ -1,4 +1,4 @@
-﻿import type { ResolvedFieldValue } from "@/lib/config/types";
+import type { ResolvedFieldValue } from "@/lib/config/types";
 
 function EmptyValue() {
   return <span className="text-[color:var(--wsu-border)]">-</span>;
@@ -87,7 +87,14 @@ export function FieldValue({
 
   if (field.renderType === "badge") {
     return field.textValue ? (
-      <span className="inline-flex rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-crimson)]">
+      <span
+        className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
+        style={{
+          borderColor: "var(--view-border, var(--wsu-border))",
+          backgroundColor: "var(--view-badge-bg, #f3f4f6)",
+          color: "var(--view-badge-text, #374151)",
+        }}
+      >
         {field.textValue}
       </span>
     ) : (

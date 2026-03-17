@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import { requireAdminPageAccess } from "@/lib/admin-page";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
 
@@ -12,6 +13,12 @@ export default async function SourcesIndexPage() {
 
   return (
     <section className="space-y-4">
+      <AdminBreadcrumbs
+        items={[
+          { href: "/admin", label: "Dashboard" },
+          { href: null, label: "Sources" },
+        ]}
+      />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.22em] text-[color:var(--wsu-muted)]">Admin routes</p>

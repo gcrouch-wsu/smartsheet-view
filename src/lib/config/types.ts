@@ -40,13 +40,16 @@ export interface SourceConfig {
 export interface FieldSourceSelector {
   columnId?: number;
   columnTitle?: string;
+  columnType?: string;
 }
 
 export interface ViewFieldSource extends FieldSourceSelector {
   preferredColumnId?: number;
   preferredColumnTitle?: string;
+  preferredColumnType?: string;
   fallbackColumnId?: number;
   fallbackColumnTitle?: string;
+  fallbackColumnType?: string;
   coalesce?: FieldSourceSelector[];
 }
 
@@ -78,6 +81,7 @@ export interface ViewFieldConfig {
 export interface ViewFilterConfig {
   columnId?: number;
   columnTitle?: string;
+  columnType?: string;
   op: FilterOperator;
   value?: string | number | boolean | Array<string | number | boolean>;
 }
@@ -99,9 +103,26 @@ export interface ViewPresentationConfig {
 }
 
 export interface ViewStyleConfig {
-  primaryColor?: string;
+  backgroundColor?: string;
+  cardBackground?: string;
   accentColor?: string;
+  textColor?: string;
+  mutedColor?: string;
+  borderColor?: string;
+  fontFamily?: string;
+  headingFontFamily?: string;
   borderRadius?: string;
+  cardShadow?: string;
+  badgeBg?: string;
+  badgeText?: string;
+  /** @deprecated Use accentColor. Kept for backward compatibility. */
+  primaryColor?: string;
+}
+
+export interface ThemeConfig {
+  id: string;
+  label: string;
+  tokens: Partial<ViewStyleConfig>;
 }
 
 export interface ViewConfig {
@@ -119,6 +140,8 @@ export interface ViewConfig {
   style?: ViewStyleConfig;
   /** When true, hide the layout switcher; only use the view's default layout. */
   fixedLayout?: boolean;
+  /** Theme preset id (e.g. wsu_crimson). When unset, WSU Crimson is used. */
+  themePresetId?: string;
   fields: ViewFieldConfig[];
 }
 
@@ -210,6 +233,7 @@ export interface ResolvedView {
   layout: LayoutType;
   presentation?: ViewPresentationConfig;
   style?: ViewStyleConfig;
+  themePresetId?: string;
   fixedLayout?: boolean;
   rowCount: number;
   fields: ResolvedViewField[];

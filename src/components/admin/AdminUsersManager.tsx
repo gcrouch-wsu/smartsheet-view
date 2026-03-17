@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/admin/Toast";
 import type { AdminAccountSummary, ManagedAdminStorageMode, ManagedAdminUserSummary } from "@/lib/admin-users";
 
 interface AdminUsersManagerProps {
@@ -54,6 +55,7 @@ function buildErrorMessage(payload: { message?: string; error?: string; errors?:
 }
 
 export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, storageMode }: AdminUsersManagerProps) {
+  const toast = useToast();
   const [users, setUsers] = useState(() => sortUsers(initialUsers));
   const [form, setForm] = useState<UserFormState>(() => emptyForm());
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -124,7 +126,9 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
       } | null;
 
       if (!response.ok || !payload?.user) {
-        setError(buildErrorMessage(payload));
+        const msg = buildErrorMessage(payload);
+        setError(msg);
+        toast.addToast(msg, "error");
         return;
       }
 
@@ -135,10 +139,13 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
           savedUser,
         ]),
       );
-      setSuccess(editingUserId ? "Admin user updated." : "Admin user created.");
+      const successMsg = editingUserId ? "Admin user updated." : "Admin user created.";
+      setSuccess(successMsg);
+      toast.addToast(successMsg, "success");
       resetForm();
     } catch {
       setError("Unable to save the admin user.");
+      toast.addToast("Unable to save the admin user.", "error");
     } finally {
       setIsPending(false);
     }
@@ -161,7 +168,9 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
 
       const payload = (await response.json().catch(() => null)) as { message?: string; error?: string; errors?: string[] } | null;
       if (!response.ok) {
-        setError(buildErrorMessage(payload));
+        const msg = buildErrorMessage(payload);
+        setError(msg);
+        toast.addToast(msg, "error");
         return;
       }
 
@@ -170,8 +179,10 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
         resetForm();
       }
       setSuccess("Admin user deleted.");
+      toast.addToast("Admin user deleted.", "success");
     } catch {
       setError("Unable to delete the admin user.");
+      toast.addToast("Unable to delete the admin user.", "error");
     } finally {
       setIsPending(false);
     }

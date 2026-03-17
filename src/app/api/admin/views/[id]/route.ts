@@ -41,6 +41,13 @@ export async function PUT(
     return NextResponse.json({ errors: result.errors }, { status: 400 });
   }
 
+  const existingView = await getViewConfigById(id);
+  if (existingView) {
+    result.data.public = existingView.public;
+  } else {
+    result.data.public = false;
+  }
+
   try {
     const view = await saveAdminViewConfig(result.data);
     return NextResponse.json({ view });

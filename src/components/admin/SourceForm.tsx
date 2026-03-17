@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { useToast } from "@/components/admin/Toast";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 import type { SourceConfig } from "@/lib/config/types";
 
@@ -34,6 +35,7 @@ export function SourceForm({
   isNew: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState<SourceConfig>(() => buildInitialState(initialSource, connectionKeys));
   const [errors, setErrors] = useState<string[]>([]);
@@ -75,13 +77,16 @@ export function SourceForm({
     const payload = (await response.json()) as { errors?: string[]; source?: SourceConfig; error?: string };
 
     if (!response.ok) {
-      setErrors(payload.errors ?? [payload.error ?? "Unable to save source."]);
+      const errs = payload.errors ?? [payload.error ?? "Unable to save source."];
+      setErrors(Array.isArray(errs) ? errs : [errs]);
+      toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to save source.", "error");
       return;
     }
 
     const saved = payload.source ?? form;
     setForm(saved);
     setNotice("Source saved.");
+    toast.addToast("Source saved.", "success");
     router.replace(`/admin/sources/${saved.id}`);
     router.refresh();
   }
@@ -105,10 +110,13 @@ export function SourceForm({
     const payload = (await response.json()) as { error?: string; errors?: string[] };
 
     if (!response.ok) {
-      setErrors(payload.errors ?? [payload.error ?? "Unable to delete source."]);
+      const errs = payload.errors ?? [payload.error ?? "Unable to delete source."];
+      setErrors(Array.isArray(errs) ? errs : [errs]);
+      toast.addToast(Array.isArray(errs) ? errs[0] : errs ?? "Unable to delete source.", "error");
       return;
     }
 
+    toast.addToast("Source deleted.", "success");
     router.push("/admin/sources");
     router.refresh();
   }
@@ -133,12 +141,16 @@ export function SourceForm({
     };
 
     if (!response.ok || !payload.schema) {
-      setSchemaError(payload.errors?.join(" ") || payload.error || payload.connection?.error || "Unable to fetch schema.");
+      const err = payload.errors?.join(" ") || payload.error || payload.connection?.error || "Unable to fetch schema.";
+      setSchemaError(err);
+      toast.addToast(err, "error");
       return;
     }
 
     setSchema(payload.schema);
-    setNotice(payload.connection?.ok === false ? "Connection warning returned during schema fetch." : "Connection verified and schema loaded.");
+    const noticeMsg = payload.connection?.ok === false ? "Connection warning returned during schema fetch." : "Connection verified and schema loaded.";
+    setNotice(noticeMsg);
+    toast.addToast(payload.connection?.ok === false ? "Schema loaded with connection warning." : "Connection verified.", "success");
   }
 
   return (

@@ -192,6 +192,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[]): ResolvedView {
     layout: view.layout,
     presentation: view.presentation,
     style: view.style,
+    themePresetId: view.themePresetId,
     fixedLayout: view.fixedLayout,
     rowCount: sortedRows.length,
     fields: view.fields
@@ -271,5 +272,32 @@ export async function loadAdminViewPreview(viewId: string): Promise<AdminViewPre
     resolvedView: resolveView(viewConfig, dataset.rows),
     schemaWarnings,
     fetchedAt: dataset.fetchedAt,
+  };
+}
+
+export interface PreviewFromConfigResult {
+  rows: ResolvedView["rows"];
+  fields: ResolvedView["fields"];
+  warnings: string[];
+  rowCount: number;
+  resolvedView: ResolvedView;
+}
+
+export async function resolvePreviewFromConfig(viewConfig: ViewConfig): Promise<PreviewFromConfigResult> {
+  const sourceConfig = await getSourceConfigById(viewConfig.sourceId);
+  if (!sourceConfig) {
+    throw new Error(`Source config "${viewConfig.sourceId}" was not found.`);
+  }
+
+  const dataset = await getSmartsheetDataset(sourceConfig, { fresh: true });
+  const warnings = collectSchemaDriftWarnings(viewConfig, dataset.columns);
+  const resolvedView = resolveView(viewConfig, dataset.rows);
+
+  return {
+    rows: resolvedView.rows,
+    fields: resolvedView.fields,
+    warnings,
+    rowCount: resolvedView.rowCount,
+    resolvedView,
   };
 }

@@ -5,6 +5,16 @@ import {
   updateViewPublication,
 } from "@/lib/config/admin-store";
 import { getSourceConfigById, getViewConfigById, listViewConfigs } from "@/lib/config/store";
+
+function ensureUniqueSlug(existingSlugs: Set<string>, baseSlug: string): string {
+  let slug = baseSlug;
+  let n = 2;
+  while (existingSlugs.has(slug)) {
+    slug = `${baseSlug}_${n}`;
+    n++;
+  }
+  return slug;
+}
 import type { ViewConfig } from "@/lib/config/types";
 import { collectSchemaDriftWarnings } from "@/lib/public-view";
 import { getSmartsheetSchema } from "@/lib/smartsheet";
@@ -80,6 +90,40 @@ export async function updateAdminViewPublication(viewId: string, isPublic: boole
   }
 
   return updateViewPublication(viewId, true);
+}
+
+export async function duplicateAdminView(sourceViewId: string) {
+  const source = await getViewConfigById(sourceViewId);
+  if (!source) {
+    throw new AdminActionError({
+      status: 404,
+      message: `View "${sourceViewId}" was not found.`,
+    });
+  }
+
+  const existingViews = await listViewConfigs();
+  const existingSlugs = new Set(existingViews.map((v) => v.slug));
+
+  const slugPrefix = source.slug.startsWith("draft_") ? "" : "draft_";
+  const baseSlug = `${slugPrefix}${source.slug}`;
+  const newId = `${source.id}-copy-${Date.now()}`;
+  const uniqueSlug = ensureUniqueSlug(existingSlugs, baseSlug);
+
+  const duplicate: ViewConfig = {
+    ...source,
+    id: newId,
+    slug: uniqueSlug,
+    public: false,
+    fields: source.fields.map((f) => ({
+      ...f,
+      source: { ...f.source },
+      transforms: f.transforms?.map((t) => ({ ...t })) ?? [],
+      render: { ...f.render },
+    })),
+  };
+
+  await saveViewConfig(duplicate);
+  return duplicate;
 }
 
 export async function deleteAdminView(viewId: string) {

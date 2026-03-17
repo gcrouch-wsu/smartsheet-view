@@ -155,6 +155,7 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
         .map((entry) => ({
           columnId: asOptionalNumber(entry.columnId),
           columnTitle: asOptionalString(entry.columnTitle),
+          columnType: asOptionalString(entry.columnType),
         }))
         .filter((entry) => typeof entry.columnId === "number" || Boolean(entry.columnTitle))
     : [];
@@ -177,10 +178,13 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
   const source = {
     columnId: asOptionalNumber(sourceInput.columnId),
     columnTitle: asOptionalString(sourceInput.columnTitle),
+    columnType: asOptionalString(sourceInput.columnType),
     preferredColumnId: asOptionalNumber(sourceInput.preferredColumnId),
     preferredColumnTitle: asOptionalString(sourceInput.preferredColumnTitle),
+    preferredColumnType: asOptionalString(sourceInput.preferredColumnType),
     fallbackColumnId: asOptionalNumber(sourceInput.fallbackColumnId),
     fallbackColumnTitle: asOptionalString(sourceInput.fallbackColumnTitle),
+    fallbackColumnType: asOptionalString(sourceInput.fallbackColumnType),
     coalesce: coalesceTitles.length > 0 ? coalesceTitles : undefined,
   };
 
@@ -238,6 +242,7 @@ function parseFilterConfig(input: unknown, index: number): ValidationResult<View
 
   const columnId = asOptionalNumber(input.columnId);
   const columnTitle = asOptionalString(input.columnTitle);
+  const columnType = asOptionalString(input.columnType);
   if (columnId === undefined && !columnTitle) {
     errors.push(`${path} must define columnId or columnTitle.`);
   }
@@ -253,7 +258,7 @@ function parseFilterConfig(input: unknown, index: number): ValidationResult<View
   return {
     success: errors.length === 0,
     errors,
-    data: errors.length ? undefined : { columnId, columnTitle, op: op as FilterOperator, value },
+    data: errors.length ? undefined : { columnId, columnTitle, columnType, op: op as FilterOperator, value },
   };
 }
 
