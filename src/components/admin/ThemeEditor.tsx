@@ -11,7 +11,7 @@ import { getContrastRatio, getContrastScore } from "@/lib/color-utils";
 
 interface ThemeEditorProps {
   view: ViewConfig;
-  update: (key: keyof ViewConfig, value: unknown) => void;
+  update: <K extends keyof ViewConfig>(key: K, value: ViewConfig[K]) => void;
 }
 
 const COLOR_LABELS: Record<string, string> = {
