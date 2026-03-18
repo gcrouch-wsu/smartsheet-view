@@ -71,3 +71,33 @@ a.btn-crimson:hover {
   font-family: var(--view-font, inherit);
   font-size: var(--view-font-size, inherit);
 }
+
+/* Ensure links in custom header are clickable */
+.custom-header-text a {
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  color: var(--wsu-crimson);
+  text-decoration: underline;
+}
+.custom-header-text a:hover {
+  color: var(--wsu-crimson-dark, var(--wsu-crimson));
+}
+
+/* TipTap editor base styles */
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror p {
+  margin: 0 0 0.5em;
+}
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import DOMPurify from "isomorphic-dompurify";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
@@ -22,7 +23,7 @@ function parseFormattedHeaderText(text: string, publicUrl: string): Array<string
     }
   }
   const result: Array<string | { t: "b" | "i" | "a"; c: string }> = [];
-  const re = /\*\*(.+?)\*\*|\*(.+?)\*|(https?:\/\/[^\s]+)/g;
+  const re = /\*\*(.+?)\*\*|\*(.+?)\*|(https?:\/\/[^\s<>"']+)/g;
   for (const part of parts) {
     if (typeof part === "object") {
       result.push(part);
@@ -41,6 +42,29 @@ function parseFormattedHeaderText(text: string, publicUrl: string): Array<string
     if (lastEnd < part.length) result.push(part.slice(lastEnd));
   }
   return result;
+}
+
+function isHtmlContent(text: string): boolean {
+  return text.trimStart().startsWith("<");
+}
+
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName === "A") {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
+
+function renderHeaderCustomText(html: string, publicUrl: string): string {
+  const withUrl = html.replace(
+    /\{\{PUBLIC_URL\}\}/g,
+    `<a href="${publicUrl.replace(/"/g, "&quot;")}" target="_blank" rel="noopener noreferrer" class="custom-header-link">${publicUrl.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</a>`
+  );
+  return DOMPurify.sanitize(withUrl, {
+    ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "a", "span"],
+    ALLOWED_ATTR: ["href", "target", "rel", "class"],
+    ADD_ATTR: ["target", "rel"],
+  });
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -144,33 +168,44 @@ export default async function PublicViewPage({
                     </p>
                   )}
                 </div>
-                {activeView.presentation?.headerCustomText && (
-                  <div className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
-                    {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
-                      <p key={i} className="whitespace-pre-wrap">
-                        {parseFormattedHeaderText(line, `${baseUrl}/view/${slug}?view=${activeView.id}`).map((part, j) =>
-                          typeof part === "string" ? (
-                            <span key={j}>{part}</span>
-                          ) : part.t === "b" ? (
-                            <strong key={j}>{part.c}</strong>
-                          ) : part.t === "i" ? (
-                            <em key={j}>{part.c}</em>
-                          ) : (
-                            <a
-                              key={j}
-                              href={part.c}
-                              className="text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {part.c}
-                            </a>
-                          )
-                        )}
-                      </p>
-                    ))}
-                  </div>
-                )}
+                {activeView.presentation?.headerCustomText &&
+                  (isHtmlContent(activeView.presentation.headerCustomText) ? (
+                    <div
+                      className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)] [&_a]:cursor-pointer [&_a]:relative [&_a]:z-[1] [&_a]:text-[color:var(--wsu-crimson)] [&_a]:underline [&_a]:hover:text-[color:var(--wsu-crimson-dark)]"
+                      dangerouslySetInnerHTML={{
+                        __html: renderHeaderCustomText(
+                          activeView.presentation.headerCustomText,
+                          `${baseUrl}/view/${slug}?view=${activeView.id}`
+                        ),
+                      }}
+                    />
+                  ) : (
+                    <div className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
+                      {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
+                        <p key={i} className="whitespace-pre-wrap">
+                          {parseFormattedHeaderText(line, `${baseUrl}/view/${slug}?view=${activeView.id}`).map((part, j) =>
+                            typeof part === "string" ? (
+                              <span key={j}>{part}</span>
+                            ) : part.t === "b" ? (
+                              <strong key={j}>{part.c}</strong>
+                            ) : part.t === "i" ? (
+                              <em key={j}>{part.c}</em>
+                            ) : (
+                              <a
+                                key={j}
+                                href={part.c}
+                                className="cursor-pointer relative z-[1] text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {part.c}
+                              </a>
+                            )
+                          )}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
               </div>
               {!activeView.presentation?.hideHeaderInfoBox &&
                 (!(activeView.presentation?.hideHeaderActiveView ?? false) ||

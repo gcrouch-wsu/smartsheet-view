@@ -1,21 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import Placeholder from "@tiptap/extension-placeholder";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect, useRef } from "react";
 
 const PUBLIC_URL_PLACEHOLDER = "{{PUBLIC_URL}}";
-
-function insertAtCursor(
-  textarea: HTMLTextAreaElement,
-  before: string,
-  after: string
-) {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const value = textarea.value;
-  const newValue = value.slice(0, start) + before + value.slice(start, end) + after + value.slice(end);
-  const newCursor = start + before.length + (end - start);
-  return { newValue, newCursor };
-}
 
 export function HeaderCustomTextEditor({
   value,
@@ -26,31 +16,51 @@ export function HeaderCustomTextEditor({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isInternalUpdate = useRef(false);
 
-  const handleFormat = (before: string, after: string) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const { newValue, newCursor } = insertAtCursor(ta, before, after);
-    onChange(newValue);
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.setSelectionRange(newCursor, newCursor);
-    });
-  };
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        blockquote: false,
+        horizontalRule: false,
+        bulletList: false,
+        orderedList: false,
+      }),
+      Placeholder.configure({ placeholder: placeholder ?? "Public URL: {{PUBLIC_URL}}" }),
+    ],
+    content: value || "",
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-sm max-w-none min-h-[80px] rounded-b-lg rounded-t-none border border-t-0 border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      if (isInternalUpdate.current) return;
+      const html = editor.getHTML();
+      onChange(html === "<p></p>" ? "" : html);
+    },
+  });
+
+  useEffect(() => {
+    if (!editor) return;
+    if (isInternalUpdate.current) return;
+    const current = editor.getHTML();
+    const normalized = value || "<p></p>";
+    if (current !== normalized) {
+      isInternalUpdate.current = true;
+      editor.commands.setContent(normalized, { emitUpdate: false });
+      isInternalUpdate.current = false;
+    }
+  }, [editor, value]);
+
+  if (!editor) return null;
 
   const handleInsertUrl = () => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const value = ta.value;
-    const newValue = value.slice(0, start) + PUBLIC_URL_PLACEHOLDER + value.slice(start);
-    onChange(newValue);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const pos = start + PUBLIC_URL_PLACEHOLDER.length;
-      ta.setSelectionRange(pos, pos);
-    });
+    editor.chain().focus().insertContent(PUBLIC_URL_PLACEHOLDER).run();
   };
 
   return (
@@ -58,19 +68,27 @@ export function HeaderCustomTextEditor({
       <div className="flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-2 py-1.5">
         <button
           type="button"
-          onClick={() => handleFormat("**", "**")}
-          className="rounded px-2 py-1 text-xs font-bold text-[color:var(--wsu-ink)] hover:bg-white/60"
-          title="Bold (**text**)"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={`rounded px-2 py-1 text-xs font-bold text-[color:var(--wsu-ink)] hover:bg-white/60 ${editor.isActive("bold") ? "bg-white/60" : ""}`}
+          title="Bold"
         >
           B
         </button>
         <button
           type="button"
-          onClick={() => handleFormat("*", "*")}
-          className="rounded px-2 py-1 text-xs italic text-[color:var(--wsu-ink)] hover:bg-white/60"
-          title="Italic (*text*)"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={`rounded px-2 py-1 text-xs italic text-[color:var(--wsu-ink)] hover:bg-white/60 ${editor.isActive("italic") ? "bg-white/60" : ""}`}
+          title="Italic"
         >
           I
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={`rounded px-2 py-1 text-xs text-[color:var(--wsu-ink)] hover:bg-white/60 line-through ${editor.isActive("strike") ? "bg-white/60" : ""}`}
+          title="Strikethrough"
+        >
+          S
         </button>
         <button
           type="button"
@@ -81,14 +99,7 @@ export function HeaderCustomTextEditor({
           Insert URL
         </button>
       </div>
-      <textarea
-        ref={textareaRef}
-        rows={3}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-b-lg rounded-t-none border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]"
-      />
+      <EditorContent editor={editor} />
       <p className="text-xs text-[color:var(--wsu-muted)]">
         Renders in body font. {PUBLIC_URL_PLACEHOLDER} → live clickable link.
       </p>
