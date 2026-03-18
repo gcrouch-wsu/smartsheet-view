@@ -48,5 +48,7 @@ config/admin-users/
 # Local documentation (keep out of repo)
 PROJECT_SPEC.md
 claude_review.md
+UI.MD
+future_build.md
 .claude/
 *.txt

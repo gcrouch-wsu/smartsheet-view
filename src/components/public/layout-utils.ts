@@ -1,4 +1,10 @@
+import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+
+export type CardLayoutCell =
+  | { type: "field"; field: ResolvedFieldValue }
+  | { type: "placeholder" }
+  | { type: "text"; label: string };
 
 function fieldCanRender(field: ResolvedFieldValue) {
   return !(field.hideWhenEmpty && field.isEmpty);
@@ -63,8 +69,8 @@ export function getIndexText(view: ResolvedView, row: ResolvedViewRow) {
   return text || `Row ${row.id}`;
 }
 
-/** When cardLayout is set, returns fields grouped by row. Each row is an array of ResolvedFieldValue. Skips empty rows. */
-export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): ResolvedFieldValue[][] {
+/** When cardLayout is set, returns cells grouped by row. Each cell is field, placeholder, or static text. Skips rows with no fields. */
+export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): CardLayoutCell[][] {
   const layout = view.presentation?.cardLayout;
   if (!layout || layout.length === 0) {
     return [];
@@ -72,11 +78,27 @@ export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): Res
 
   return layout
     .map((layoutRow) =>
-      layoutRow.fieldKeys
-        .map((key) => row.fieldMap[key])
-        .filter((f): f is ResolvedFieldValue => f != null && fieldCanRender(f))
+      layoutRow.fieldKeys.map((key): CardLayoutCell | null => {
+        if (key === CARD_LAYOUT_PLACEHOLDER) {
+          return { type: "placeholder" };
+        }
+        if (key.startsWith(CARD_LAYOUT_TEXT_PREFIX)) {
+          return { type: "text", label: key.slice(CARD_LAYOUT_TEXT_PREFIX.length) };
+        }
+        const field = row.fieldMap[key];
+        if (field && fieldCanRender(field)) {
+          return { type: "field", field };
+        }
+        return null;
+      }).filter((c): c is CardLayoutCell => c != null)
     )
-    .filter((fields) => fields.length > 0);
+    .filter((cells) => cells.some((c) => c.type === "field" || c.type === "text"));
+}
+
+/** Get first field from a row of cells (for accordion/tabbed summary). */
+export function getFirstFieldFromCells(cells: CardLayoutCell[]): ResolvedFieldValue | null {
+  const cell = cells.find((c) => c.type === "field");
+  return cell?.type === "field" ? cell.field : null;
 }
 
 /** Whether the view uses custom card layout. */

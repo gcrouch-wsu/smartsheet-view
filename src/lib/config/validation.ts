@@ -1,3 +1,4 @@
+import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import type {
   FilterOperator,
   LayoutType,
@@ -221,6 +222,8 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
           render: {
             type: renderType as RenderType,
             emptyLabel: asOptionalString(renderInput.emptyLabel),
+            listDelimiter: asOptionalString(renderInput.listDelimiter),
+            listDisplay: asOptionalString(renderInput.listDisplay) === "stacked" ? "stacked" : asOptionalString(renderInput.listDisplay) === "inline" ? "inline" : undefined,
           },
           emptyBehavior: emptyBehavior as ViewFieldConfig["emptyBehavior"],
           hideLabel: hideLabel || undefined,
@@ -310,7 +313,13 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const hideHeaderPageTitle = asBoolean(input.hideHeaderPageTitle, false);
   const hideHeaderLiveDataText = asBoolean(input.hideHeaderLiveDataText, false);
   const hideHeaderInfoBox = asBoolean(input.hideHeaderInfoBox, false);
+  const hideHeaderActiveView = asBoolean(input.hideHeaderActiveView, false);
+  const hideHeaderRows = asBoolean(input.hideHeaderRows, false);
+  const hideHeaderRefreshed = asBoolean(input.hideHeaderRefreshed, false);
   const hideViewTitleSection = asBoolean(input.hideViewTitleSection, false);
+  const hideViewTabs = asBoolean(input.hideViewTabs, false);
+  const hideViewTabCount = asBoolean(input.hideViewTabCount, false);
+  const viewTabLabel = asOptionalString(input.viewTabLabel);
 
   if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
     errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
@@ -332,6 +341,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       } else {
         const keys = row.fieldKeys.filter((k: unknown) => typeof k === "string").map((k: string) => k.trim()).filter(Boolean);
         for (const key of keys) {
+          if (key === CARD_LAYOUT_PLACEHOLDER || key.startsWith(CARD_LAYOUT_TEXT_PREFIX)) continue;
           if (!fieldKeys.has(key)) {
             errors.push(`presentation.cardLayout[${i}] references unknown field key \"${key}\".`);
           }
@@ -353,7 +363,13 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       hideHeaderPageTitle ||
       hideHeaderLiveDataText ||
       hideHeaderInfoBox ||
-      hideViewTitleSection
+      hideHeaderActiveView ||
+      hideHeaderRows ||
+      hideHeaderRefreshed ||
+      hideViewTitleSection ||
+      hideViewTabs ||
+      hideViewTabCount ||
+      viewTabLabel
   );
 
   return {
@@ -374,7 +390,13 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             hideHeaderPageTitle,
             hideHeaderLiveDataText,
             hideHeaderInfoBox,
+            hideHeaderActiveView,
+            hideHeaderRows,
+            hideHeaderRefreshed,
             hideViewTitleSection,
+            hideViewTabs,
+            hideViewTabCount,
+            viewTabLabel,
           },
   };
 }

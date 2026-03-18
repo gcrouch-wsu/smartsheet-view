@@ -1,9 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 interface ViewTabItem {
   id: string;
   label: string;
   rowCount: number;
+  hideCount?: boolean;
 }
 
 function buildHref(slug: string, viewId: string, layout?: string, embed?: boolean) {
@@ -46,9 +47,11 @@ export function ViewTabs({
             }`}
           >
             <span>{view.label}</span>
-            <span className={`rounded-full px-2 py-0.5 text-xs ${active ? "bg-white/20 text-white" : "bg-[color:var(--wsu-stone)] text-[color:var(--wsu-muted)]"}`}>
-              {view.rowCount}
-            </span>
+            {!view.hideCount && (
+              <span className={`rounded-full px-2 py-0.5 text-xs ${active ? "bg-white/20 text-white" : "bg-[color:var(--wsu-stone)] text-[color:var(--wsu-muted)]"}`}>
+                {view.rowCount}
+              </span>
+            )}
           </Link>
         );
       })}

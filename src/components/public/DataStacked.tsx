@@ -1,3 +1,4 @@
+import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -43,13 +44,16 @@ export function DataStacked({ view }: { view: ResolvedView }) {
               id={`row-${row.id}`}
               className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
-              {customRows.map((fields, rowIndex) => (
+              {customRows.map((cells, rowIndex) => (
                 <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                   <div className="flex flex-wrap gap-4">
-                    {fields.map((field) => (
-                      <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
-                        <FieldBlock rowId={row.id} field={field} />
-                      </div>
+                    {cells.map((cell, i) => (
+                      <CardLayoutCellRenderer
+                        key={i}
+                        rowId={row.id}
+                        cell={cell}
+                        flexClass={cells.length > 1 ? "min-w-0 flex-1" : "w-full"}
+                      />
                     ))}
                   </div>
                 </div>

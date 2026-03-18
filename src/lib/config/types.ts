@@ -63,9 +63,15 @@ export interface TransformConfig {
   timeStyle?: "full" | "long" | "medium" | "short";
 }
 
+export type ListDisplayMode = "inline" | "stacked";
+
 export interface ViewFieldRender {
   type: RenderType;
   emptyLabel?: string;
+  /** Delimiter between list items when inline (e.g. ", ", " | "). Default ", ". */
+  listDelimiter?: string;
+  /** "inline" = one line with delimiter; "stacked" = each item on its own row. */
+  listDisplay?: ListDisplayMode;
 }
 
 export interface ViewFieldConfig {
@@ -93,8 +99,12 @@ export interface ViewSortConfig {
   direction: "asc" | "desc";
 }
 
+/** Special keys for card layout: __placeholder__ = blank for alignment, __text:Label__ = static text. */
+export const CARD_LAYOUT_PLACEHOLDER = "__placeholder__";
+export const CARD_LAYOUT_TEXT_PREFIX = "__text:";
+
 export interface CardLayoutRow {
-  /** Field keys in this row; multiple fields render side-by-side. */
+  /** Field keys or special values (__placeholder__, __text:Label). Multiple items render side-by-side. */
   fieldKeys: string[];
 }
 
@@ -118,8 +128,18 @@ export interface ViewPresentationConfig {
   hideHeaderSourceLabel?: boolean;
   hideHeaderPageTitle?: boolean;
   hideHeaderLiveDataText?: boolean;
+  /** @deprecated Use hideHeaderActiveView, hideHeaderRows, hideHeaderRefreshed for granular control. */
   hideHeaderInfoBox?: boolean;
+  hideHeaderActiveView?: boolean;
+  hideHeaderRows?: boolean;
+  hideHeaderRefreshed?: boolean;
   hideViewTitleSection?: boolean;
+  /** Hide the view tabs (e.g. "Graduate Program Contact List 124"). */
+  hideViewTabs?: boolean;
+  /** Hide the row count badge on view tabs. */
+  hideViewTabCount?: boolean;
+  /** Custom label for this view's tab (overrides view.label). */
+  viewTabLabel?: string;
 }
 
 export interface ViewStyleConfig {
@@ -232,6 +252,10 @@ export interface ResolvedFieldValue {
   isEmpty: boolean;
   hideWhenEmpty: boolean;
   hideLabel?: boolean;
+  /** Delimiter between list items when inline (e.g. ", ", " | "). */
+  listDelimiter?: string;
+  /** "inline" = one line with delimiter; "stacked" = each item on its own row. */
+  listDisplay?: ListDisplayMode;
 }
 
 export interface ResolvedViewRow {

@@ -1,3 +1,4 @@
+import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutRows, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -45,10 +46,13 @@ export function DataList({ view }: { view: ResolvedView }) {
                     return (
                     <div key={rowIndex} className={rowDividerClass}>
                       <div className="flex flex-wrap gap-4">
-                        {fields.map((field) => (
-                          <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
-                            <FieldBlock rowId={row.id} field={field} />
-                          </div>
+                        {fields.map((cell, i) => (
+                          <CardLayoutCellRenderer
+                            key={i}
+                            rowId={row.id}
+                            cell={cell}
+                            flexClass={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}
+                          />
                         ))}
                       </div>
                     </div>

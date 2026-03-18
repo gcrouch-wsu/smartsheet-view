@@ -491,6 +491,8 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     isEmpty,
     hideWhenEmpty: field.emptyBehavior === "hide",
     hideLabel: field.hideLabel,
+    listDelimiter: field.render.listDelimiter,
+    listDisplay: field.render.listDisplay,
   };
 }
 

@@ -107,17 +107,26 @@ export default async function PublicViewPage({
                   )}
                 </div>
               </div>
-              {!activeView.presentation?.hideHeaderInfoBox && (
+              {!activeView.presentation?.hideHeaderInfoBox &&
+                (!(activeView.presentation?.hideHeaderActiveView ?? false) ||
+                  !(activeView.presentation?.hideHeaderRows ?? false) ||
+                  !(activeView.presentation?.hideHeaderRefreshed ?? false)) && (
                 <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                  <p>
-                    <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                  </p>
-                  <p className="mt-2">
-                    <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
-                  </p>
-                  <p className="mt-2">
-                    <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
-                  </p>
+                  {!activeView.presentation?.hideHeaderActiveView && (
+                    <p>
+                      <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                    </p>
+                  )}
+                  {!activeView.presentation?.hideHeaderRows && (
+                    <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                      <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                    </p>
+                  )}
+                  {!activeView.presentation?.hideHeaderRefreshed && (
+                    <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
+                      <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -125,13 +134,20 @@ export default async function PublicViewPage({
         )}
 
         <section className={embed ? "space-y-3" : "space-y-4"}>
-          <ViewTabs
-            slug={slug}
-            views={page.views.map((view) => ({ id: view.id, label: view.label, rowCount: view.rowCount }))}
-            activeViewId={activeView.id}
-            layout={layout}
-            embed={embed}
-          />
+          {!activeView.presentation?.hideViewTabs && (
+            <ViewTabs
+              slug={slug}
+              views={page.views.map((view) => ({
+                id: view.id,
+                label: view.presentation?.viewTabLabel ?? view.label,
+                rowCount: view.rowCount,
+                hideCount: view.presentation?.hideViewTabCount,
+              }))}
+              activeViewId={activeView.id}
+              layout={layout}
+              embed={embed}
+            />
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             {!activeView.presentation?.hideViewTitleSection && (

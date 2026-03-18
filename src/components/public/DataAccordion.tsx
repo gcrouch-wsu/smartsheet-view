@@ -1,6 +1,7 @@
+import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { describeResolvedField, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import { describeResolvedField, getCardLayoutRows, getFirstFieldFromCells, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -32,8 +33,10 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
 
         if (customRows.length > 0) {
-          const firstRowFields = customRows[0] ?? [];
-          const summaryField = firstRowFields[1] ?? firstRowFields[0];
+          const firstRowCells = customRows[0] ?? [];
+          const firstField = getFirstFieldFromCells(firstRowCells);
+          const secondField = firstRowCells.find((c) => c.type === "field" && c.field.key !== firstField?.key);
+          const summaryField = secondField?.type === "field" ? secondField.field : null;
           return (
             <details
               key={row.id}
@@ -44,9 +47,9 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
                   <p className="text-lg font-semibold text-[color:var(--wsu-ink)]">
-                    {firstRowFields[0] ? describeResolvedField(firstRowFields[0]) : getRowHeadingText(view, row)}
+                    {firstField ? describeResolvedField(firstField) : getRowHeadingText(view, row)}
                   </p>
-                  {summaryField && summaryField.key !== firstRowFields[0]?.key && (
+                  {summaryField && (
                     <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summaryField) || summaryField.label}</p>
                   )}
                 </div>
@@ -55,13 +58,16 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                 </span>
               </summary>
               <div className={`border-t ${innerBorderClass} px-5 py-5`}>
-                {customRows.map((fields, rowIndex) => (
+                {customRows.map((cells, rowIndex) => (
                   <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                     <div className="flex flex-wrap gap-4">
-                      {fields.map((field) => (
-                        <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
-                          <FieldBlock rowId={row.id} field={field} />
-                        </div>
+                      {cells.map((cell, i) => (
+                        <CardLayoutCellRenderer
+                          key={i}
+                          rowId={row.id}
+                          cell={cell}
+                          flexClass={cells.length > 1 ? "min-w-0 flex-1" : "w-full"}
+                        />
                       ))}
                     </div>
                   </div>

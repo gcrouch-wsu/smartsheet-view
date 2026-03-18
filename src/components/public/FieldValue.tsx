@@ -9,7 +9,29 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
     return <EmptyValue />;
   }
 
-  if (stacked || field.links.length > 1) {
+  const useInline = field.listDisplay === "inline" && field.links.length > 1;
+  const delimiter = field.listDelimiter ?? ", ";
+  if (useInline) {
+      return (
+        <span className="leading-6 text-[color:var(--wsu-ink)]">
+          {field.links.map((link, i) => (
+            <span key={`${link.href}-${link.label}`}>
+              {i > 0 && <span className="text-[color:var(--wsu-muted)]">{delimiter}</span>}
+              <a
+                href={link.href}
+                className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                target={field.renderType === "link" ? "_blank" : undefined}
+                rel={field.renderType === "link" ? "noreferrer" : undefined}
+              >
+                {link.label}
+              </a>
+            </span>
+          ))}
+        </span>
+      );
+  }
+
+  if (stacked || field.listDisplay === "stacked" || field.links.length > 1) {
     return (
       <ul className="space-y-1">
         {field.links.map((link) => (
@@ -65,6 +87,19 @@ export function FieldValue({
   if (field.renderType === "list") {
     if (field.listValue.length === 0) {
       return <EmptyValue />;
+    }
+    const listDelimiter = field.listDelimiter ?? ", ";
+    if (field.listDisplay === "inline") {
+      return (
+        <span className="leading-6 text-[color:var(--wsu-ink)]">
+          {field.listValue.map((entry, i) => (
+            <span key={entry}>
+              {i > 0 && <span className="text-[color:var(--wsu-muted)]">{listDelimiter}</span>}
+              {entry}
+            </span>
+          ))}
+        </span>
+      );
     }
     return (
       <ul className="space-y-1">

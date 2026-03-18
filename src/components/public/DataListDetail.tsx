@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { describeResolvedField, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -88,13 +89,16 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
         </div>
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
-            {getCardLayoutRows(view, activeRow).map((fields, rowIndex) => (
+            {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => (
               <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                 <div className="flex flex-wrap gap-4">
-                  {fields.map((field) => (
-                    <div key={field.key} className={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}>
-                      <FieldBlock rowId={activeRow.id} field={field} />
-                    </div>
+                  {cells.map((cell, i) => (
+                    <CardLayoutCellRenderer
+                      key={i}
+                      rowId={activeRow.id}
+                      cell={cell}
+                      flexClass={cells.length > 1 ? "min-w-0 flex-1" : "w-full"}
+                    />
                   ))}
                 </div>
               </div>

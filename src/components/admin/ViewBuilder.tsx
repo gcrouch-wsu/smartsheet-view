@@ -10,6 +10,7 @@ import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndInd
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { ThemeEditor } from "./ThemeEditor";
+import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
 import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
@@ -624,7 +625,7 @@ export function ViewBuilder({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Source</span>
             <select
               value={view.sourceId}
@@ -647,7 +648,7 @@ export function ViewBuilder({
             </select>
             <p className="text-xs text-[color:var(--wsu-muted)]">Label, slug, and ID auto-fill from the source when empty.</p>
           </label>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Label</span>
             <input
               value={view.label}
@@ -664,7 +665,7 @@ export function ViewBuilder({
             />
             <p className="text-xs text-[color:var(--wsu-muted)]">Display name. Slug and ID auto-derive when empty.</p>
           </label>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Slug</span>
             <input
               value={view.slug}
@@ -680,7 +681,7 @@ export function ViewBuilder({
             />
             <p className="text-xs text-[color:var(--wsu-muted)]">URL path (e.g. /view/graduate-programs). ID syncs when empty.</p>
           </label>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">View ID</span>
             <input
               value={view.id}
@@ -690,7 +691,7 @@ export function ViewBuilder({
             />
             <p className="text-xs text-[color:var(--wsu-muted)]">Unique identifier. Set once at creation; cannot be changed.</p>
           </label>
-          <label className="space-y-2 text-sm md:col-span-2">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm md:col-span-2">
             <span className="font-medium text-[color:var(--wsu-ink)]">Description</span>
             <textarea
               value={view.description ?? ""}
@@ -719,7 +720,7 @@ export function ViewBuilder({
                 ))}
               </div>
             </div>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Tab order</span>
             <input
               type="number"
@@ -728,7 +729,7 @@ export function ViewBuilder({
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
           </label>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Heading field key</span>
             <p className="text-xs text-[color:var(--wsu-muted)]">Main title for cards and accordions. Can also be set in the Fields tab.</p>
             <select
@@ -742,7 +743,7 @@ export function ViewBuilder({
               ))}
             </select>
           </label>
-          <label className="space-y-2 text-sm">
+          <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Summary field key</span>
             <p className="text-xs text-[color:var(--wsu-muted)]">Sub-heading or secondary text. Can also be set in the Fields tab.</p>
             <select
@@ -829,6 +830,9 @@ export function ViewBuilder({
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {row.fieldKeys.map((key, keyIndex) => {
+                          const isPlaceholder = key === CARD_LAYOUT_PLACEHOLDER;
+                          const isStaticText = key.startsWith(CARD_LAYOUT_TEXT_PREFIX);
+                          const staticLabel = isStaticText ? key.slice(CARD_LAYOUT_TEXT_PREFIX.length) : "";
                           const field = view.fields.find((f) => f.key === key);
                           const keys = row.fieldKeys;
                           return (
@@ -852,7 +856,13 @@ export function ViewBuilder({
                               >
                                 ←
                               </button>
-                              {field?.label ?? key}
+                              {isPlaceholder ? (
+                                <span className="italic text-[color:var(--wsu-muted)]">(placeholder)</span>
+                              ) : isStaticText ? (
+                                <span className="text-[color:var(--wsu-muted)]">&quot;{staticLabel}&quot;</span>
+                              ) : (
+                                field?.label ?? key
+                              )}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -902,12 +912,53 @@ export function ViewBuilder({
                           className="rounded border border-[color:var(--wsu-border)] bg-white px-2 py-1 text-xs min-h-[32px]"
                         >
                           <option value="">Add field</option>
+                          <option value={CARD_LAYOUT_PLACEHOLDER}>Add placeholder (blank for alignment)</option>
                           {view.fields
                             .filter((f) => !row.fieldKeys.includes(f.key))
                             .map((f) => (
                               <option key={f.key} value={f.key}>{f.label || f.key}</option>
                             ))}
                         </select>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            placeholder="Static text label"
+                            className="w-28 rounded border border-[color:var(--wsu-border)] bg-white px-2 py-1 text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const input = e.currentTarget;
+                                const label = input.value.trim();
+                                if (label) {
+                                  const key = `${CARD_LAYOUT_TEXT_PREFIX}${label}`;
+                                  const next = [...(view.presentation?.cardLayout ?? [])];
+                                  const nextKeys = [...(next[rowIndex]?.fieldKeys ?? []), key];
+                                  next[rowIndex] = { fieldKeys: nextKeys };
+                                  update("presentation", { ...view.presentation, cardLayout: next });
+                                  input.value = "";
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              const input = (e.currentTarget as HTMLButtonElement).parentElement?.querySelector("input[type='text']") as HTMLInputElement | null;
+                              const label = input?.value?.trim();
+                              if (label) {
+                                const key = `${CARD_LAYOUT_TEXT_PREFIX}${label}`;
+                                const next = [...(view.presentation?.cardLayout ?? [])];
+                                const nextKeys = [...(next[rowIndex]?.fieldKeys ?? []), key];
+                                next[rowIndex] = { fieldKeys: nextKeys };
+                                update("presentation", { ...view.presentation, cardLayout: next });
+                                if (input) input.value = "";
+                              }
+                            }}
+                            className="rounded border border-[color:var(--wsu-border)] px-2 py-1 text-xs"
+                          >
+                            Add text
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1005,7 +1056,34 @@ export function ViewBuilder({
                   onChange={(e) => update("presentation", { ...view.presentation, hideHeaderInfoBox: e.target.checked })}
                   className="rounded border-[color:var(--wsu-border)]"
                 />
-                <span>Info box (Active view, Rows, Refreshed)</span>
+                <span>Hide entire info box</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderActiveView ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderActiveView: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Hide Active view</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderRows ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRows: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Hide Rows</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideHeaderRefreshed ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRefreshed: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Hide Refreshed</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1017,6 +1095,42 @@ export function ViewBuilder({
                 <span>View title (h2 + description below tabs)</span>
               </label>
             </div>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">View tabs (red buttons)</span>
+            <p className="text-xs text-[color:var(--wsu-muted)]">The tab buttons showing view name and row count (e.g. Graduate Program Contact List 124).</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideViewTabs ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTabs: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Hide view tabs</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.hideViewTabCount ?? false}
+                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTabCount: e.target.checked })}
+                  className="rounded border-[color:var(--wsu-border)]"
+                />
+                <span>Hide row count on tab</span>
+              </label>
+            </div>
+            <label className="mt-2 flex flex-col gap-1 text-sm">
+              <span className="font-medium text-[color:var(--wsu-ink)]">Custom tab label</span>
+              <input
+                type="text"
+                value={view.presentation?.viewTabLabel ?? ""}
+                onChange={(e) => update("presentation", { ...view.presentation, viewTabLabel: e.target.value || undefined })}
+                placeholder={view.label}
+                className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
+              />
+              <span className="text-xs text-[color:var(--wsu-muted)]">Override the label shown on this view&apos;s tab. Leave empty to use view label.</span>
+            </label>
           </div>
 
           <label className="flex items-center gap-3 text-sm">
@@ -1219,6 +1333,33 @@ export function ViewBuilder({
                         ))}
                       </select>
                     </label>
+                    {["list", "mailto_list", "phone_list"].includes(field.render.type) && (
+                      <>
+                        <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                          <span>List display</span>
+                          <select
+                            value={field.render.listDisplay ?? "stacked"}
+                            onChange={(e) => updateField(index, { ...field, render: { ...field.render, listDisplay: (e.target.value || undefined) as "inline" | "stacked" | undefined } })}
+                            className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                          >
+                            <option value="stacked">Stacked (each on own row)</option>
+                            <option value="inline">Inline (delimiter between)</option>
+                          </select>
+                        </label>
+                        {field.render.listDisplay === "inline" && (
+                          <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                            <span>Delimiter</span>
+                            <input
+                              type="text"
+                              value={field.render.listDelimiter ?? ", "}
+                              onChange={(e) => updateField(index, { ...field, render: { ...field.render, listDelimiter: e.target.value || undefined } })}
+                              placeholder=", "
+                              className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                            />
+                          </label>
+                        )}
+                      </>
+                    )}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Transforms</span>
                       <div className="flex flex-wrap gap-1.5">
