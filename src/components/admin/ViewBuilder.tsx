@@ -9,6 +9,7 @@ import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
+import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { ThemeEditor } from "./ThemeEditor";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
@@ -1033,8 +1034,11 @@ export function ViewBuilder({
               </div>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium text-[color:var(--wsu-ink)]">Custom header text</span>
-                <textarea rows={2} value={view.presentation?.headerCustomText ?? ""} onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })} placeholder="Shown in main header area. Use **bold**, *italic*, {{PUBLIC_URL}} for live link" className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm" />
-                <span className="text-xs text-[color:var(--wsu-muted)]">{"**bold** *italic* {{PUBLIC_URL}} → live URL"}</span>
+                <HeaderCustomTextEditor
+                  value={view.presentation?.headerCustomText ?? ""}
+                  onChange={(v) => update("presentation", { ...view.presentation, headerCustomText: v || undefined })}
+                  placeholder="Public URL: {{PUBLIC_URL}}"
+                />
               </label>
             </div>
           </div>

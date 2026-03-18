@@ -52,8 +52,22 @@ a {
   text-decoration: none;
 }
 
+/* Crimson primary buttons: white text for contrast (overrides a { color: inherit }) */
+a.btn-crimson {
+  color: white !important;
+}
+a.btn-crimson:hover {
+  color: white !important;
+}
+
 /* Theme font overrides (set by ViewStyleWrapper) */
 .font-view-heading {
   font-family: var(--view-heading-font, inherit);
   font-size: var(--view-heading-font-size, inherit);
+}
+
+/* Custom header text: use body font, not heading font */
+.custom-header-text {
+  font-family: var(--view-font, inherit);
+  font-size: var(--view-font-size, inherit);
 }

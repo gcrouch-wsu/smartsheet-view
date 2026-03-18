@@ -11,21 +11,35 @@ import { mergeThemeTokens } from "@/lib/config/themes";
 import { loadPublicPage } from "@/lib/public-view";
 import { notFound } from "next/navigation";
 
-/** Parse **bold**, *italic*, and {{PUBLIC_URL}} in text. Renders formatted content. */
+/** Parse **bold**, *italic*, and {{PUBLIC_URL}} in text. {{PUBLIC_URL}} always becomes a live link. */
 function parseFormattedHeaderText(text: string, publicUrl: string): Array<string | { t: "b" | "i" | "a"; c: string }> {
-  const withUrl = text.replace(/\{\{PUBLIC_URL\}\}/g, publicUrl);
+  const parts: Array<string | { t: "a"; c: string }> = [];
+  const segments = text.split(/\{\{PUBLIC_URL\}\}/g);
+  for (let i = 0; i < segments.length; i++) {
+    parts.push(segments[i]!);
+    if (i < segments.length - 1) {
+      parts.push({ t: "a" as const, c: publicUrl });
+    }
+  }
   const result: Array<string | { t: "b" | "i" | "a"; c: string }> = [];
   const re = /\*\*(.+?)\*\*|\*(.+?)\*|(https?:\/\/[^\s]+)/g;
-  let lastEnd = 0;
-  let m;
-  while ((m = re.exec(withUrl)) !== null) {
-    if (m.index > lastEnd) result.push(withUrl.slice(lastEnd, m.index));
-    if (m[1] !== undefined) result.push({ t: "b", c: m[1] });
-    else if (m[2] !== undefined) result.push({ t: "i", c: m[2] });
-    else if (m[3] !== undefined) result.push({ t: "a", c: m[3] });
-    lastEnd = re.lastIndex;
+  for (const part of parts) {
+    if (typeof part === "object") {
+      result.push(part);
+      continue;
+    }
+    let lastEnd = 0;
+    let m;
+    re.lastIndex = 0;
+    while ((m = re.exec(part)) !== null) {
+      if (m.index > lastEnd) result.push(part.slice(lastEnd, m.index));
+      if (m[1] !== undefined) result.push({ t: "b" as const, c: m[1] });
+      else if (m[2] !== undefined) result.push({ t: "i" as const, c: m[2] });
+      else if (m[3] !== undefined) result.push({ t: "a" as const, c: m[3] });
+      lastEnd = re.lastIndex;
+    }
+    if (lastEnd < part.length) result.push(part.slice(lastEnd));
   }
-  if (lastEnd < withUrl.length) result.push(withUrl.slice(lastEnd));
   return result;
 }
 
@@ -131,7 +145,7 @@ export default async function PublicViewPage({
                   )}
                 </div>
                 {activeView.presentation?.headerCustomText && (
-                  <div className="mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
+                  <div className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
                     {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
                       <p key={i} className="whitespace-pre-wrap">
                         {parseFormattedHeaderText(line, `${baseUrl}/view/${slug}?view=${activeView.id}`).map((part, j) =>

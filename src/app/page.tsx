@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { getPublicPageSummaries } from "@/lib/public-view";
 import { testSmartsheetConnection } from "@/lib/smartsheet";
 
@@ -44,7 +44,7 @@ export default async function HomePage() {
                   ? "Smartsheet connection verified."
                   : "Smartsheet connection unavailable. Check your API token and environment."}
               </div>
-              <Link href="/admin" className="inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[color:var(--wsu-crimson-dark)]">
+              <Link href="/admin" className="btn-crimson inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium transition hover:bg-[color:var(--wsu-crimson-dark)]">
                 Open admin builder
               </Link>
             </div>
@@ -79,7 +79,7 @@ export default async function HomePage() {
                   </div>
                   <Link
                     href={`/view/${page.slug}`}
-                    className="inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[color:var(--wsu-crimson-dark)]"
+                    className="btn-crimson inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium transition hover:bg-[color:var(--wsu-crimson-dark)]"
                   >
                     Open page
                   </Link>
