@@ -1033,7 +1033,8 @@ export function ViewBuilder({
               </div>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium text-[color:var(--wsu-ink)]">Custom header text</span>
-                <textarea rows={2} value={view.presentation?.headerCustomText ?? ""} onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })} placeholder="Replace info box with custom text" className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm" />
+                <textarea rows={2} value={view.presentation?.headerCustomText ?? ""} onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })} placeholder="Shown in main header area. Use **bold**, *italic*, {{PUBLIC_URL}} for live link" className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm" />
+                <span className="text-xs text-[color:var(--wsu-muted)]">{"**bold** *italic* {{PUBLIC_URL}} → live URL"}</span>
               </label>
             </div>
           </div>

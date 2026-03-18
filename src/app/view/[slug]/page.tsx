@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
@@ -9,6 +10,24 @@ import type { LayoutType } from "@/lib/config/types";
 import { mergeThemeTokens } from "@/lib/config/themes";
 import { loadPublicPage } from "@/lib/public-view";
 import { notFound } from "next/navigation";
+
+/** Parse **bold**, *italic*, and {{PUBLIC_URL}} in text. Renders formatted content. */
+function parseFormattedHeaderText(text: string, publicUrl: string): Array<string | { t: "b" | "i" | "a"; c: string }> {
+  const withUrl = text.replace(/\{\{PUBLIC_URL\}\}/g, publicUrl);
+  const result: Array<string | { t: "b" | "i" | "a"; c: string }> = [];
+  const re = /\*\*(.+?)\*\*|\*(.+?)\*|(https?:\/\/[^\s]+)/g;
+  let lastEnd = 0;
+  let m;
+  while ((m = re.exec(withUrl)) !== null) {
+    if (m.index > lastEnd) result.push(withUrl.slice(lastEnd, m.index));
+    if (m[1] !== undefined) result.push({ t: "b", c: m[1] });
+    else if (m[2] !== undefined) result.push({ t: "i", c: m[2] });
+    else if (m[3] !== undefined) result.push({ t: "a", c: m[3] });
+    lastEnd = re.lastIndex;
+  }
+  if (lastEnd < withUrl.length) result.push(withUrl.slice(lastEnd));
+  return result;
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -48,6 +67,11 @@ export default async function PublicViewPage({
     notFound();
   }
 
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "localhost:3000";
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  const baseUrl = `${proto}://${host}`;
+
   const requestedView = firstValue(resolvedSearchParams.view);
   const requestedLayout = firstValue(resolvedSearchParams.layout);
   const embed = firstValue(resolvedSearchParams.embed) === "1";
@@ -83,7 +107,7 @@ export default async function PublicViewPage({
         {!embed && (
           <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
             <div className="flex flex-wrap items-start justify-between gap-6">
-              <div className="space-y-3">
+              <div className="min-w-0 flex-1 space-y-3">
                 {!activeView.presentation?.hideHeaderBackLink && (
                   <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
                     Back to configured pages
@@ -106,33 +130,53 @@ export default async function PublicViewPage({
                     </p>
                   )}
                 </div>
+                {activeView.presentation?.headerCustomText && (
+                  <div className="mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
+                    {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
+                      <p key={i} className="whitespace-pre-wrap">
+                        {parseFormattedHeaderText(line, `${baseUrl}/view/${slug}?view=${activeView.id}`).map((part, j) =>
+                          typeof part === "string" ? (
+                            <span key={j}>{part}</span>
+                          ) : part.t === "b" ? (
+                            <strong key={j}>{part.c}</strong>
+                          ) : part.t === "i" ? (
+                            <em key={j}>{part.c}</em>
+                          ) : (
+                            <a
+                              key={j}
+                              href={part.c}
+                              className="text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {part.c}
+                            </a>
+                          )
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
               {!activeView.presentation?.hideHeaderInfoBox &&
-                (activeView.presentation?.headerCustomText ||
-                  !(activeView.presentation?.hideHeaderActiveView ?? false) ||
+                (!(activeView.presentation?.hideHeaderActiveView ?? false) ||
                   !(activeView.presentation?.hideHeaderRows ?? false) ||
                   !(activeView.presentation?.hideHeaderRefreshed ?? false)) && (
-                <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                  {activeView.presentation?.headerCustomText ? (
-                    <p className="whitespace-pre-wrap">{activeView.presentation.headerCustomText}</p>
-                  ) : (
-                    <>
-                      {!activeView.presentation?.hideHeaderActiveView && (
-                        <p>
-                          <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                        </p>
-                      )}
-                      {!activeView.presentation?.hideHeaderRows && (
-                        <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                          <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
-                        </p>
-                      )}
-                      {!activeView.presentation?.hideHeaderRefreshed && (
-                        <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
-                          <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
-                        </p>
-                      )}
-                    </>
+                <div className="shrink-0 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                  {!activeView.presentation?.hideHeaderActiveView && (
+                    <p>
+                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                    </p>
+                  )}
+                  {!activeView.presentation?.hideHeaderRows && (
+                    <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                      <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                    </p>
+                  )}
+                  {!activeView.presentation?.hideHeaderRefreshed && (
+                    <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
+                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                    </p>
                   )}
                 </div>
               )}
