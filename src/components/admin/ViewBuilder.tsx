@@ -977,182 +977,97 @@ export function ViewBuilder({
             </div>
           )}
 
+          {/* Layout & cards */}
           {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
-            <div className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Row dividers</span>
-              <p className="text-xs text-[color:var(--wsu-muted)]">Divider between rows/cards. None hides borders; subtle uses a lighter line.</p>
-              <div className="flex flex-wrap gap-2">
-                {(["default", "subtle", "none"] as const).map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => update("presentation", { ...view.presentation, rowDividerStyle: style })}
-                    className={`min-h-[36px] rounded-full border px-4 py-2 text-sm font-medium ${
-                      (view.presentation?.rowDividerStyle ?? "default") === style
-                        ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5 text-[color:var(--wsu-crimson)]"
-                        : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)]"
-                    }`}
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Layout & cards</h3>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row dividers</label>
+                  <select
+                    value={view.presentation?.rowDividerStyle ?? "default"}
+                    onChange={(e) => update("presentation", { ...view.presentation, rowDividerStyle: e.target.value as "default" | "subtle" | "none" })}
+                    className="w-full max-w-xs rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
-                    {style === "none" ? "None" : style === "subtle" ? "Subtle" : "Default"}
-                  </button>
-                ))}
+                    <option value="default">Default</option>
+                    <option value="subtle">Subtle</option>
+                    <option value="none">None</option>
+                  </select>
+                  <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Divider between rows/cards.</p>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={view.presentation?.hideRowBadge ?? false}
+                    onChange={(e) => update("presentation", { ...view.presentation, hideRowBadge: e.target.checked })}
+                    className="rounded border-[color:var(--wsu-border)]"
+                  />
+                  <span>Hide row badge</span>
+                </label>
               </div>
             </div>
           )}
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={view.presentation?.hideRowBadge ?? false}
-              onChange={(event) => update("presentation", { ...view.presentation, hideRowBadge: event.target.checked })}
-              className="rounded border-[color:var(--wsu-border)]"
-            />
-            <span className="font-medium text-[color:var(--wsu-ink)]">Hide row badge</span>
-          </label>
 
-          <div className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Header (public view)</span>
-            <p className="text-xs text-[color:var(--wsu-muted)]">Hide elements in the top card to reduce repetition (e.g. when the page title and view label are the same).</p>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderBackLink ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderBackLink: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Back link</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderSourceLabel ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderSourceLabel: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Source label</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderPageTitle ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderPageTitle: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Page title</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderLiveDataText ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderLiveDataText: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Live data text</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderInfoBox ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderInfoBox: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide entire info box</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderActiveView ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderActiveView: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide Active view</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderRows ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRows: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide Rows</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideHeaderRefreshed ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRefreshed: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide Refreshed</span>
-              </label>
-              <label className="mt-2 flex w-full flex-col gap-1 text-sm">
+          {/* Page header */}
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Page header</h3>
+            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Hide elements in the top card to reduce clutter.</p>
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderBackLink ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderBackLink: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Back link</span></label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderSourceLabel ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderSourceLabel: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Source label</span></label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderPageTitle ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderPageTitle: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Page title</span></label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderLiveDataText ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderLiveDataText: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Live data text</span></label>
+            </div>
+          </div>
+
+          {/* Info box */}
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Info box</h3>
+            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Active view, row count, refreshed time. Or replace with custom text.</p>
+            <div className="mt-3 space-y-3">
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderInfoBox ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderInfoBox: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide entire info box</span></label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderActiveView ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderActiveView: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide Active view</span></label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderRows ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRows: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide Rows</span></label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderRefreshed ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRefreshed: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide Refreshed</span></label>
+              </div>
+              <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium text-[color:var(--wsu-ink)]">Custom header text</span>
-                <textarea
-                  rows={3}
-                  value={view.presentation?.headerCustomText ?? ""}
-                  onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })}
-                  placeholder="Replace Active view / Rows / Refreshed with custom text"
-                  className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 text-sm"
-                />
-                <span className="text-xs text-[color:var(--wsu-muted)]">When set, replaces the default info box content. Supports multiple lines.</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideViewTitleSection ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTitleSection: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>View title (h2 + description below tabs)</span>
+                <textarea rows={2} value={view.presentation?.headerCustomText ?? ""} onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })} placeholder="Replace info box with custom text" className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm" />
               </label>
             </div>
           </div>
 
-          <div className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">View tabs (red buttons)</span>
-            <p className="text-xs text-[color:var(--wsu-muted)]">The tab buttons showing view name and row count (e.g. Graduate Program Contact List 124).</p>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {/* View section & tabs */}
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">View section</h3>
+            <div className="mt-3 space-y-3">
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideViewTabs ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTabs: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide view tabs</span>
+                <input type="checkbox" checked={view.presentation?.hideViewTitleSection ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTitleSection: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" />
+                <span>Hide view title (h2 + description below tabs)</span>
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={view.presentation?.hideViewTabCount ?? false}
-                  onChange={(e) => update("presentation", { ...view.presentation, hideViewTabCount: e.target.checked })}
-                  className="rounded border-[color:var(--wsu-border)]"
-                />
-                <span>Hide row count on tab</span>
-              </label>
+              <div>
+                <span className="block text-xs font-medium text-[color:var(--wsu-muted)]">View tabs</span>
+                <div className="mt-1 flex flex-wrap gap-x-6 gap-y-2">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideViewTabs ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTabs: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide tabs</span></label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideViewTabCount ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTabCount: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide row count on tab</span></label>
+                </div>
+                <label className="mt-2 flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-[color:var(--wsu-ink)]">Custom tab label</span>
+                  <input type="text" value={view.presentation?.viewTabLabel ?? ""} onChange={(e) => update("presentation", { ...view.presentation, viewTabLabel: e.target.value || undefined })} placeholder={view.label} className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2" />
+                </label>
+              </div>
             </div>
-            <label className="mt-2 flex flex-col gap-1 text-sm">
-              <span className="font-medium text-[color:var(--wsu-ink)]">Custom tab label</span>
-              <input
-                type="text"
-                value={view.presentation?.viewTabLabel ?? ""}
-                onChange={(e) => update("presentation", { ...view.presentation, viewTabLabel: e.target.value || undefined })}
-                placeholder={view.label}
-                className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
-              />
-              <span className="text-xs text-[color:var(--wsu-muted)]">Override the label shown on this view&apos;s tab. Leave empty to use view label.</span>
+          </div>
+
+          {/* Layout lock */}
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={view.fixedLayout ?? false} onChange={(e) => update("fixedLayout", e.target.checked)} className="rounded border-[color:var(--wsu-border)]" />
+              <span className="font-medium text-[color:var(--wsu-ink)]">Lock layout for viewers</span>
             </label>
+            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Prevent viewers from switching table/cards/list layout.</p>
           </div>
-
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={view.fixedLayout ?? false}
-              onChange={(event) => update("fixedLayout", event.target.checked)}
-              className="rounded border-[color:var(--wsu-border)]"
-            />
-            <span className="font-medium text-[color:var(--wsu-ink)]">Lock layout for viewers</span>
-          </label>
         </div>
 
           <ThemeEditor view={view} update={update} />

@@ -1,46 +1,40 @@
 import React, { useState } from "react";
+import {
+  BORDER_RADIUS_OPTIONS,
+  FONT_OPTIONS,
+  FONT_SIZE_OPTIONS,
+  SHADOW_OPTIONS,
+} from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import type { ViewConfig, ViewStyleConfig } from "@/lib/config/types";
 import { getContrastRatio, getContrastScore } from "@/lib/color-utils";
 
 interface ThemeEditorProps {
   view: ViewConfig;
-  update: (key: keyof ViewConfig, value: any) => void;
+  update: (key: keyof ViewConfig, value: unknown) => void;
 }
 
-const STYLE_TOKEN_LABELS: Record<keyof ViewStyleConfig, string> = {
+const COLOR_LABELS: Record<string, string> = {
   backgroundColor: "Page background",
   cardBackground: "Card/panel background",
-  accentColor: "Accent color (links, buttons)",
+  accentColor: "Accent (links, buttons)",
   textColor: "Primary text",
   mutedColor: "Secondary/label text",
   borderColor: "Borders",
-  fontFamily: "Body font",
-  headingFontFamily: "Heading font",
-  borderRadius: "Card/button radius",
-  cardShadow: "Card drop shadow",
   badgeBg: "Badge background",
   badgeText: "Badge text",
-  primaryColor: "Primary color (deprecated)",
 };
 
-const COLOR_TOKENS: Array<keyof ViewStyleConfig> = [
-  "backgroundColor",
-  "cardBackground",
-  "accentColor",
-  "textColor",
-  "mutedColor",
-  "borderColor",
-  "badgeBg",
-  "badgeText",
-];
+const COLOR_TOKENS = Object.keys(COLOR_LABELS) as Array<keyof ViewStyleConfig>;
 
-const TEXT_TOKENS: Array<keyof ViewStyleConfig> = [
-  "fontFamily",
-  "headingFontFamily",
-  "borderRadius",
-  "cardShadow",
-];
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">{title}</h4>
+      {children}
+    </div>
+  );
+}
 
 export function ThemeEditor({ view, update }: ThemeEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -50,95 +44,77 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
 
   const handlePresetSelect = (themeId: string) => {
     if (hasOverrides && themeId !== currentPresetId) {
-      if (!window.confirm("Switching presets will reset your custom style overrides. Continue?")) {
+      if (!window.confirm("Switching presets will reset your custom overrides. Continue?")) {
         return;
       }
     }
     update("themePresetId", themeId);
-    update("style", {}); // Reset overrides
+    update("style", undefined);
   };
 
   const updateStyle = (token: keyof ViewStyleConfig, value: string) => {
-    const nextStyle = { ...view.style, [token]: value };
-    // If the value matches the preset, we could remove it from overrides, 
-    // but for simplicity we'll just keep it as an explicit override for now.
-    if (value === "") {
-      delete (nextStyle as any)[token];
+    const nextStyle = { ...view.style };
+    if (value === "" || value === (currentPreset.tokens[token] as string)) {
+      delete (nextStyle as Record<string, unknown>)[token];
+    } else {
+      (nextStyle as Record<string, string>)[token] = value;
     }
     update("style", Object.keys(nextStyle).length > 0 ? nextStyle : undefined);
   };
 
+  const getValue = (token: keyof ViewStyleConfig) =>
+    view.style?.[token] ?? (currentPreset.tokens[token] as string) ?? "";
+
   const renderContrastIndicator = (token: keyof ViewStyleConfig, value: string) => {
     if (token !== "accentColor" && token !== "textColor") return null;
-
-    // Check against background or card background depending on where it's usually used
     const bgToken: keyof ViewStyleConfig = token === "accentColor" ? "backgroundColor" : "cardBackground";
-    const bgColor = view.style?.[bgToken] || currentPreset.tokens[bgToken] || "#ffffff";
-    const fgColor = value || currentPreset.tokens[token] || "#000000";
-
+    const bgColor = getValue(bgToken) || "#ffffff";
+    const fgColor = value || "#000000";
     const ratio = getContrastRatio(fgColor, bgColor);
     const score = getContrastScore(ratio);
-
     return (
-      <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider">
-        <span className={`h-2 w-2 rounded-full ${
-          score === "pass" ? "bg-emerald-500" : score === "warn" ? "bg-amber-500" : "bg-rose-500"
-        }`} />
-        <span className={score === "pass" ? "text-emerald-700" : score === "warn" ? "text-amber-700" : "text-rose-700"}>
-          Contrast: {ratio.toFixed(2)}:1 ({score.toUpperCase()})
-        </span>
-      </div>
+      <p className={`mt-1 text-[10px] font-medium uppercase tracking-wider ${
+        score === "pass" ? "text-emerald-600" : score === "warn" ? "text-amber-600" : "text-rose-600"
+      }`}>
+        Contrast: {ratio.toFixed(2)}:1 ({score})
+      </p>
     );
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Theme</h3>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {BUILT_IN_THEMES.map((theme) => {
-          const isActive = currentPresetId === theme.id;
-          return (
-            <button
-              key={theme.id}
-              type="button"
-              onClick={() => handlePresetSelect(theme.id)}
-              className={`group relative min-h-[64px] rounded-2xl border p-4 text-left transition ${
-                isActive
-                  ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5"
-                  : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">{theme.label}</p>
+      <Section title="Theme preset">
+        <div className="grid gap-2 sm:grid-cols-3">
+          {BUILT_IN_THEMES.map((theme) => {
+            const isActive = currentPresetId === theme.id;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => handlePresetSelect(theme.id)}
+                className={`flex min-h-[56px] items-center justify-between gap-2 rounded-xl border px-4 py-3 text-left transition ${
+                  isActive
+                    ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5"
+                    : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]"
+                }`}
+              >
+                <span className="text-sm font-semibold text-[color:var(--wsu-ink)]">{theme.label}</span>
                 <div className="flex -space-x-1">
-                  <div 
-                    className="h-4 w-4 rounded-full border border-white" 
-                    style={{ backgroundColor: theme.tokens.accentColor }} 
-                    title="Accent"
-                  />
-                  <div 
-                    className="h-4 w-4 rounded-full border border-white" 
-                    style={{ backgroundColor: theme.tokens.backgroundColor }} 
-                    title="Background"
-                  />
-                  <div 
-                    className="h-4 w-4 rounded-full border border-white" 
-                    style={{ backgroundColor: theme.tokens.textColor }} 
-                    title="Text"
-                  />
+                  <div className="h-3 w-3 rounded-full border border-white" style={{ backgroundColor: theme.tokens.accentColor }} />
+                  <div className="h-3 w-3 rounded-full border border-white" style={{ backgroundColor: theme.tokens.backgroundColor }} />
                 </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
 
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:underline"
       >
-        {isExpanded ? "Hide customization" : "Customize theme tokens…"}
+        {isExpanded ? "Hide customization" : "Customize look & feel"}
         {hasOverrides && !isExpanded && (
           <span className="rounded-full bg-[color:var(--wsu-crimson)] px-1.5 py-0.5 text-[10px] text-white">
             {Object.keys(view.style || {}).length}
@@ -147,32 +123,31 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
       </button>
 
       {isExpanded && (
-        <div className="space-y-6 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
-          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-            <div>
-              <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Colors</h4>
+        <div className="space-y-6 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <Section title="Colors">
               <div className="space-y-4">
                 {COLOR_TOKENS.map((token) => (
                   <div key={token}>
                     <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">
-                      {STYLE_TOKEN_LABELS[token]}
+                      {COLOR_LABELS[token]}
                     </label>
                     <div className="flex gap-2">
-                      <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-xl border border-[color:var(--wsu-border)]">
+                      <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-[color:var(--wsu-border)]">
                         <input
                           type="color"
-                          value={view.style?.[token] || currentPreset.tokens[token] || "#ffffff"}
+                          value={(getValue(token) || "").match(/#[0-9A-Fa-f]{3,6}/)?.[0] ?? "#ffffff"}
                           onChange={(e) => updateStyle(token, e.target.value)}
                           className="absolute inset-[-4px] h-[calc(100%+8px)] w-[calc(100%+8px)] cursor-pointer"
                         />
                       </div>
-                      <div className="relative flex-1">
+                      <div className="relative min-w-0 flex-1">
                         <input
                           type="text"
-                          value={view.style?.[token] || ""}
+                          value={view.style?.[token] ?? ""}
                           onChange={(e) => updateStyle(token, e.target.value)}
                           placeholder={currentPreset.tokens[token] as string}
-                          className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 font-mono text-xs focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                          className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2.5 py-1.5 font-mono text-xs"
                         />
                         {view.style?.[token] && (
                           <button
@@ -186,48 +161,97 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                         )}
                       </div>
                     </div>
-                    {renderContrastIndicator(token, view.style?.[token] || "")}
+                    {renderContrastIndicator(token, getValue(token))}
                   </div>
                 ))}
               </div>
-            </div>
+            </Section>
 
-            <div>
-              <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Typography & Shape</h4>
+            <Section title="Typography">
               <div className="space-y-4">
-                {TEXT_TOKENS.map((token) => (
-                  <div key={token}>
-                    <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">
-                      {STYLE_TOKEN_LABELS[token]}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={view.style?.[token] || ""}
-                        onChange={(e) => updateStyle(token, e.target.value)}
-                        placeholder={currentPreset.tokens[token] as string}
-                        className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm focus:border-[color:var(--wsu-crimson)] focus:outline-none"
-                      />
-                      {view.style?.[token] && (
-                        <button
-                          type="button"
-                          onClick={() => updateStyle(token, "")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[color:var(--wsu-muted)] hover:text-rose-600"
-                          title="Reset to preset"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body font</label>
+                  <select
+                    value={getValue("fontFamily")}
+                    onChange={(e) => updateStyle("fontFamily", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading font</label>
+                  <select
+                    value={getValue("headingFontFamily")}
+                    onChange={(e) => updateStyle("headingFontFamily", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body size</label>
+                  <select
+                    value={getValue("fontSize")}
+                    onChange={(e) => updateStyle("fontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading size</label>
+                  <select
+                    value={getValue("headingFontSize")}
+                    onChange={(e) => updateStyle("headingFontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="mt-8 rounded-xl bg-white p-3 text-[10px] text-[color:var(--wsu-muted)]">
-                <p className="font-semibold text-[color:var(--wsu-ink)]">Pro tip:</p>
-                <p className="mt-1">Tokens marked with <span className="text-rose-600">×</span> are overrides. Click the <span className="text-rose-600">×</span> to reset them to the preset default.</p>
+            </Section>
+
+            <Section title="Shape & shadow">
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Corner radius</label>
+                  <select
+                    value={getValue("borderRadius")}
+                    onChange={(e) => updateStyle("borderRadius", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {BORDER_RADIUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Card shadow</label>
+                  <select
+                    value={getValue("cardShadow")}
+                    onChange={(e) => updateStyle("cardShadow", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {SHADOW_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            </Section>
           </div>
+          <p className="text-xs text-[color:var(--wsu-muted)]">
+            Tokens with × are overrides. Click × to reset to the preset default.
+          </p>
         </div>
       )}
     </div>

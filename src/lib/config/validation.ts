@@ -413,6 +413,8 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "borderColor",
   "fontFamily",
   "headingFontFamily",
+  "fontSize",
+  "headingFontSize",
   "borderRadius",
   "cardShadow",
   "badgeBg",

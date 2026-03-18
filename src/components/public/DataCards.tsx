@@ -39,8 +39,11 @@ export function DataCards({ view }: { view: ResolvedView }) {
 
         if (customRows.length > 0) {
           const colCount = getCardLayoutColumnCount(view);
-          const gridClass = colCount > 1 ? `grid gap-4` : "space-y-4";
-          const gridStyle = colCount > 1 ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined;
+          const useAlignedGrid = colCount > 1;
+          const gridClass = useAlignedGrid ? "grid gap-4" : "space-y-4";
+          const gridStyle = useAlignedGrid
+            ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`, gridTemplateRows: "auto auto" }
+            : undefined;
           return (
             <article
               key={row.id}
@@ -48,18 +51,24 @@ export function DataCards({ view }: { view: ResolvedView }) {
               className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
               {customRows.map((cells, rowIndex) => {
-                const paddedCells = colCount > 1 ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
+                const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
                 return (
                   <div key={rowIndex} className={rowDividerClass(rowIndex)}>
                     <div className={gridClass} style={gridStyle}>
-                      {paddedCells.map((cell, i) => (
-                        <CardLayoutCellRenderer
-                          key={i}
-                          rowId={row.id}
-                          cell={cell}
-                          flexClass={colCount > 1 ? "min-w-0" : "w-full"}
-                        />
-                      ))}
+                      {useAlignedGrid ? (
+                        <>
+                          {paddedCells.map((cell, i) => (
+                            <CardLayoutCellRenderer key={`h-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="header" />
+                          ))}
+                          {paddedCells.map((cell, i) => (
+                            <CardLayoutCellRenderer key={`v-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="value" />
+                          ))}
+                        </>
+                      ) : (
+                        paddedCells.map((cell, i) => (
+                          <CardLayoutCellRenderer key={i} rowId={row.id} cell={cell} flexClass="w-full" />
+                        ))
+                      )}
                     </div>
                   </div>
                 );

@@ -55,4 +55,5 @@ a {
 /* Theme font overrides (set by ViewStyleWrapper) */
 .font-view-heading {
   font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-heading-font-size, inherit);
 }

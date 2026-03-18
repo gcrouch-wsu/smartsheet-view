@@ -10,6 +10,8 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   borderColor: "--view-border",
   fontFamily: "--view-font",
   headingFontFamily: "--view-heading-font",
+  fontSize: "--view-font-size",
+  headingFontSize: "--view-heading-font-size",
   borderRadius: "--view-radius",
   cardShadow: "--view-card-shadow",
   badgeBg: "--view-badge-bg",
@@ -59,9 +61,12 @@ export function ViewStyleWrapper({
     cssVars.backgroundColor = tokens.backgroundColor;
   }
 
-  // Apply body font so theme fontFamily is used
+  // Apply body font and size
   if (tokens.fontFamily) {
     cssVars.fontFamily = tokens.fontFamily;
+  }
+  if (tokens.fontSize) {
+    cssVars.fontSize = tokens.fontSize;
   }
 
   return <div style={cssVars as React.CSSProperties}>{children}</div>;

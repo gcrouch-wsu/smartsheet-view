@@ -1,5 +1,46 @@
 import type { FilterOperator, LayoutType, RenderType } from "@/lib/config/types";
 
+/** Web-safe font stacks for body and heading text. */
+export const FONT_OPTIONS: { value: string; label: string }[] = [
+  { value: "system-ui, sans-serif", label: "System UI (default)" },
+  { value: "Georgia, serif", label: "Georgia" },
+  { value: "'Times New Roman', Times, serif", label: "Times New Roman" },
+  { value: "Arial, Helvetica, sans-serif", label: "Arial" },
+  { value: "Verdana, Geneva, sans-serif", label: "Verdana" },
+  { value: "'Segoe UI', system-ui, sans-serif", label: "Segoe UI" },
+  { value: "'Open Sans', system-ui, sans-serif", label: "Open Sans" },
+  { value: "inherit", label: "Inherit from page" },
+];
+
+/** Body and heading font sizes (rem). Good for readability. */
+export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
+  { value: "0.875rem", label: "Small (14px)" },
+  { value: "1rem", label: "Medium (16px)" },
+  { value: "1.0625rem", label: "Large (17px)" },
+  { value: "1.125rem", label: "Extra large (18px)" },
+  { value: "1.25rem", label: "2XL (20px)" },
+  { value: "1.5rem", label: "3XL (24px)" },
+];
+
+/** Border radius presets for cards and buttons. */
+export const BORDER_RADIUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "0", label: "None" },
+  { value: "0.25rem", label: "Small (4px)" },
+  { value: "0.5rem", label: "Medium (8px)" },
+  { value: "1rem", label: "Large (16px)" },
+  { value: "1.75rem", label: "Extra large (28px)" },
+  { value: "2rem", label: "Rounded (32px)" },
+];
+
+/** Card shadow presets. */
+export const SHADOW_OPTIONS: { value: string; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "0 1px 3px rgba(0,0,0,0.08)", label: "Subtle" },
+  { value: "0 4px 6px rgba(0,0,0,0.1)", label: "Light" },
+  { value: "0 16px 40px rgba(35,31,32,0.06)", label: "Medium (default)" },
+  { value: "0 24px 64px rgba(35,31,32,0.08)", label: "Strong" },
+];
+
 export const LAYOUT_OPTIONS: LayoutType[] = ["table", "cards", "list", "tabbed", "stacked", "accordion", "list_detail"];
 export const RENDER_TYPE_OPTIONS: RenderType[] = [
   "text",
