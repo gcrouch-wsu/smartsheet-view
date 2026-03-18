@@ -94,6 +94,26 @@ describe("transforms", () => {
     expect(buildResolvedFieldValue(field, "Biology").sortValue).toBeUndefined();
   });
 
+  it("splits comma-separated string into array", () => {
+    const transformed = applyTransforms("Lisa Lujan, Deb Marsh", [{ op: "split", delimiter: "," }], {
+      row: createRow(),
+      sourceCell: null,
+    });
+    expect(transformed).toEqual(["Lisa Lujan", "Deb Marsh"]);
+  });
+
+  it("splits contact list by comma so stacked display works", () => {
+    const contacts = [
+      { name: "Lisa Lujan", email: "lisa@wsu.edu" },
+      { name: "Deb Marsh", email: "deb@wsu.edu" },
+    ];
+    const transformed = applyTransforms(contacts, [{ op: "split", delimiter: "," }], {
+      row: createRow(),
+      sourceCell: null,
+    });
+    expect(transformed).toEqual(["Lisa Lujan", "Deb Marsh"]);
+  });
+
   it("marks empty fields for renderer suppression when emptyBehavior is hide", () => {
     const field: ViewFieldConfig = {
       key: "sharedEmail",

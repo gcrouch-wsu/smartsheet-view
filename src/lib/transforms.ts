@@ -138,11 +138,26 @@ function normalizeToStringList(value: unknown): string[] {
 }
 
 function splitTokens(value: unknown, delimiters?: string[]) {
-  const raw = normalizeToStringList(value);
+  // When value is ContactValue[], normalizeToStringList yields individual tokens (name, email, ...)
+  // with no delimiters between contacts, so split has no effect. Convert to a single string first
+  // (e.g. "Lisa Lujan, Deb Marsh") so the delimiter can actually split it.
+  // Use isContactValueArray (not toContactList) to avoid recursion — toContactList calls splitTokens.
+  let toSplit: string[];
+  if (isContactValueArray(value)) {
+    toSplit = [
+      value
+        .map((c) => c.name || c.email || "")
+        .filter(Boolean)
+        .join(", "),
+    ];
+  } else {
+    toSplit = normalizeToStringList(value);
+  }
+
   const splitDelimiters = delimiters?.length ? delimiters : [",", ";", "\n"];
 
   return uniqueStrings(
-    raw.flatMap((entry) => {
+    toSplit.flatMap((entry) => {
       const parts = splitDelimiters.reduce<string[]>((segments, delimiter) => {
         return segments.flatMap((segment) => segment.split(delimiter));
       }, [entry]);
