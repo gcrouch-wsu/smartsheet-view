@@ -28,7 +28,7 @@ function createEmptyField(): ViewFieldConfig {
     key: "",
     label: "",
     source: { columnTitle: "" },
-    transforms: [{ op: "trim" }],
+    transforms: [],
     render: { type: "text" },
   };
 }
@@ -75,7 +75,7 @@ function columnToField(col: SmartsheetColumn, displayName?: string): ViewFieldCo
     key: columnToKey(col),
     label: displayName ?? col.title,
     source: { columnTitle: col.title, columnId: col.id, columnType: col.type },
-    transforms: suggestion.transforms ?? [{ op: "trim" }],
+    transforms: suggestion.transforms ?? [],
     render: { type: suggestion.render },
   };
 }
@@ -1084,6 +1084,17 @@ export function ViewBuilder({
                   className="rounded border-[color:var(--wsu-border)]"
                 />
                 <span>Hide Refreshed</span>
+              </label>
+              <label className="mt-2 flex w-full flex-col gap-1 text-sm">
+                <span className="font-medium text-[color:var(--wsu-ink)]">Custom header text</span>
+                <textarea
+                  rows={3}
+                  value={view.presentation?.headerCustomText ?? ""}
+                  onChange={(e) => update("presentation", { ...view.presentation, headerCustomText: e.target.value || undefined })}
+                  placeholder="Replace Active view / Rows / Refreshed with custom text"
+                  className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 text-sm"
+                />
+                <span className="text-xs text-[color:var(--wsu-muted)]">When set, replaces the default info box content. Supports multiple lines.</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input

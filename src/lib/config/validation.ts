@@ -316,6 +316,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const hideHeaderActiveView = asBoolean(input.hideHeaderActiveView, false);
   const hideHeaderRows = asBoolean(input.hideHeaderRows, false);
   const hideHeaderRefreshed = asBoolean(input.hideHeaderRefreshed, false);
+  const headerCustomText = asOptionalString(input.headerCustomText);
   const hideViewTitleSection = asBoolean(input.hideViewTitleSection, false);
   const hideViewTabs = asBoolean(input.hideViewTabs, false);
   const hideViewTabCount = asBoolean(input.hideViewTabCount, false);
@@ -366,6 +367,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       hideHeaderActiveView ||
       hideHeaderRows ||
       hideHeaderRefreshed ||
+      headerCustomText ||
       hideViewTitleSection ||
       hideViewTabs ||
       hideViewTabCount ||
@@ -393,6 +395,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             hideHeaderActiveView,
             hideHeaderRows,
             hideHeaderRefreshed,
+            headerCustomText,
             hideViewTitleSection,
             hideViewTabs,
             hideViewTabCount,

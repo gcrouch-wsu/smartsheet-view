@@ -133,6 +133,8 @@ export interface ViewPresentationConfig {
   hideHeaderActiveView?: boolean;
   hideHeaderRows?: boolean;
   hideHeaderRefreshed?: boolean;
+  /** Custom text for the header info box. When set, replaces Active view / Rows / Refreshed. Supports multiple lines. */
+  headerCustomText?: string;
   hideViewTitleSection?: boolean;
   /** Hide the view tabs (e.g. "Graduate Program Contact List 124"). */
   hideViewTabs?: boolean;
