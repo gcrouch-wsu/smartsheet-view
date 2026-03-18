@@ -472,10 +472,18 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
       break;
     case "hidden":
       break;
-    default:
-      textValue = asText(value);
-      listValue = textValue ? [textValue] : [];
+    default: {
+      // "text" and others: when value is array (e.g. from split transform) and listDisplay is set, support stacked/inline list
+      const isArray = Array.isArray(value) && value.length > 0;
+      if (isArray && field.render.listDisplay) {
+        listValue = buildTextList(value);
+        textValue = listValue.join(field.render.listDelimiter ?? ", ");
+      } else {
+        textValue = asText(value);
+        listValue = textValue ? [textValue] : [];
+      }
       break;
+    }
   }
 
   const isEmpty = !textValue && links.length === 0 && listValue.length === 0;

@@ -16,7 +16,7 @@ export function DataTable({ view }: { view: ResolvedView }) {
               {view.fields.map((field) => (
                 <th
                   key={field.key}
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
+                  className="font-view-heading px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
                 >
                   {field.label}
                 </th>

@@ -1333,7 +1333,8 @@ export function ViewBuilder({
                         ))}
                       </select>
                     </label>
-                    {["list", "mailto_list", "phone_list"].includes(field.render.type) && (
+                    {(["list", "mailto_list", "phone_list"].includes(field.render.type) ||
+                      (field.render.type === "text" && field.transforms?.some((t) => t.op === "split"))) && (
                       <>
                         <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                           <span>List display</span>
@@ -1362,10 +1363,25 @@ export function ViewBuilder({
                     )}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Transforms</span>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {field.transforms?.map((t, ti) => (
                           <span key={ti} className="group relative flex items-center gap-1 rounded-full bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[10px] font-medium text-[color:var(--wsu-muted)]">
                             {t.op}
+                            {t.op === "split" && (
+                              <input
+                                type="text"
+                                value={t.delimiter ?? ","}
+                                onChange={(e) => {
+                                  const next = [...(field.transforms ?? [])];
+                                  next[ti] = { ...t, delimiter: e.target.value || undefined };
+                                  updateField(index, { ...field, transforms: next });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-10 min-w-0 rounded border-0 bg-white/60 px-1 py-0 text-[10px] focus:ring-1"
+                                placeholder=","
+                                title="Delimiter (e.g. comma)"
+                              />
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -1383,7 +1399,9 @@ export function ViewBuilder({
                           value=""
                           onChange={(e) => {
                             if (!e.target.value) return;
-                            const next = [...(field.transforms ?? []), { op: e.target.value }];
+                            const op = e.target.value;
+                            const newTransform = op === "split" ? { op: "split", delimiter: "," } : { op };
+                            const next = [...(field.transforms ?? []), newTransform];
                             updateField(index, { ...field, transforms: next });
                             e.target.value = "";
                           }}

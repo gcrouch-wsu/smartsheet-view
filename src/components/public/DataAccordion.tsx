@@ -1,14 +1,14 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { describeResolvedField, getCardLayoutRows, getFirstFieldFromCells, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import { describeResolvedField, getCardLayoutColumnCount, getCardLayoutRows, getFirstFieldFromCells, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -46,7 +46,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
             >
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
-                  <p className="text-lg font-semibold text-[color:var(--wsu-ink)]">
+                  <p className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">
                     {firstField ? describeResolvedField(firstField) : getRowHeadingText(view, row)}
                   </p>
                   {summaryField && (
@@ -58,20 +58,26 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                 </span>
               </summary>
               <div className={`border-t ${innerBorderClass} px-5 py-5`}>
-                {customRows.map((cells, rowIndex) => (
-                  <div key={rowIndex} className={rowDividerClass(rowIndex)}>
-                    <div className="flex flex-wrap gap-4">
-                      {cells.map((cell, i) => (
-                        <CardLayoutCellRenderer
-                          key={i}
-                          rowId={row.id}
-                          cell={cell}
-                          flexClass={cells.length > 1 ? "min-w-0 flex-1" : "w-full"}
-                        />
-                      ))}
+                {customRows.map((cells, rowIndex) => {
+                  const colCount = getCardLayoutColumnCount(view);
+                  const gridClass = colCount > 1 ? `grid gap-4` : "space-y-4";
+                  const gridStyle = colCount > 1 ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined;
+                  const paddedCells = colCount > 1 ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
+                  return (
+                    <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                      <div className={gridClass} style={gridStyle}>
+                        {paddedCells.map((cell, i) => (
+                          <CardLayoutCellRenderer
+                            key={i}
+                            rowId={row.id}
+                            cell={cell}
+                            flexClass={colCount > 1 ? "min-w-0" : "w-full"}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </details>
           );
@@ -90,7 +96,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>
-                <p className="text-lg font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
+                <p className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
                 {summary && <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summary) || summary.label}</p>}
               </div>
               <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
@@ -102,7 +108,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div className="space-y-1">
                     {!heading.hideLabel && (
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
                     )}
                     <FieldValue field={heading} stacked />
                   </div>
@@ -110,7 +116,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                 {summary && (
                   <div className="space-y-1">
                     {!summary.hideLabel && (
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{summary.label}</p>
+                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{summary.label}</p>
                     )}
                     <FieldValue field={summary} stacked />
                   </div>

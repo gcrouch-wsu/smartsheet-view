@@ -91,12 +91,12 @@ export default async function PublicViewPage({
                 )}
                 <div>
                   {!activeView.presentation?.hideHeaderSourceLabel && (
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                    <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
                       {page.source.label}
                     </p>
                   )}
                   {!activeView.presentation?.hideHeaderPageTitle && (
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
+                    <h1 className="font-view-heading mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
                       {page.title}
                     </h1>
                   )}
@@ -114,7 +114,7 @@ export default async function PublicViewPage({
                 <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
                   {!activeView.presentation?.hideHeaderActiveView && (
                     <p>
-                      <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
                     </p>
                   )}
                   {!activeView.presentation?.hideHeaderRows && (
@@ -124,7 +124,7 @@ export default async function PublicViewPage({
                   )}
                   {!activeView.presentation?.hideHeaderRefreshed && (
                     <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
-                      <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
                     </p>
                   )}
                 </div>
@@ -152,7 +152,7 @@ export default async function PublicViewPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {!activeView.presentation?.hideViewTitleSection && (
               <div>
-                <h2 className="text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+                <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
                 {activeView.description && (
                   <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
                 )}

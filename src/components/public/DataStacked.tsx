@@ -1,14 +1,14 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -44,20 +44,26 @@ export function DataStacked({ view }: { view: ResolvedView }) {
               id={`row-${row.id}`}
               className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
-              {customRows.map((cells, rowIndex) => (
-                <div key={rowIndex} className={rowDividerClass(rowIndex)}>
-                  <div className="flex flex-wrap gap-4">
-                    {cells.map((cell, i) => (
-                      <CardLayoutCellRenderer
-                        key={i}
-                        rowId={row.id}
-                        cell={cell}
-                        flexClass={cells.length > 1 ? "min-w-0 flex-1" : "w-full"}
-                      />
-                    ))}
+              {customRows.map((cells, rowIndex) => {
+                const colCount = getCardLayoutColumnCount(view);
+                const gridClass = colCount > 1 ? `grid gap-4` : "space-y-4";
+                const gridStyle = colCount > 1 ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined;
+                const paddedCells = colCount > 1 ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
+                return (
+                  <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                    <div className={gridClass} style={gridStyle}>
+                      {paddedCells.map((cell, i) => (
+                        <CardLayoutCellRenderer
+                          key={i}
+                          rowId={row.id}
+                          cell={cell}
+                          flexClass={colCount > 1 ? "min-w-0" : "w-full"}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </article>
           );
         }
@@ -77,9 +83,9 @@ export function DataStacked({ view }: { view: ResolvedView }) {
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div>
                     {!heading.hideLabel && (
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
                     )}
-                    <div className="mt-2 text-lg font-semibold text-[color:var(--wsu-ink)]">
+                    <div className="font-view-heading mt-2 text-lg font-semibold text-[color:var(--wsu-ink)]">
                       <FieldValue field={heading} />
                     </div>
                   </div>

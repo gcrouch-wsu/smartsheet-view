@@ -59,5 +59,10 @@ export function ViewStyleWrapper({
     cssVars.backgroundColor = tokens.backgroundColor;
   }
 
+  // Apply body font so theme fontFamily is used
+  if (tokens.fontFamily) {
+    cssVars.fontFamily = tokens.fontFamily;
+  }
+
   return <div style={cssVars as React.CSSProperties}>{children}</div>;
 }

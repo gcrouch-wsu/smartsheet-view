@@ -101,6 +101,13 @@ export function getFirstFieldFromCells(cells: CardLayoutCell[]): ResolvedFieldVa
   return cell?.type === "field" ? cell.field : null;
 }
 
+/** Max number of columns across all card layout rows (for grid alignment). */
+export function getCardLayoutColumnCount(view: ResolvedView): number {
+  const layout = view.presentation?.cardLayout;
+  if (!layout || layout.length === 0) return 0;
+  return Math.max(...layout.map((row) => row.fieldKeys.length), 0);
+}
+
 /** Whether the view uses custom card layout. */
 export function hasCustomCardLayout(view: ResolvedView): boolean {
   const layout = view.presentation?.cardLayout;

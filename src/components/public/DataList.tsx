@@ -1,14 +1,14 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
-import { getCardLayoutRows, hasCustomCardLayout } from "@/components/public/layout-utils";
+import { getCardLayoutColumnCount, getCardLayoutRows, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -43,15 +43,19 @@ export function DataList({ view }: { view: ResolvedView }) {
                             ? "border-t border-[color:var(--wsu-border)]/40 pt-4"
                             : "border-t border-[color:var(--wsu-border)] pt-4"
                         : "";
+                    const colCount = getCardLayoutColumnCount(view);
+                    const gridClass = colCount > 1 ? `grid gap-4` : "space-y-4";
+                    const gridStyle = colCount > 1 ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined;
+                    const paddedCells = colCount > 1 ? [...fields.slice(0, colCount), ...Array(Math.max(0, colCount - fields.length)).fill({ type: "placeholder" as const })] : fields;
                     return (
                     <div key={rowIndex} className={rowDividerClass}>
-                      <div className="flex flex-wrap gap-4">
-                        {fields.map((cell, i) => (
+                      <div className={gridClass} style={gridStyle}>
+                        {paddedCells.map((cell, i) => (
                           <CardLayoutCellRenderer
                             key={i}
                             rowId={row.id}
                             cell={cell}
-                            flexClass={fields.length > 1 ? "min-w-0 flex-1" : "w-full"}
+                            flexClass={colCount > 1 ? "min-w-0" : "w-full"}
                           />
                         ))}
                       </div>

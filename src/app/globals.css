@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   --wsu-crimson: #a60f2d;
@@ -50,4 +50,9 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Theme font overrides (set by ViewStyleWrapper) */
+.font-view-heading {
+  font-family: var(--view-heading-font, inherit);
 }

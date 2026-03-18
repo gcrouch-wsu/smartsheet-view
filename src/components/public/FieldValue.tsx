@@ -137,6 +137,32 @@ export function FieldValue({
     );
   }
 
+  // text type with split transform: listValue has multiple items, use list display
+  if (field.renderType === "text" && field.listValue.length > 1 && field.listDisplay) {
+    const listDelimiter = field.listDelimiter ?? ", ";
+    if (field.listDisplay === "inline") {
+      return (
+        <span className="leading-6 text-[color:var(--wsu-ink)]">
+          {field.listValue.map((entry, i) => (
+            <span key={entry}>
+              {i > 0 && <span className="text-[color:var(--wsu-muted)]">{listDelimiter}</span>}
+              {entry}
+            </span>
+          ))}
+        </span>
+      );
+    }
+    return (
+      <ul className="space-y-1">
+        {field.listValue.map((entry) => (
+          <li key={entry} className="leading-6 text-[color:var(--wsu-ink)]">
+            {entry}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return field.textValue ? (
     <span className="leading-6 text-[color:var(--wsu-ink)]">{field.textValue}</span>
   ) : (

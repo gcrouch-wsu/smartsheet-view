@@ -6,7 +6,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -31,7 +31,7 @@ export function CardLayoutCellRenderer({
   if (cell.type === "text") {
     return (
       <div key={`text-${cell.label}`} className={`${baseClass} space-y-1`}>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{cell.label}</p>
+        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{cell.label}</p>
       </div>
     );
   }
