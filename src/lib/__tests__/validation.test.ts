@@ -65,4 +65,42 @@ describe("validateViewConfig", () => {
     expect(result.success).toBe(false);
     expect(result.errors[0]).toContain("presentation.headingFieldKey");
   });
+
+  it("preserves themePresetId and editing config in validated output", () => {
+    const result = validateViewConfig(
+      {
+        id: "directory-editing",
+        slug: "directory",
+        sourceId: "grad-programs",
+        label: "Directory Editing",
+        layout: "table",
+        public: false,
+        themePresetId: "wsu_sage",
+        editing: {
+          enabled: true,
+          contactColumnIds: [101],
+          editableColumnIds: [102, 103],
+          showLoginLink: false,
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnId: 102, columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.themePresetId).toBe("wsu_sage");
+    expect(result.data?.editing).toEqual({
+      enabled: true,
+      contactColumnIds: [101],
+      editableColumnIds: [102, 103],
+      showLoginLink: false,
+    });
+  });
 });

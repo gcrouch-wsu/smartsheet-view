@@ -31,27 +31,51 @@ function getPool(): Pool {
   return globalForDb.__smartsheetsViewConfigPool;
 }
 
-async function query<T = unknown>(text: string, params?: readonly unknown[]) {
+export async function queryConfigDb<T = unknown>(text: string, params?: readonly unknown[]) {
   const result = await getPool().query(text, params as unknown[]);
   return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 };
 }
 
 let ensureTablesPromise: Promise<void> | null = null;
 
-async function ensureTables() {
+export async function ensureConfigTables() {
   if (!ensureTablesPromise) {
     ensureTablesPromise = (async () => {
-      await query(`
+      await queryConfigDb(`
         CREATE TABLE IF NOT EXISTS config_sources (
           id TEXT PRIMARY KEY,
           data JSONB NOT NULL
         )
       `);
-      await query(`
+      await queryConfigDb(`
         CREATE TABLE IF NOT EXISTS config_views (
           id TEXT PRIMARY KEY,
           data JSONB NOT NULL
         )
+      `);
+      await queryConfigDb(`
+        CREATE TABLE IF NOT EXISTS contributor_users (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          password_salt TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await queryConfigDb(`
+        CREATE INDEX IF NOT EXISTS idx_contributor_users_email
+        ON contributor_users(email)
+      `);
+      await queryConfigDb(`
+        CREATE TABLE IF NOT EXISTS contributor_login_attempts (
+          ip TEXT NOT NULL,
+          attempted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await queryConfigDb(`
+        CREATE INDEX IF NOT EXISTS idx_contributor_login_attempts_ip_at
+        ON contributor_login_attempts(ip, attempted_at)
       `);
     })().catch((err) => {
       ensureTablesPromise = null;
@@ -78,22 +102,22 @@ function parseViewConfig(value: unknown, id: string, knownSourceIds: string[]): 
 }
 
 export async function listSourceConfigs(): Promise<SourceConfig[]> {
-  await ensureTables();
-  const { rows } = await query<{ id: string; data: unknown }>("SELECT id, data FROM config_sources ORDER BY id");
+  await ensureConfigTables();
+  const { rows } = await queryConfigDb<{ id: string; data: unknown }>("SELECT id, data FROM config_sources ORDER BY id");
   return rows.map((row) => parseSourceConfig(row.data, row.id));
 }
 
 export async function listViewConfigs(): Promise<ViewConfig[]> {
   const sources = await listSourceConfigs();
   const knownSourceIds = sources.map((s) => s.id);
-  await ensureTables();
-  const { rows } = await query<{ id: string; data: unknown }>("SELECT id, data FROM config_views ORDER BY id");
+  await ensureConfigTables();
+  const { rows } = await queryConfigDb<{ id: string; data: unknown }>("SELECT id, data FROM config_views ORDER BY id");
   return rows.map((row) => parseViewConfig(row.data, row.id, knownSourceIds));
 }
 
 export async function getSourceConfigById(sourceId: string): Promise<SourceConfig | null> {
-  await ensureTables();
-  const { rows } = await query<{ id: string; data: unknown }>("SELECT id, data FROM config_sources WHERE id = $1", [
+  await ensureConfigTables();
+  const { rows } = await queryConfigDb<{ id: string; data: unknown }>("SELECT id, data FROM config_sources WHERE id = $1", [
     sourceId,
   ]);
   const row = rows[0];
@@ -103,8 +127,8 @@ export async function getSourceConfigById(sourceId: string): Promise<SourceConfi
 export async function getViewConfigById(viewId: string): Promise<ViewConfig | null> {
   const sources = await listSourceConfigs();
   const knownSourceIds = sources.map((s) => s.id);
-  await ensureTables();
-  const { rows } = await query<{ id: string; data: unknown }>("SELECT id, data FROM config_views WHERE id = $1", [
+  await ensureConfigTables();
+  const { rows } = await queryConfigDb<{ id: string; data: unknown }>("SELECT id, data FROM config_views WHERE id = $1", [
     viewId,
   ]);
   const row = rows[0];
@@ -152,8 +176,8 @@ export async function saveSourceConfig(config: SourceConfig): Promise<void> {
   if (!result.success || !result.data) {
     throw new Error(result.errors.join(" "));
   }
-  await ensureTables();
-  await query(
+  await ensureConfigTables();
+  await queryConfigDb(
     `INSERT INTO config_sources (id, data) VALUES ($1, $2)
      ON CONFLICT (id) DO UPDATE SET data = $2`,
     [result.data.id, JSON.stringify(result.data)]
@@ -166,8 +190,8 @@ export async function saveViewConfig(config: ViewConfig): Promise<void> {
   if (!result.success || !result.data) {
     throw new Error(result.errors.join(" "));
   }
-  await ensureTables();
-  await query(
+  await ensureConfigTables();
+  await queryConfigDb(
     `INSERT INTO config_views (id, data) VALUES ($1, $2)
      ON CONFLICT (id) DO UPDATE SET data = $2`,
     [result.data.id, JSON.stringify(result.data)]
@@ -175,13 +199,13 @@ export async function saveViewConfig(config: ViewConfig): Promise<void> {
 }
 
 export async function deleteSourceConfig(sourceId: string): Promise<void> {
-  await ensureTables();
-  await query("DELETE FROM config_sources WHERE id = $1", [sourceId]);
+  await ensureConfigTables();
+  await queryConfigDb("DELETE FROM config_sources WHERE id = $1", [sourceId]);
 }
 
 export async function deleteViewConfig(viewId: string): Promise<void> {
-  await ensureTables();
-  await query("DELETE FROM config_views WHERE id = $1", [viewId]);
+  await ensureConfigTables();
+  await queryConfigDb("DELETE FROM config_views WHERE id = $1", [viewId]);
 }
 
 export async function updateViewPublication(viewId: string, isPublic: boolean): Promise<ViewConfig> {

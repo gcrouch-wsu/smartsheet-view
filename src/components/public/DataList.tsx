@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -15,7 +16,15 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   );
 }
 
-export function DataList({ view }: { view: ResolvedView }) {
+export function DataList({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -29,10 +38,17 @@ export function DataList({ view }: { view: ResolvedView }) {
       <ul className={listDividerClass}>
         {view.rows.map((row) => {
           const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+          const isEditable = editableRowIds?.has(row.id) ?? false;
 
           if (customRows.length > 0) {
             return (
-              <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24 px-5 py-5">
+              <li key={row.id} id={`row-${row.id}`} className={`scroll-mt-24 px-5 py-5 ${getContributorRowAccentClass(isEditable)}`}>
+                {isEditable && (
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <ContributorEditableBadge />
+                    <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+                  </div>
+                )}
                 <div className="space-y-4">
                   {customRows.map((cells, rowIndex) => {
                     const rowDividerClass =
@@ -77,7 +93,13 @@ export function DataList({ view }: { view: ResolvedView }) {
           }
 
           return (
-            <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24 px-5 py-5">
+            <li key={row.id} id={`row-${row.id}`} className={`scroll-mt-24 px-5 py-5 ${getContributorRowAccentClass(isEditable)}`}>
+              {isEditable && (
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <ContributorEditableBadge />
+                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+                </div>
+              )}
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {row.fields
                   .filter((field) => !(field.hideWhenEmpty && field.isEmpty))

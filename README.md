@@ -35,6 +35,12 @@ Edit `.env` with your Smartsheet and Admin credentials:
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`: Initial admin username.
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`: Initial admin password.
 - `DATABASE_URL` (Optional): Connect to Postgres for durable admin users and config (sources/views) on Vercel. When set, sources and views are stored in Postgres instead of config files, enabling create/edit/delete on serverless deployments.
+- `CONTRIBUTOR_SESSION_SECRET` (Required for contributor editing): Secret used to sign contributor session cookies.
+
+Postgres requirement:
+- The app expects **PostgreSQL 13 or newer**.
+- The schema uses `gen_random_uuid()` without installing `pgcrypto` at app startup.
+- This is compatible with Vercel Postgres / Neon style hosted Postgres, but older Postgres versions are not supported.
 
 ### 3. Run Development Server
 ```bash
@@ -61,6 +67,8 @@ After saving, use **Test connection** to verify the Smartsheet API can reach the
 3. Deploy. The build uses `npm ci` and `npm run build` as defined in `vercel.json`.
 
 **Note:** For Vercel deployments, set `DATABASE_URL` to persist admin users and enable full config management (create, edit, delete sources and views). Without it, the filesystem is read-only and config changes will not persist.
+
+**Contributor editing note:** Contributor row editing requires both `DATABASE_URL` and `CONTRIBUTOR_SESSION_SECRET`, and the database must be **PostgreSQL 13+** because the schema relies on `gen_random_uuid()`.
 
 ## Project Structure
 

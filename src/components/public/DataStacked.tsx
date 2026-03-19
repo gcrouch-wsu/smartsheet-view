@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -15,7 +16,15 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   );
 }
 
-export function DataStacked({ view }: { view: ResolvedView }) {
+export function DataStacked({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -36,14 +45,21 @@ export function DataStacked({ view }: { view: ResolvedView }) {
     <div className="space-y-4">
       {view.rows.map((row) => {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+        const isEditable = editableRowIds?.has(row.id) ?? false;
 
         if (customRows.length > 0) {
           return (
             <article
               key={row.id}
               id={`row-${row.id}`}
-              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
+              {isEditable && (
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <ContributorEditableBadge />
+                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+                </div>
+              )}
               {customRows.map((cells, rowIndex) => {
                 const colCount = getCardLayoutColumnCount(view);
                 const useAlignedGrid = colCount > 1;
@@ -85,7 +101,7 @@ export function DataStacked({ view }: { view: ResolvedView }) {
           <article
             key={row.id}
             id={`row-${row.id}`}
-            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
           >
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[color:var(--wsu-border)] pb-4">
               <div>
@@ -106,8 +122,12 @@ export function DataStacked({ view }: { view: ResolvedView }) {
                 )}
               </div>
               {!view.presentation?.hideRowBadge && (
-                <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                  Row {row.id}
+                <div className="flex items-center gap-2">
+                  {isEditable && <ContributorEditableBadge />}
+                  <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                    Row {row.id}
+                  </div>
+                  {isEditable && <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />}
                 </div>
               )}
             </div>

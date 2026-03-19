@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { describeResolvedField, getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -18,7 +19,15 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   );
 }
 
-export function DataListDetail({ view }: { view: ResolvedView }) {
+export function DataListDetail({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
 
   if (view.rows.length === 0) {
@@ -29,6 +38,7 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
   if (!activeRow) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
+  const activeRowEditable = editableRowIds?.has(activeRow.id) ?? false;
 
   const heading = getRowHeadingField(view, activeRow);
   const summary = getRowSummaryField(view, activeRow, heading?.key);
@@ -56,6 +66,7 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
             const rowHeading = getRowHeadingField(view, row);
             const rowSummary = getRowSummaryField(view, row, rowHeading?.key);
             const active = row.id === activeRow.id;
+            const isEditable = editableRowIds?.has(row.id) ?? false;
 
             return (
               <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24">
@@ -68,7 +79,10 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
                       : "bg-transparent text-[color:var(--wsu-ink)] hover:bg-[color:var(--wsu-stone)]/50"
                   }`}
                 >
-                  <p className="font-semibold">{rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold">{rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`}</p>
+                    {isEditable && <ContributorEditableBadge className={active ? "bg-white/15 text-white" : ""} />}
+                  </div>
                   {rowSummary && (
                     <p className={`mt-1 text-sm ${active ? "text-white/85" : "text-[color:var(--wsu-muted)]"}`}>
                       {describeResolvedField(rowSummary) || rowSummary.label}
@@ -83,9 +97,19 @@ export function DataListDetail({ view }: { view: ResolvedView }) {
 
       <article className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
         <div className="border-b border-[color:var(--wsu-border)] pb-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
-          <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
-          {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
+              <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
+              {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
+            </div>
+            {activeRowEditable && (
+              <div className="flex items-center gap-2">
+                <ContributorEditableBadge />
+                <ContributorEditButton rowId={activeRow.id} onEditRow={onEditRow} />
+              </div>
+            )}
+          </div>
         </div>
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">

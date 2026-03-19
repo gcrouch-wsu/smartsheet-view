@@ -173,6 +173,13 @@ export interface ThemeConfig {
   tokens: Partial<ViewStyleConfig>;
 }
 
+export interface ViewEditingConfig {
+  enabled: boolean;
+  contactColumnIds: number[];
+  editableColumnIds: number[];
+  showLoginLink?: boolean;
+}
+
 export interface ViewConfig {
   id: string;
   slug: string;
@@ -190,6 +197,7 @@ export interface ViewConfig {
   fixedLayout?: boolean;
   /** Theme preset id (e.g. wsu_crimson). When unset, WSU Crimson is used. */
   themePresetId?: string;
+  editing?: ViewEditingConfig;
   fields: ViewFieldConfig[];
 }
 

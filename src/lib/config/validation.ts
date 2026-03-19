@@ -7,6 +7,7 @@ import type {
   SourceConfig,
   TransformConfig,
   ViewConfig,
+  ViewEditingConfig,
   ViewFieldConfig,
   ViewFilterConfig,
   ViewPresentationConfig,
@@ -449,6 +450,67 @@ function parseStyleConfig(input: unknown): ValidationResult<ViewStyleConfig | un
   };
 }
 
+function parseNumberArray(input: unknown, path: string) {
+  const errors: string[] = [];
+  if (input === undefined || input === null || input === "") {
+    return { errors, values: [] as number[] };
+  }
+  if (!Array.isArray(input)) {
+    return { errors: [`${path} must be an array.`], values: [] as number[] };
+  }
+
+  const values: number[] = [];
+  for (const [index, entry] of input.entries()) {
+    const parsed = asOptionalNumber(entry);
+    if (parsed === undefined) {
+      errors.push(`${path}[${index}] must be a number.`);
+      continue;
+    }
+    values.push(parsed);
+  }
+
+  return {
+    errors,
+    values: [...new Set(values)],
+  };
+}
+
+function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig | undefined> {
+  if (input === undefined || input === null || input === "") {
+    return { success: true, errors: [], data: undefined };
+  }
+
+  if (!isRecord(input)) {
+    return { success: false, errors: ["editing must be an object."] };
+  }
+
+  const enabled = asBoolean(input.enabled, false);
+  const contactColumnIds = parseNumberArray(input.contactColumnIds, "editing.contactColumnIds");
+  const editableColumnIds = parseNumberArray(input.editableColumnIds, "editing.editableColumnIds");
+  const errors = [...contactColumnIds.errors, ...editableColumnIds.errors];
+
+  if (enabled && contactColumnIds.values.length === 0) {
+    errors.push("editing.contactColumnIds must include at least one column when editing is enabled.");
+  }
+
+  if (enabled && editableColumnIds.values.length === 0) {
+    errors.push("editing.editableColumnIds must include at least one column when editing is enabled.");
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          enabled,
+          contactColumnIds: contactColumnIds.values,
+          editableColumnIds: editableColumnIds.values,
+          showLoginLink: asBoolean(input.showLoginLink, true),
+        },
+  };
+}
+
 export function validateSourceConfig(input: unknown): ValidationResult<SourceConfig> {
   const errors: string[] = [];
 
@@ -568,7 +630,8 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
   const fieldKeys = new Set(fields.map((field) => field.key));
   const presentationResult = parsePresentationConfig(input.presentation, fieldKeys);
   const styleResult = parseStyleConfig(input.style);
-  errors.push(...presentationResult.errors, ...styleResult.errors);
+  const editingResult = parseEditingConfig(input.editing);
+  errors.push(...presentationResult.errors, ...styleResult.errors, ...editingResult.errors);
 
   return {
     success: errors.length === 0,
@@ -589,6 +652,8 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
           presentation: presentationResult.data,
           style: styleResult.data,
           fixedLayout: asBoolean(input.fixedLayout),
+          themePresetId: asOptionalString(input.themePresetId),
+          editing: editingResult.data,
           fields,
         },
   };

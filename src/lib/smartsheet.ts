@@ -49,8 +49,27 @@ export interface SmartsheetSchemaSummary {
   rowCount: number;
 }
 
-interface FetchBehaviorOptions {
+interface EffectiveFetchOptions {
+  includeObjectValue?: boolean;
+  includeColumnOptions?: boolean;
+  level?: number;
+}
+
+export interface FetchBehaviorOptions {
   fresh?: boolean;
+  fetchOptionsOverride?: Partial<SourceConfig["fetchOptions"]>;
+}
+
+export class SmartsheetRequestError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(body || `Smartsheet request failed with HTTP ${status}`);
+    this.name = "SmartsheetRequestError";
+    this.status = status;
+    this.body = body;
+  }
 }
 
 function parseConnectionsEnv() {
@@ -128,12 +147,21 @@ function resolveConnection(connectionKey = "default", sourceApiBaseUrl?: string)
   };
 }
 
-function buildIncludeList(source: SourceConfig) {
+function resolveFetchOptions(source: SourceConfig, options?: FetchBehaviorOptions): EffectiveFetchOptions {
+  return {
+    includeObjectValue: options?.fetchOptionsOverride?.includeObjectValue ?? source.fetchOptions?.includeObjectValue,
+    includeColumnOptions:
+      options?.fetchOptionsOverride?.includeColumnOptions ?? source.fetchOptions?.includeColumnOptions,
+    level: options?.fetchOptionsOverride?.level ?? source.fetchOptions?.level,
+  };
+}
+
+function buildIncludeList(fetchOptions: EffectiveFetchOptions) {
   const includes = new Set<string>(["columnType"]);
-  if (source.fetchOptions?.includeColumnOptions !== false) {
+  if (fetchOptions.includeColumnOptions !== false) {
     includes.add("columnOptions");
   }
-  if (source.fetchOptions?.includeObjectValue !== false) {
+  if (fetchOptions.includeObjectValue !== false) {
     includes.add("objectValue");
   }
   return [...includes];
@@ -188,14 +216,16 @@ function normalizeRows(rows: SmartsheetApiRow[], columns: SmartsheetColumn[]): S
 async function fetchSmartsheetSource<T>(
   endpointPath: string,
   source: SourceConfig,
-  revalidateSeconds: number
+  revalidateSeconds: number,
+  options?: FetchBehaviorOptions,
 ) {
   const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
   const url = new URL(`${apiBaseUrl.replace(/\/$/, "")}/${endpointPath.replace(/^\//, "")}`);
-  url.searchParams.set("include", buildIncludeList(source).join(","));
+  const fetchOptions = resolveFetchOptions(source, options);
+  url.searchParams.set("include", buildIncludeList(fetchOptions).join(","));
 
-  if (source.fetchOptions?.level) {
-    url.searchParams.set("level", String(source.fetchOptions.level));
+  if (fetchOptions.level) {
+    url.searchParams.set("level", String(fetchOptions.level));
   }
 
   const response = await fetch(url, {
@@ -209,7 +239,7 @@ async function fetchSmartsheetSource<T>(
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(body || `Smartsheet request failed with HTTP ${response.status}`);
+    throw new SmartsheetRequestError(response.status, body);
   }
 
   return (await response.json()) as T;
@@ -227,16 +257,39 @@ function resolveRevalidateSeconds(source: SourceConfig, options?: FetchBehaviorO
   return options?.fresh ? 0 : source.cacheTtlSeconds ?? 120;
 }
 
-async function getSourceResponse(source: SourceConfig, revalidateSeconds: number) {
-  return fetchSmartsheetSource<SmartsheetApiResponse>(
+export async function getSmartsheetSchema(source: SourceConfig, options?: FetchBehaviorOptions): Promise<SmartsheetSchemaSummary> {
+  const response = await fetchSmartsheetSource<SmartsheetApiResponse>(
     `${source.sourceType === "report" ? "reports" : "sheets"}/${source.smartsheetId}`,
     source,
-    revalidateSeconds
+    resolveRevalidateSeconds(source, options),
+    options,
   );
+  const columns = normalizeColumns(response.columns ?? []);
+
+  return {
+    sourceType: source.sourceType,
+    id: response.id,
+    name: response.name,
+    columns,
+    rowCount: response.rows?.length ?? 0,
+  };
 }
 
-async function buildDataset(source: SourceConfig, revalidateSeconds: number): Promise<SmartsheetDataset> {
-  const response = await getSourceResponse(source, revalidateSeconds);
+export async function getSmartsheetDataset(source: SourceConfig, options?: FetchBehaviorOptions) {
+  return buildDataset(source, resolveRevalidateSeconds(source, options), options);
+}
+
+async function buildDataset(
+  source: SourceConfig,
+  revalidateSeconds: number,
+  options?: FetchBehaviorOptions,
+): Promise<SmartsheetDataset> {
+  const response = await fetchSmartsheetSource<SmartsheetApiResponse>(
+    `${source.sourceType === "report" ? "reports" : "sheets"}/${source.smartsheetId}`,
+    source,
+    revalidateSeconds,
+    options,
+  );
   const columns = normalizeColumns(response.columns ?? []);
   const rows = normalizeRows(response.rows ?? [], columns);
 
@@ -250,21 +303,34 @@ async function buildDataset(source: SourceConfig, revalidateSeconds: number): Pr
   };
 }
 
-export async function getSmartsheetSchema(source: SourceConfig, options?: FetchBehaviorOptions): Promise<SmartsheetSchemaSummary> {
-  const response = await getSourceResponse(source, resolveRevalidateSeconds(source, options));
-  const columns = normalizeColumns(response.columns ?? []);
+export async function updateSmartsheetRow(
+  source: SourceConfig,
+  sheetId: number,
+  rowId: number,
+  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>
+) {
+  const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/sheets/${sheetId}/rows`;
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify([
+      {
+        id: rowId,
+        cells,
+      },
+    ]),
+  });
 
-  return {
-    sourceType: source.sourceType,
-    id: response.id,
-    name: response.name,
-    columns,
-    rowCount: response.rows?.length ?? 0,
-  };
-}
-
-export async function getSmartsheetDataset(source: SourceConfig, options?: FetchBehaviorOptions) {
-  return buildDataset(source, resolveRevalidateSeconds(source, options));
+  if (!response.ok) {
+    const body = await response.text();
+    throw new SmartsheetRequestError(response.status, body);
+  }
 }
 
 export async function testSourceConnection(source: SourceConfig): Promise<{ ok: boolean; error?: string }> {

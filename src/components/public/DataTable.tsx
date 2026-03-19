@@ -1,8 +1,17 @@
+import { ContributorEditButton, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import type { ResolvedView } from "@/lib/config/types";
 
-export function DataTable({ view }: { view: ResolvedView }) {
+export function DataTable({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -21,18 +30,35 @@ export function DataTable({ view }: { view: ResolvedView }) {
                   {field.label}
                 </th>
               ))}
+              {onEditRow && (
+                <th className="font-view-heading px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {view.rows.map((row) => (
-              <tr key={row.id} id={`row-${row.id}`} className="border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0 scroll-mt-24">
-                {row.fields.map((field) => (
-                  <td key={`${row.id}-${field.key}`} className="px-4 py-4 text-sm">
-                    <FieldValue field={field} />
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {view.rows.map((row) => {
+              const isEditable = editableRowIds?.has(row.id) ?? false;
+              return (
+                <tr
+                  key={row.id}
+                  id={`row-${row.id}`}
+                  className={`border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0 scroll-mt-24 ${getContributorRowAccentClass(isEditable)}`}
+                >
+                  {row.fields.map((field) => (
+                    <td key={`${row.id}-${field.key}`} className="px-4 py-4 text-sm">
+                      <FieldValue field={field} />
+                    </td>
+                  ))}
+                  {onEditRow && (
+                    <td className="px-4 py-4 text-right">
+                      {isEditable && <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -15,7 +16,15 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   );
 }
 
-export function DataCards({ view }: { view: ResolvedView }) {
+export function DataCards({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -36,6 +45,7 @@ export function DataCards({ view }: { view: ResolvedView }) {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {view.rows.map((row) => {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+        const isEditable = editableRowIds?.has(row.id) ?? false;
 
         if (customRows.length > 0) {
           const colCount = getCardLayoutColumnCount(view);
@@ -48,8 +58,14 @@ export function DataCards({ view }: { view: ResolvedView }) {
             <article
               key={row.id}
               id={`row-${row.id}`}
-              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
+              {isEditable && (
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <ContributorEditableBadge />
+                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+                </div>
+              )}
               {customRows.map((cells, rowIndex) => {
                 const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
                 return (
@@ -85,8 +101,14 @@ export function DataCards({ view }: { view: ResolvedView }) {
           <article
             key={row.id}
             id={`row-${row.id}`}
-            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
           >
+            {isEditable && (
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <ContributorEditableBadge />
+                <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+              </div>
+            )}
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="border-b border-[color:var(--wsu-border)] pb-4">
                 {!heading.hideLabel ? (

@@ -107,6 +107,40 @@ describe("smartsheet normalization", () => {
     expect(dataset.rows[0]?.sheetId).toBe(9999);
   });
 
+  it("applies request-scoped fetch overrides without mutating the source config", async () => {
+    vi.stubEnv("SMARTSHEET_API_TOKEN", "token-123");
+
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(sheetResponseFixture));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const source: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 7763577444192132,
+      fetchOptions: {
+        includeObjectValue: false,
+        includeColumnOptions: true,
+      },
+    };
+
+    await getSmartsheetDataset(source, {
+      fetchOptionsOverride: {
+        includeObjectValue: true,
+        level: 3,
+      },
+    });
+
+    const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.searchParams.get("include")?.split(",").sort()).toEqual([
+      "columnOptions",
+      "columnType",
+      "objectValue",
+    ]);
+    expect(url.searchParams.get("level")).toBe("3");
+    expect(source.fetchOptions?.includeObjectValue).toBe(false);
+  });
+
   it("falls back to the first named connection when no default token is configured", async () => {
     vi.stubEnv(
       "SMARTSHEET_CONNECTIONS_JSON",

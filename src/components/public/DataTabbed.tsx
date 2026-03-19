@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { describeResolvedField, getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -22,7 +23,15 @@ function findSelectedRow(view: ResolvedView, rowId: number | null) {
   return view.rows.find((row) => row.id === rowId) ?? view.rows[0] ?? null;
 }
 
-export function DataTabbed({ view }: { view: ResolvedView }) {
+export function DataTabbed({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
 
   if (view.rows.length === 0) {
@@ -33,6 +42,7 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
   if (!activeRow) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
+  const activeRowEditable = editableRowIds?.has(activeRow.id) ?? false;
 
   const heading = getRowHeadingField(view, activeRow);
   const summary = getRowSummaryField(view, activeRow, heading?.key);
@@ -55,6 +65,7 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
       <div className="flex flex-wrap gap-2">
         {view.rows.map((row) => {
           const active = row.id === activeRow.id;
+          const isEditable = editableRowIds?.has(row.id) ?? false;
           const rowHeading = getRowHeadingField(view, row);
           const label = rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`;
 
@@ -67,7 +78,9 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
               className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                 active
                   ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-                  : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                  : isEditable
+                    ? "border-[color:var(--wsu-crimson)]/40 bg-white text-[color:var(--wsu-crimson)] hover:border-[color:var(--wsu-crimson)]"
+                    : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
               }`}
             >
               {label}
@@ -78,9 +91,19 @@ export function DataTabbed({ view }: { view: ResolvedView }) {
 
       <article className={`rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}>
         <div className="border-b border-[color:var(--wsu-border)] pb-4">
-          <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
-          <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
-          {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
+              <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
+              {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
+            </div>
+            {activeRowEditable && (
+              <div className="flex items-center gap-2">
+                <ContributorEditableBadge />
+                <ContributorEditButton rowId={activeRow.id} onEditRow={onEditRow} />
+              </div>
+            )}
+          </div>
         </div>
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">

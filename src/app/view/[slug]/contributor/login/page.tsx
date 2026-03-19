@@ -1,0 +1,112 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { ContributorLoginForm } from "@/components/public/ContributorLoginForm";
+import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
+import {
+  CONTRIBUTOR_SESSION_COOKIE_NAME,
+  getContributorConfigurationError,
+  readContributorSessionToken,
+} from "@/lib/contributor-auth";
+import {
+  loadPublicPageState,
+  resolveRequestedResolvedView,
+  resolveRequestedViewConfig,
+} from "@/lib/public-view";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ContributorLoginPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const requestedView = firstValue(resolvedSearchParams.view);
+  const configurationError = getContributorConfigurationError();
+
+  const page = await loadPublicPageState(slug);
+  if (!page) {
+    redirect("/");
+  }
+
+  const activeView = resolveRequestedResolvedView(page.resolvedViews, page.defaultViewId, requestedView);
+  const activeViewConfig = resolveRequestedViewConfig(page.viewConfigs, requestedView);
+  if (!activeView || !activeViewConfig) {
+    redirect(`/view/${slug}`);
+  }
+
+  const returnHref = `/view/${slug}?view=${activeView.id}`;
+
+  if (configurationError || !activeViewConfig.editing?.enabled) {
+    return (
+      <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-8 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+          <h1 className="text-3xl font-semibold text-[color:var(--wsu-ink)]">Contributor editing unavailable</h1>
+          <p className="mt-3 text-sm text-[color:var(--wsu-muted)]">
+            {configurationError ?? "Editing is not enabled for this view."}
+          </p>
+          <Link
+            href={returnHref}
+            className="mt-6 inline-flex rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)]"
+          >
+            Return to view
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const cookieStore = await cookies();
+  const session = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
+  if (session.ok && session.payload) {
+    redirect(returnHref);
+  }
+
+  return (
+    <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl">
+        <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
+            <section className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-8 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+              <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                {page.sourceConfig.label}
+              </p>
+              <h1 className="font-view-heading mt-3 text-4xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
+                Contributor access
+              </h1>
+              <p className="mt-4 text-sm leading-7 text-[color:var(--wsu-muted)]">
+                Sign in to update your assigned rows in <span className="font-medium text-[color:var(--wsu-ink)]">{activeView.label}</span>.
+              </p>
+              <div className="mt-8 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white p-5">
+                <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">Before you continue</p>
+                <ul className="mt-3 space-y-2 text-sm text-[color:var(--wsu-muted)]">
+                  <li>Use your `@wsu.edu` email address.</li>
+                  <li>Choose First-time access only the first time you set your contributor password.</li>
+                  <li>Your row access is checked against the live Smartsheet data each time you save.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-8 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+              <ContributorLoginForm slug={slug} viewId={activeView.id} returnHref={returnHref} />
+              <Link
+                href={returnHref}
+                className="mt-6 inline-flex text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]"
+              >
+                Back to view
+              </Link>
+            </section>
+          </div>
+        </ViewStyleWrapper>
+      </div>
+    </main>
+  );
+}

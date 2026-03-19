@@ -1,0 +1,107 @@
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import {
+  CONTRIBUTOR_SESSION_COOKIE_NAME,
+  getContributorConfigurationError,
+  readContributorSessionToken,
+} from "@/lib/contributor-auth";
+import {
+  buildContributorEditingClientConfig,
+  isContributorInRow,
+  isContributorStillInSheet,
+} from "@/lib/contributor-utils";
+import { loadPublicViewCollection } from "@/lib/public-view";
+import { SmartsheetRequestError, updateSmartsheetRow } from "@/lib/smartsheet";
+import { applyViewFilters } from "@/lib/filters";
+import { CONTRIBUTOR_DATASET_OPTIONS, loadContributorDataset } from "@/lib/contributor-view";
+
+export const runtime = "nodejs";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ slug: string; rowId: string }> },
+) {
+  const configurationError = getContributorConfigurationError();
+  if (configurationError) {
+    return NextResponse.json({ error: configurationError }, { status: 503 });
+  }
+
+  const cookieStore = await cookies();
+  const session = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
+  if (!session.ok || !session.payload) {
+    return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
+  }
+
+  const { slug, rowId: rowIdParam } = await params;
+  const rowId = Number(rowIdParam);
+  const body = (await request.json().catch(() => null)) as
+    | { viewId?: unknown; cells?: Array<{ columnId?: unknown; value?: unknown; objectValue?: unknown }> }
+    | null;
+
+  if (!Number.isFinite(rowId)) {
+    return NextResponse.json({ error: "Row not found." }, { status: 404 });
+  }
+
+  const viewId = typeof body?.viewId === "string" ? body.viewId : "";
+  if (!viewId) {
+    return NextResponse.json({ error: "viewId is required." }, { status: 400 });
+  }
+
+  const collection = await loadPublicViewCollection(slug);
+  if (!collection) {
+    return NextResponse.json({ error: "View not found." }, { status: 404 });
+  }
+
+  const view = collection.viewConfigs.find((entry) => entry.id === viewId);
+  if (!view || !view.editing?.enabled) {
+    return NextResponse.json({ error: "View not found." }, { status: 404 });
+  }
+
+  const dataset = await loadContributorDataset(collection.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
+  const email = session.payload.email;
+
+  if (!isContributorStillInSheet(dataset.rows, email, view.editing.contactColumnIds)) {
+    return NextResponse.json({ error: "Your access has been removed. Contact your coordinator." }, { status: 403 });
+  }
+
+  const filteredRows = applyViewFilters(dataset.rows, view.filters);
+  const row = filteredRows.find((entry) => entry.id === rowId);
+  if (!row) {
+    return NextResponse.json({ error: "Row not found." }, { status: 404 });
+  }
+
+  if (!isContributorInRow(row, email, view.editing.contactColumnIds)) {
+    return NextResponse.json({ error: "You cannot edit this row." }, { status: 403 });
+  }
+
+  const editingConfig = buildContributorEditingClientConfig(view, dataset.columns);
+  if (!editingConfig) {
+    return NextResponse.json({ error: "View not found." }, { status: 404 });
+  }
+
+  const allowedColumnIds = new Set(editingConfig.editableColumnIds);
+  const filteredCells = (Array.isArray(body?.cells) ? body.cells : [])
+    .map((cell) => ({
+      columnId: typeof cell?.columnId === "number" ? cell.columnId : Number(cell?.columnId),
+      value: cell?.value,
+      objectValue: cell?.objectValue,
+    }))
+    .filter((cell) => Number.isFinite(cell.columnId) && allowedColumnIds.has(cell.columnId));
+
+  if (filteredCells.length === 0) {
+    return NextResponse.json({ error: "No editable cells in request." }, { status: 400 });
+  }
+
+  try {
+    await updateSmartsheetRow(collection.sourceConfig, row.sheetId ?? collection.sourceConfig.smartsheetId, row.id, filteredCells);
+  } catch (error) {
+    if (error instanceof SmartsheetRequestError && error.status === 429) {
+      return NextResponse.json({ error: "Smartsheet rate limit. Try again shortly." }, { status: 429 });
+    }
+    return NextResponse.json({ error: "Update failed. Try again." }, { status: 502 });
+  }
+
+  revalidatePath(`/view/${slug}`);
+  return NextResponse.json({ ok: true });
+}

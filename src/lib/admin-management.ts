@@ -4,6 +4,7 @@ import {
   saveViewConfig,
   updateViewPublication,
 } from "@/lib/config/admin-store";
+import { useConfigDatabase } from "@/lib/config/config-db";
 import { getSourceConfigById, getViewConfigById, listViewConfigs } from "@/lib/config/store";
 
 function ensureUniqueSlug(existingSlugs: Set<string>, baseSlug: string): string {
@@ -16,6 +17,7 @@ function ensureUniqueSlug(existingSlugs: Set<string>, baseSlug: string): string 
   return slug;
 }
 import type { ViewConfig } from "@/lib/config/types";
+import { getContributorEditingValidationErrors } from "@/lib/contributor-utils";
 import { collectSchemaDriftWarnings } from "@/lib/public-view";
 import { getSmartsheetSchema } from "@/lib/smartsheet";
 
@@ -51,7 +53,34 @@ export async function getPublicationWarnings(view: ViewConfig) {
   return collectSchemaDriftWarnings(view, schema.columns);
 }
 
+async function validateContributorEditing(view: ViewConfig) {
+  if (!view.editing?.enabled) {
+    return;
+  }
+
+  if (!useConfigDatabase()) {
+    throw new AdminActionError({
+      status: 400,
+      message: "Contributor editing requires DATABASE_URL-backed storage.",
+    });
+  }
+
+  const source = await getSourceForView(view);
+  const schema = await getSmartsheetSchema(source, { fresh: true });
+  const errors = getContributorEditingValidationErrors(view, schema.columns);
+
+  if (errors.length > 0) {
+    throw new AdminActionError({
+      status: 400,
+      message: "Contributor editing configuration is invalid for the current source schema.",
+      errors,
+    });
+  }
+}
+
 export async function saveAdminViewConfig(view: ViewConfig) {
+  await validateContributorEditing(view);
+
   if (view.public) {
     const warnings = await getPublicationWarnings(view);
     if (warnings.length > 0) {
@@ -79,6 +108,8 @@ export async function updateAdminViewPublication(viewId: string, isPublic: boole
       message: `View \"${viewId}\" was not found.`,
     });
   }
+
+  await validateContributorEditing(view);
 
   const warnings = await getPublicationWarnings(view);
   if (warnings.length > 0) {

@@ -18,6 +18,7 @@ import type {
   ViewFieldSource,
 } from "@/lib/config/types";
 import { applyViewFilters, sortResolvedRows } from "@/lib/filters";
+import type { FetchBehaviorOptions } from "@/lib/smartsheet";
 import { getSmartsheetDataset, normalizeColumnKey } from "@/lib/smartsheet";
 import { applyTransforms, buildResolvedFieldValue, normalizeSourceValue } from "@/lib/transforms";
 import { humanizeSlug } from "@/lib/utils";
@@ -29,6 +30,25 @@ export interface AdminViewPreview {
   resolvedView: ResolvedView;
   schemaWarnings: string[];
   fetchedAt: string;
+}
+
+export interface LoadedPublicPageState {
+  slug: string;
+  title: string;
+  sourceConfig: SourceConfig;
+  sourceName: string;
+  viewConfigs: ViewConfig[];
+  resolvedViews: ResolvedView[];
+  defaultViewId: string;
+  fetchedAt: string;
+}
+
+export interface PublicViewCollection {
+  slug: string;
+  title: string;
+  sourceConfig: SourceConfig;
+  viewConfigs: ViewConfig[];
+  defaultViewId: string;
 }
 
 function resolveSelector(row: SmartsheetRow, selector: FieldSourceSelector): SmartsheetCell | null {
@@ -207,11 +227,43 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[]): ResolvedView {
   };
 }
 
-export async function getPublicPageSummaries(): Promise<PublicPageSummary[]> {
-  return listPublicPageSummaries();
+function filterCompatibleViews(views: ViewConfig[], sourceConfig: SourceConfig, slug: string) {
+  const compatibleViews = views.filter((view) => view.sourceId === sourceConfig.id);
+
+  if (compatibleViews.length < views.length) {
+    console.warn(
+      `[smartsheets_view] Slug "${slug}" contains views with different sources. Only views for source "${sourceConfig.id}" will be shown.`
+    );
+  }
+
+  return compatibleViews;
 }
 
-export async function loadPublicPage(slug: string, options?: { includePrivate?: boolean }): Promise<ResolvedPublicPage | null> {
+export function resolveRequestedViewConfig(viewConfigs: ViewConfig[], requestedViewId?: string | null) {
+  return (
+    viewConfigs.find((view) => view.id === requestedViewId) ??
+    viewConfigs[0] ??
+    null
+  );
+}
+
+export function resolveRequestedResolvedView(
+  resolvedViews: ResolvedView[],
+  defaultViewId: string,
+  requestedViewId?: string | null,
+) {
+  return (
+    resolvedViews.find((view) => view.id === requestedViewId) ??
+    resolvedViews.find((view) => view.id === defaultViewId) ??
+    resolvedViews[0] ??
+    null
+  );
+}
+
+export async function loadPublicViewCollection(
+  slug: string,
+  options?: { includePrivate?: boolean },
+): Promise<PublicViewCollection | null> {
   const views = await getPublicViewsBySlug(slug, options);
   if (views.length === 0) {
     return null;
@@ -224,33 +276,62 @@ export async function loadPublicPage(slug: string, options?: { includePrivate?: 
     throw new Error(`The data source for this view ("${sourceId}") could not be found or is no longer registered.`);
   }
 
-  // Filter to only views that share the same source to prevent data fetching errors
-  const compatibleViews = views.filter((view) => view.sourceId === sourceConfig.id);
-  
-  if (compatibleViews.length < views.length) {
-    console.warn(`[smartsheets_view] Slug "${slug}" contains views with different sources. Only views for source "${sourceId}" will be shown.`);
-  }
-
-  const dataset = await getSmartsheetDataset(sourceConfig);
-
-  for (const view of compatibleViews) {
-    logSchemaDriftWarnings(slug, view.id, collectSchemaDriftWarnings(view, dataset.columns));
-  }
-
-  const resolvedViews = compatibleViews.map((view) => resolveView(view, dataset.rows));
+  const compatibleViews = filterCompatibleViews(views, sourceConfig, slug);
 
   return {
     slug,
     title: humanizeSlug(slug),
-    source: {
-      id: sourceConfig.id,
-      label: sourceConfig.label,
-      name: dataset.name,
-      sourceType: sourceConfig.sourceType,
-    },
-    views: resolvedViews,
-    defaultViewId: resolvedViews[0]?.id ?? "",
+    sourceConfig,
+    viewConfigs: compatibleViews,
+    defaultViewId: compatibleViews[0]?.id ?? "",
+  };
+}
+
+export async function loadPublicPageState(
+  slug: string,
+  options?: { includePrivate?: boolean; datasetOptions?: FetchBehaviorOptions },
+): Promise<LoadedPublicPageState | null> {
+  const collection = await loadPublicViewCollection(slug, options);
+  if (!collection) {
+    return null;
+  }
+
+  const dataset = await getSmartsheetDataset(collection.sourceConfig, options?.datasetOptions);
+
+  for (const view of collection.viewConfigs) {
+    logSchemaDriftWarnings(slug, view.id, collectSchemaDriftWarnings(view, dataset.columns));
+  }
+
+  return {
+    ...collection,
+    sourceName: dataset.name,
+    resolvedViews: collection.viewConfigs.map((view) => resolveView(view, dataset.rows)),
     fetchedAt: dataset.fetchedAt,
+  };
+}
+
+export async function getPublicPageSummaries(): Promise<PublicPageSummary[]> {
+  return listPublicPageSummaries();
+}
+
+export async function loadPublicPage(slug: string, options?: { includePrivate?: boolean }): Promise<ResolvedPublicPage | null> {
+  const state = await loadPublicPageState(slug, options);
+  if (!state) {
+    return null;
+  }
+
+  return {
+    slug: state.slug,
+    title: state.title,
+    source: {
+      id: state.sourceConfig.id,
+      label: state.sourceConfig.label,
+      name: state.sourceName,
+      sourceType: state.sourceConfig.sourceType,
+    },
+    views: state.resolvedViews,
+    defaultViewId: state.defaultViewId,
+    fetchedAt: state.fetchedAt,
   };
 }
 

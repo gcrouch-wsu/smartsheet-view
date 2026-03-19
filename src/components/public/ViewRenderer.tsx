@@ -7,6 +7,11 @@ import { DataTabbed } from "@/components/public/DataTabbed";
 import { DataTable } from "@/components/public/DataTable";
 import type { LayoutType, ResolvedView } from "@/lib/config/types";
 
+export interface PublicRowEditingProps {
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}
+
 export function formatLayoutLabel(layout: LayoutType) {
   return layout
     .split("_")
@@ -14,24 +19,32 @@ export function formatLayoutLabel(layout: LayoutType) {
     .join(" ");
 }
 
-export function PublicViewRenderer({ layout, view }: { layout: LayoutType; view: ResolvedView }) {
+export function PublicViewRenderer({
+  layout,
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  layout: LayoutType;
+  view: ResolvedView;
+} & PublicRowEditingProps) {
   if (layout === "cards") {
-    return <DataCards view={view} />;
+    return <DataCards view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
   if (layout === "list") {
-    return <DataList view={view} />;
+    return <DataList view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
   if (layout === "stacked") {
-    return <DataStacked view={view} />;
+    return <DataStacked view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
   if (layout === "accordion") {
-    return <DataAccordion view={view} />;
+    return <DataAccordion view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
   if (layout === "tabbed") {
-    return <DataTabbed view={view} />;
+    return <DataTabbed view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
   if (layout === "list_detail") {
-    return <DataListDetail view={view} />;
+    return <DataListDetail view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
   }
-  return <DataTable view={view} />;
+  return <DataTable view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
 }

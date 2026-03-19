@@ -9,18 +9,19 @@ import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
+import { getEligibleEditableFieldDefinitions } from "@/lib/contributor-utils";
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { ThemeEditor } from "./ThemeEditor";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
-import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
+import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewEditingConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
 import type { ResolvedView } from "@/lib/config/types";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 
 import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
-type ViewBuilderTab = "setup" | "fields" | "filters" | "preview";
+type ViewBuilderTab = "setup" | "fields" | "filters" | "editing" | "preview";
 
 function createEmptyTransform(): TransformConfig {
   return { op: "trim" };
@@ -145,6 +146,22 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function createEditingConfigState(current?: ViewEditingConfig): ViewEditingConfig {
+  return {
+    enabled: current?.enabled ?? false,
+    contactColumnIds: current?.contactColumnIds ?? [],
+    editableColumnIds: current?.editableColumnIds ?? [],
+    showLoginLink: current?.showLoginLink !== false,
+  };
+}
+
+function toggleNumberSelection(values: number[], id: number, checked: boolean) {
+  if (checked) {
+    return values.includes(id) ? values : [...values, id];
+  }
+  return values.filter((value) => value !== id);
+}
+
 const FETCH_CREDENTIALS: RequestCredentials = "include";
 
 export function ViewBuilder({
@@ -168,9 +185,35 @@ export function ViewBuilder({
   const [schemaError, setSchemaError] = useState<string>("");
   const [schemaLoading, setSchemaLoading] = useState(false);
   const sourceMap = useMemo(() => new Map(sources.map((source) => [source.id, source.label])), [sources]);
+  const contactColumns = useMemo(
+    () => schema?.columns.filter((column) => column.type === "CONTACT_LIST" || column.type === "MULTI_CONTACT_LIST") ?? [],
+    [schema],
+  );
+  const eligibleEditableFields = useMemo(
+    () => (schema ? getEligibleEditableFieldDefinitions(view, schema.columns) : []),
+    [schema, view],
+  );
+  const invalidEditableColumnIds = useMemo(() => {
+    if (!schema || !view.editing?.enabled) {
+      return [];
+    }
+    const eligibleIds = new Set(eligibleEditableFields.map((field) => field.columnId));
+    return view.editing.editableColumnIds.filter((columnId) => !eligibleIds.has(columnId));
+  }, [eligibleEditableFields, schema, view.editing]);
+  const invalidContactColumnIds = useMemo(() => {
+    if (!schema || !view.editing?.enabled) {
+      return [];
+    }
+    const contactIds = new Set(contactColumns.map((column) => column.id));
+    return view.editing.contactColumnIds.filter((columnId) => !contactIds.has(columnId));
+  }, [contactColumns, schema, view.editing]);
 
   function update<K extends keyof ViewConfig>(key: K, value: ViewConfig[K]) {
     setView((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateEditing(nextEditing: ViewEditingConfig | undefined) {
+    update("editing", nextEditing);
   }
 
   function updateField(index: number, nextField: ViewFieldConfig) {
@@ -615,7 +658,7 @@ export function ViewBuilder({
         )}
 
         <nav className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="View builder tabs">
-          {(["setup", "fields", "filters", "preview"] as const).map((tab) => (
+          {(["setup", "fields", "filters", "editing", "preview"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -633,6 +676,7 @@ export function ViewBuilder({
               {tab === "setup" && "Setup"}
               {tab === "fields" && "Fields"}
               {tab === "filters" && "Filters & Sort"}
+              {tab === "editing" && "Editing"}
               {tab === "preview" && "Preview"}
             </button>
           ))}
@@ -2008,6 +2052,230 @@ export function ViewBuilder({
                 </div>
               ))}
               {(view.defaultSort ?? []).length === 0 && <p className="text-sm text-[color:var(--wsu-muted)]">No sort configured.</p>}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "editing" && (
+          <div id="tabpanel-editing" role="tabpanel" aria-labelledby="tab-editing" className="mt-6 space-y-6">
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Contributor editing</h2>
+                  <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                    Enable row-level editing for contributors who appear in the configured contact columns.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void fetchSchema()}
+                  disabled={schemaLoading || !view.sourceId}
+                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {schemaLoading ? "Loading schema..." : schema ? "Refresh schema" : "Load schema"}
+                </button>
+              </div>
+
+              {schemaError && (
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  {schemaError}
+                </p>
+              )}
+
+              {!schema ? (
+                <p className="mt-6 text-sm text-[color:var(--wsu-muted)]">
+                  Load the source schema to configure contact columns and eligible editable fields.
+                </p>
+              ) : (
+                <div className="mt-6 space-y-6">
+                  <label className="flex items-start gap-3 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+                    <input
+                      type="checkbox"
+                      checked={view.editing?.enabled ?? false}
+                      onChange={(event) =>
+                        updateEditing({
+                          ...createEditingConfigState(view.editing),
+                          enabled: event.target.checked,
+                        })
+                      }
+                      className="mt-1 rounded border-[color:var(--wsu-border)]"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-[color:var(--wsu-ink)]">Enable contributor editing</p>
+                      <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                        Contributors can edit only rows where their `@wsu.edu` email appears in one of the selected contact columns.
+                      </p>
+                    </div>
+                  </label>
+
+                  {view.editing?.enabled && (
+                    <>
+                      <section className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
+                        <div>
+                          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                            Public Login Link
+                          </h3>
+                          <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                            Control whether the public page shows a contributor sign-in link for this view.
+                          </p>
+                        </div>
+                        <label className="mt-4 flex items-start gap-3 rounded-xl border border-[color:var(--wsu-border)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={view.editing.showLoginLink !== false}
+                            onChange={(event) =>
+                              updateEditing({
+                                ...createEditingConfigState(view.editing),
+                                enabled: true,
+                                showLoginLink: event.target.checked,
+                              })
+                            }
+                            className="mt-1 rounded border-[color:var(--wsu-border)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[color:var(--wsu-ink)]">Show contributor login link on the public page</p>
+                            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                              When hidden, contributor editing still works for direct login URLs and existing signed-in contributors.
+                            </p>
+                          </div>
+                        </label>
+                      </section>
+
+                      <div className="grid gap-6 lg:grid-cols-2">
+                        <section className="space-y-4 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
+                          <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                              Contact Columns
+                            </h3>
+                            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                              Any matching contact in these columns grants row edit access.
+                            </p>
+                          </div>
+                          <div className="space-y-3">
+                            {contactColumns.length === 0 ? (
+                              <p className="text-sm text-[color:var(--wsu-muted)]">
+                                No CONTACT_LIST or MULTI_CONTACT_LIST columns are available in this source.
+                              </p>
+                            ) : (
+                              contactColumns.map((column) => {
+                                const checked = view.editing?.contactColumnIds.includes(column.id) ?? false;
+                                return (
+                                  <label
+                                    key={column.id}
+                                    className="flex items-start gap-3 rounded-xl border border-[color:var(--wsu-border)] bg-white p-3"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(event) =>
+                                        updateEditing({
+                                          ...createEditingConfigState(view.editing),
+                                          enabled: true,
+                                          contactColumnIds: toggleNumberSelection(
+                                            view.editing?.contactColumnIds ?? [],
+                                            column.id,
+                                            event.target.checked,
+                                          ),
+                                        })
+                                      }
+                                      className="mt-1 rounded border-[color:var(--wsu-border)]"
+                                    />
+                                    <div>
+                                      <p className="text-sm font-medium text-[color:var(--wsu-ink)]">{column.title}</p>
+                                      <p className="text-xs text-[color:var(--wsu-muted)]">{column.type}</p>
+                                    </div>
+                                  </label>
+                                );
+                              })
+                            )}
+                          </div>
+                        </section>
+
+                        <section className="space-y-4 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
+                          <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                              Editable Fields
+                            </h3>
+                            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                              Only visible direct-mapped TEXT_NUMBER and PICKLIST fields with no transforms are eligible.
+                            </p>
+                          </div>
+                          <div className="space-y-3">
+                            {eligibleEditableFields.length === 0 ? (
+                              <p className="text-sm text-[color:var(--wsu-muted)]">
+                                No eligible editable fields are available. Add a direct visible text or badge field first.
+                              </p>
+                            ) : (
+                              eligibleEditableFields.map((field) => {
+                                const checked = view.editing?.editableColumnIds.includes(field.columnId) ?? false;
+                                return (
+                                  <label
+                                    key={field.columnId}
+                                    className="flex items-start gap-3 rounded-xl border border-[color:var(--wsu-border)] bg-white p-3"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(event) =>
+                                        updateEditing({
+                                          ...createEditingConfigState(view.editing),
+                                          enabled: true,
+                                          editableColumnIds: toggleNumberSelection(
+                                            view.editing?.editableColumnIds ?? [],
+                                            field.columnId,
+                                            event.target.checked,
+                                          ),
+                                        })
+                                      }
+                                      className="mt-1 rounded border-[color:var(--wsu-border)]"
+                                    />
+                                    <div>
+                                      <p className="text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</p>
+                                      <p className="text-xs text-[color:var(--wsu-muted)]">
+                                        Column {field.columnId} · {field.columnType} · render {field.renderType}
+                                      </p>
+                                    </div>
+                                  </label>
+                                );
+                              })
+                            )}
+                          </div>
+                        </section>
+                      </div>
+
+                      {(invalidContactColumnIds.length > 0 || invalidEditableColumnIds.length > 0) && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                          <p className="font-semibold">Current selections need attention</p>
+                          {invalidContactColumnIds.length > 0 && (
+                            <p className="mt-2">
+                              Contact columns no longer valid: {invalidContactColumnIds.join(", ")}.
+                            </p>
+                          )}
+                          {invalidEditableColumnIds.length > 0 && (
+                            <p className="mt-2">
+                              Editable columns no longer eligible: {invalidEditableColumnIds.join(", ")}.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="rounded-xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                        <p>
+                          <span className="font-semibold text-[color:var(--wsu-ink)]">Selected contact columns:</span>{" "}
+                          {view.editing.contactColumnIds.length}
+                        </p>
+                        <p className="mt-2">
+                          <span className="font-semibold text-[color:var(--wsu-ink)]">Selected editable columns:</span>{" "}
+                          {view.editing.editableColumnIds.length}
+                        </p>
+                        <p className="mt-2">
+                          Save-time validation will re-check these selections against the live schema.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

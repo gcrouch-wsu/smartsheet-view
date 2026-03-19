@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { describeResolvedField, getCardLayoutColumnCount, getCardLayoutRows, getFirstFieldFromCells, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
@@ -15,7 +16,15 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   );
 }
 
-export function DataAccordion({ view }: { view: ResolvedView }) {
+export function DataAccordion({
+  view,
+  editableRowIds,
+  onEditRow,
+}: {
+  view: ResolvedView;
+  editableRowIds?: Set<number>;
+  onEditRow?: (rowId: number) => void;
+}) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -31,6 +40,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
     <div className="space-y-3">
       {view.rows.map((row, index) => {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+        const isEditable = editableRowIds?.has(row.id) ?? false;
 
         if (customRows.length > 0) {
           const firstRowCells = customRows[0] ?? [];
@@ -42,7 +52,7 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
               key={row.id}
               id={`row-${row.id}`}
               open={index === 0}
-              className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+              className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
@@ -53,9 +63,15 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
                     <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summaryField) || summaryField.label}</p>
                   )}
                 </div>
-                <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
-                  {index === 0 ? "Open" : "Expand"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {isEditable && <ContributorEditableBadge />}
+                  {isEditable && (
+                    <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
+                  )}
+                  <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
+                    {index === 0 ? "Open" : "Expand"}
+                  </span>
+                </div>
               </summary>
               <div className={`border-t ${innerBorderClass} px-5 py-5`}>
                 {customRows.map((cells, rowIndex) => {
@@ -101,16 +117,22 @@ export function DataAccordion({ view }: { view: ResolvedView }) {
             key={row.id}
             id={`row-${row.id}`}
             open={index === 0}
-            className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+            className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>
                 <p className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
                 {summary && <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summary) || summary.label}</p>}
               </div>
-              <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
-                {index === 0 ? "Open" : "Expand"}
-              </span>
+              <div className="flex items-center gap-2">
+                {isEditable && <ContributorEditableBadge />}
+                {isEditable && (
+                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
+                )}
+                <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
+                  {index === 0 ? "Open" : "Expand"}
+                </span>
+              </div>
             </summary>
             <div className={`border-t ${innerBorderClass} px-5 py-5`}>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
