@@ -1,6 +1,8 @@
 "use client";
 
-import { useEditor, EditorContent, BubbleMenu, Node, mergeAttributes } from "@tiptap/react";
+import { useEditor, EditorContent, Node, mergeAttributes } from "@tiptap/react";
+import { BubbleMenu as BubbleMenuComponent } from "@tiptap/react/menus";
+import { BubbleMenu as BubbleMenuExtension } from "@tiptap/extension-bubble-menu";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -113,6 +115,7 @@ export function HeaderCustomTextEditor({
           class: "text-[color:var(--wsu-crimson)] underline cursor-pointer",
         },
       }),
+      BubbleMenuExtension,
       PublicUrlNode,
     ],
     content: value || "",
@@ -262,7 +265,7 @@ export function HeaderCustomTextEditor({
 
       {/* Bubble Menu (Inline Formatting) */}
       {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+        <BubbleMenuComponent editor={editor} tippyOptions={{ duration: 100 }}>
           <div className="flex items-center gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-white p-1 shadow-xl ring-1 ring-black/5">
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleBold().run()}
@@ -286,7 +289,7 @@ export function HeaderCustomTextEditor({
               <LinkIcon />
             </ToolbarButton>
           </div>
-        </BubbleMenu>
+        </BubbleMenuComponent>
       )}
 
       <EditorContent editor={editor} />
