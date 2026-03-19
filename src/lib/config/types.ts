@@ -123,6 +123,8 @@ export interface ViewPresentationConfig {
   cardLayout?: CardLayoutRow[];
   /** Divider between rows/cards. "none" hides, "default" is standard border, "subtle" is lighter. */
   rowDividerStyle?: RowDividerStyle;
+  /** Hide the entire page header card (custom text + status box). Use when neither is needed. */
+  hideHeader?: boolean;
   /** Header chrome: hide elements to reduce clutter. */
   hideHeaderBackLink?: boolean;
   hideHeaderSourceLabel?: boolean;

@@ -308,6 +308,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const rowDividerStyle = asOptionalString(input.rowDividerStyle);
   const validDividerStyles = ["none", "default", "subtle"];
   const dividerStyle = rowDividerStyle && validDividerStyles.includes(rowDividerStyle) ? rowDividerStyle : undefined;
+  const hideHeader = asBoolean(input.hideHeader, false);
   const hideHeaderBackLink = asBoolean(input.hideHeaderBackLink, false);
   const hideHeaderSourceLabel = asBoolean(input.hideHeaderSourceLabel, false);
   const hideHeaderPageTitle = asBoolean(input.hideHeaderPageTitle, false);
@@ -359,6 +360,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       hideRowBadge ||
       dividerStyle ||
       (cardLayout && cardLayout.length > 0) ||
+      hideHeader ||
       hideHeaderBackLink ||
       hideHeaderSourceLabel ||
       hideHeaderPageTitle ||
@@ -387,6 +389,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             hideRowBadge,
             cardLayout,
             rowDividerStyle: dividerStyle as RowDividerStyle,
+            hideHeader,
             hideHeaderBackLink,
             hideHeaderSourceLabel,
             hideHeaderPageTitle,

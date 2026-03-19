@@ -1053,6 +1053,12 @@ export function ViewBuilder({
             <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Customize the top section of your public page.</p>
             
             <div className="mt-6 space-y-8">
+              <VisibilitySelect
+                label="Page header"
+                value={!view.presentation?.hideHeader}
+                onChange={(show) => update("presentation", { ...view.presentation, hideHeader: !show })}
+                description="The top card with custom text and status. Hide when neither is needed."
+              />
               {/* Custom Content */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1258,6 +1264,7 @@ export function ViewBuilder({
                   <div className="mt-3 max-h-[500px] overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
                     <div className="scale-[0.85] origin-top">
                       <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                        {!view.presentation?.hideHeader && (
                         <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
                           <div className="flex flex-wrap items-start justify-between gap-6">
                             <div className="min-w-0 flex-1 space-y-3">
@@ -1343,6 +1350,7 @@ export function ViewBuilder({
                             )}
                           </div>
                         </header>
+                        )}
                         <div className="mt-4">
                           <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
                         </div>
@@ -1675,6 +1683,7 @@ export function ViewBuilder({
                   <div className="mt-3 max-h-[500px] overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
                     <div className="scale-[0.85] origin-top">
                       <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                        {!view.presentation?.hideHeader && (
                         <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
                           <div className="flex flex-wrap items-start justify-between gap-6">
                             <div className="min-w-0 flex-1 space-y-3">
@@ -1760,6 +1769,7 @@ export function ViewBuilder({
                             )}
                           </div>
                         </header>
+                        )}
                         <div className="mt-4">
                           <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
                         </div>
@@ -1977,6 +1987,7 @@ export function ViewBuilder({
               >
                 <div className="mx-auto max-w-7xl space-y-6 text-left">
                   <ViewStyleWrapper style={previewData.resolvedView.style} themePresetId={previewData.resolvedView.themePresetId}>
+                    {!view.presentation?.hideHeader && (
                     <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
                       <div className="flex flex-wrap items-start justify-between gap-6">
                         <div className="min-w-0 flex-1 space-y-3">
@@ -2067,6 +2078,7 @@ export function ViewBuilder({
                         )}
                       </div>
                     </header>
+                    )}
 
                     <section className="mt-6 space-y-4">
                       {!view.presentation?.hideViewTabs && (

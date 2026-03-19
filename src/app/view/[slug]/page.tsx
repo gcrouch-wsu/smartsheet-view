@@ -109,7 +109,7 @@ export default async function PublicViewPage({
       {embed && <EmbedHeightReporter />}
       <div className={containerClassName}>
         <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
-        {!embed && (
+        {!embed && !activeView.presentation?.hideHeader && (
           <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="min-w-0 flex-1 space-y-3">
