@@ -32,14 +32,6 @@ const PublicUrlNode = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["span", mergeAttributes(HTMLAttributes, { "data-public-url": "", class: "public-url-chip" }), PUBLIC_URL_TEXT];
   },
-
-  addCommands() {
-    return {
-      insertPublicUrl: () => ({ commands }) => {
-        return commands.insertContent({ type: this.name });
-      },
-    };
-  },
 });
 
 // Icon helper components
@@ -254,7 +246,7 @@ export function HeaderCustomTextEditor({
 
         <button
           type="button"
-          onClick={() => editor.chain().focus().insertPublicUrl().run()}
+          onClick={() => editor.chain().focus().insertContent({ type: "publicUrl" }).run()}
           className="flex h-7 items-center gap-1.5 rounded bg-[color:var(--wsu-crimson)]/5 px-2.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-crimson)] transition hover:bg-[color:var(--wsu-crimson)]/10"
           title="Insert protected live public URL placeholder"
         >
