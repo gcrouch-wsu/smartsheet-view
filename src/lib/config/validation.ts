@@ -421,6 +421,10 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "headingFontFamily",
   "fontSize",
   "headingFontSize",
+  "fontWeight",
+  "headingFontWeight",
+  "fontStyle",
+  "headingFontStyle",
   "borderRadius",
   "cardShadow",
   "badgeBg",
@@ -500,7 +504,9 @@ function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig 
 
   const hasEditableContent = editableColumnIds.values.length > 0 || editableFieldGroups.data.length > 0;
   if (enabled && !hasEditableContent) {
-    errors.push("editing must include at least one editable column or editable field group when editing is enabled.");
+    errors.push(
+      "Select at least one Editable Field (what contributors can edit) or add a Multi-person field group. Contact columns only define who can edit, not what."
+    );
   }
 
   return {

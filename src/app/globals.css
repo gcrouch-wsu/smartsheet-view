@@ -66,12 +66,16 @@ a {
 .font-view-heading {
   font-family: var(--view-heading-font, inherit);
   font-size: var(--view-heading-font-size, inherit);
+  font-weight: var(--view-heading-font-weight, inherit);
+  font-style: var(--view-heading-font-style, inherit);
 }
 
 /* Custom header text: use body font, not heading font */
 .custom-header-text {
   font-family: var(--view-font, inherit);
   font-size: var(--view-font-size, inherit);
+  font-weight: var(--view-font-weight, inherit);
+  font-style: var(--view-font-style, inherit);
 }
 
 /* Ensure links in custom header are clickable */

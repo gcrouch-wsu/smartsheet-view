@@ -155,10 +155,18 @@ export interface ViewStyleConfig {
   borderColor?: string;
   fontFamily?: string;
   headingFontFamily?: string;
-  /** Body text size (e.g. 1rem). */
+  /** Body text size (e.g. 1rem, 12pt). */
   fontSize?: string;
   /** Heading text size (e.g. 1.25rem). */
   headingFontSize?: string;
+  /** Body font weight (e.g. normal, bold). */
+  fontWeight?: string;
+  /** Heading font weight (e.g. normal, bold). */
+  headingFontWeight?: string;
+  /** Body font style (e.g. normal, italic). */
+  fontStyle?: string;
+  /** Heading font style (e.g. normal, italic). */
+  headingFontStyle?: string;
   borderRadius?: string;
   cardShadow?: string;
   badgeBg?: string;

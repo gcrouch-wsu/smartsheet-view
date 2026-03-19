@@ -3,6 +3,8 @@ import {
   BORDER_RADIUS_OPTIONS,
   FONT_OPTIONS,
   FONT_SIZE_OPTIONS,
+  FONT_STYLE_OPTIONS,
+  FONT_WEIGHT_OPTIONS,
   SHADOW_OPTIONS,
 } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
@@ -213,6 +215,54 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
                     {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body weight</label>
+                  <select
+                    value={getValue("fontWeight")}
+                    onChange={(e) => updateStyle("fontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading weight</label>
+                  <select
+                    value={getValue("headingFontWeight")}
+                    onChange={(e) => updateStyle("headingFontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body style</label>
+                  <select
+                    value={getValue("fontStyle")}
+                    onChange={(e) => updateStyle("fontStyle", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_STYLE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading style</label>
+                  <select
+                    value={getValue("headingFontStyle")}
+                    onChange={(e) => updateStyle("headingFontStyle", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_STYLE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>

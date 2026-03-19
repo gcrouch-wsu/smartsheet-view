@@ -12,6 +12,10 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   headingFontFamily: "--view-heading-font",
   fontSize: "--view-font-size",
   headingFontSize: "--view-heading-font-size",
+  fontWeight: "--view-font-weight",
+  headingFontWeight: "--view-heading-font-weight",
+  fontStyle: "--view-font-style",
+  headingFontStyle: "--view-heading-font-style",
   borderRadius: "--view-radius",
   cardShadow: "--view-card-shadow",
   badgeBg: "--view-badge-bg",
@@ -61,12 +65,18 @@ export function ViewStyleWrapper({
     cssVars.backgroundColor = tokens.backgroundColor;
   }
 
-  // Apply body font and size
+  // Apply body font, size, weight, style
   if (tokens.fontFamily) {
     cssVars.fontFamily = tokens.fontFamily;
   }
   if (tokens.fontSize) {
     cssVars.fontSize = tokens.fontSize;
+  }
+  if (tokens.fontWeight) {
+    cssVars.fontWeight = tokens.fontWeight;
+  }
+  if (tokens.fontStyle) {
+    cssVars.fontStyle = tokens.fontStyle;
   }
 
   return <div style={cssVars as React.CSSProperties}>{children}</div>;

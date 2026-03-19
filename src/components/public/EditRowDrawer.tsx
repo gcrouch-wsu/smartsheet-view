@@ -8,6 +8,7 @@ import { useContributorContext } from "@/components/public/ContributorContext";
 import type { ResolvedViewRow } from "@/lib/config/types";
 import {
   parseMultiPersonRow,
+  serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
@@ -83,11 +84,22 @@ export function EditRowDrawer({
     setIsSaving(true);
     setError(null);
 
-    const cells: Array<{ columnId: number; value: string }> = [
-      ...editableFields.map((field) => ({
-        columnId: field.columnId,
-        value: formValues[field.columnId] ?? "",
-      })),
+    const isContactColumn = (colType: string) =>
+      colType === "CONTACT_LIST" || colType === "MULTI_CONTACT_LIST";
+
+    const cells: Array<{ columnId: number; value?: string; objectValue?: unknown }> = [
+      ...editableFields.map((field) => {
+        const raw = formValues[field.columnId] ?? "";
+        if (isContactColumn(field.columnType) && field.contactDisplayMode) {
+          const objectValue = serializeContactDisplayToObjectValue(
+            raw,
+            field.columnType,
+            field.contactDisplayMode,
+          );
+          return { columnId: field.columnId, objectValue };
+        }
+        return { columnId: field.columnId, value: raw };
+      }),
       ...editableFieldGroups.flatMap((group) =>
         serializeMultiPersonToCells(groupValues[group.id] ?? [], group),
       ),

@@ -12,14 +12,27 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
   { value: "inherit", label: "Inherit from page" },
 ];
 
-/** Body and heading font sizes (rem). Good for readability. */
+/** Body and heading font sizes (rem, pt). Good for readability. */
 export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
+  { value: "12pt", label: "12 point" },
   { value: "0.875rem", label: "Small (14px)" },
   { value: "1rem", label: "Medium (16px)" },
   { value: "1.0625rem", label: "Large (17px)" },
   { value: "1.125rem", label: "Extra large (18px)" },
   { value: "1.25rem", label: "2XL (20px)" },
   { value: "1.5rem", label: "3XL (24px)" },
+];
+
+/** Font weight options for body and heading. */
+export const FONT_WEIGHT_OPTIONS: { value: string; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "bold", label: "Bold" },
+];
+
+/** Font style options for body and heading. */
+export const FONT_STYLE_OPTIONS: { value: string; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "italic", label: "Italic" },
 ];
 
 /** Border radius presets for cards and buttons. */

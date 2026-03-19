@@ -9,7 +9,7 @@ import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
-import { getEligibleEditableFieldDefinitions } from "@/lib/contributor-utils";
+import { getEligibleEditableFieldDefinitions, getFieldsForMultiPersonGroup } from "@/lib/contributor-utils";
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { ThemeEditor } from "./ThemeEditor";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
@@ -192,6 +192,10 @@ export function ViewBuilder({
   );
   const eligibleEditableFields = useMemo(
     () => (schema ? getEligibleEditableFieldDefinitions(view, schema.columns) : []),
+    [schema, view],
+  );
+  const fieldsForMultiPersonGroup = useMemo(
+    () => (schema ? getFieldsForMultiPersonGroup(view, schema.columns) : []),
     [schema, view],
   );
   const invalidEditableColumnIds = useMemo(() => {
@@ -2149,7 +2153,7 @@ export function ViewBuilder({
                               Contact Columns
                             </h3>
                             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                              Any matching contact in these columns grants row edit access.
+                              Any matching contact in these columns grants row edit access. <strong>You must also select Editable Fields or add a Multi-person group below</strong> — contact columns define who can edit, not what.
                             </p>
                           </div>
                           <div className="space-y-3">
@@ -2198,13 +2202,13 @@ export function ViewBuilder({
                               Editable Fields
                             </h3>
                             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                              Only visible direct-mapped TEXT_NUMBER and PICKLIST fields with no transforms are eligible.
+                              Select which columns contributors can edit. <strong>At least one is required.</strong> Eligible: visible direct-mapped TEXT_NUMBER, PICKLIST, PHONE (no transforms), and CONTACT_LIST/MULTI_CONTACT_LIST (with contact_emails or contact_names transform).
                             </p>
                           </div>
                           <div className="space-y-3">
                             {eligibleEditableFields.length === 0 ? (
                               <p className="text-sm text-[color:var(--wsu-muted)]">
-                                No eligible editable fields are available. Add a direct visible text or badge field first.
+                                No eligible editable fields. In the <strong>Fields</strong> tab, add a visible TEXT_NUMBER, PICKLIST, PHONE, or CONTACT_LIST/MULTI_CONTACT_LIST field (contact columns need contact_emails or contact_names transform) with direct column mapping. Or use <strong>Multi-person field groups</strong> below for comma-separated columns (e.g. coordinator names, emails).
                               </p>
                             ) : (
                               eligibleEditableFields.map((field) => {
@@ -2249,7 +2253,7 @@ export function ViewBuilder({
                               Multi-person field groups
                             </h3>
                             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                              For columns like &quot;Coordinator&quot; and &quot;Coordinator email&quot; that hold comma-separated values. Contributors edit one card per person; values save comma-separated.
+                              For columns like &quot;Coordinator&quot; and &quot;Coordinator email&quot; that hold comma-separated values. Contributors edit one card per person; values save comma-separated. Uses a broader field list than Editable Fields — if that section is empty, you can still add a group here.
                             </p>
                           </div>
                           <div className="space-y-4">
@@ -2291,8 +2295,8 @@ export function ViewBuilder({
                                           value={current?.fieldKey ?? ""}
                                           onChange={(e) => {
                                             const fieldKey = e.target.value;
-                                            const field = view.fields.find((f) => f.key === fieldKey);
-                                            const columnId = typeof field?.source?.columnId === "number" ? field.source.columnId : 0;
+                                            const mpField = fieldsForMultiPersonGroup.find((f) => f.fieldKey === fieldKey);
+                                            const columnId = mpField?.columnId ?? 0;
                                             const next = [...(view.editing?.editableFieldGroups ?? [])];
                                             const attrs = [...(next[groupIdx]?.attributes ?? [])];
                                             const existingIdx = attrs.findIndex((a) => a.attribute === attr);
@@ -2308,8 +2312,8 @@ export function ViewBuilder({
                                           className="flex-1 rounded-lg border border-[color:var(--wsu-border)] px-2 py-1.5 text-sm"
                                         >
                                           <option value="">— Select field —</option>
-                                          {eligibleEditableFields.map((f) => (
-                                            <option key={f.columnId} value={f.fieldKey}>
+                                          {(fieldsForMultiPersonGroup.length > 0 ? fieldsForMultiPersonGroup : eligibleEditableFields).map((f) => (
+                                            <option key={`${f.fieldKey}-${f.columnId}`} value={f.fieldKey}>
                                               {f.label} (column {f.columnId})
                                             </option>
                                           ))}
@@ -2333,6 +2337,17 @@ export function ViewBuilder({
                           </div>
                         </section>
                       </div>
+
+                      {view.editing?.enabled &&
+                        (view.editing.editableColumnIds?.length ?? 0) === 0 &&
+                        (view.editing.editableFieldGroups?.length ?? 0) === 0 && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                          <p className="font-semibold">Select what contributors can edit</p>
+                          <p className="mt-1">
+                            Contact columns define <em>who</em> can edit. You must also select at least one <strong>Editable Field</strong> or add a <strong>Multi-person field group</strong> to define <em>what</em> they can edit.
+                          </p>
+                        </div>
+                      )}
 
                       {(invalidContactColumnIds.length > 0 || invalidEditableColumnIds.length > 0) && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

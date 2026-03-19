@@ -13,16 +13,36 @@ import { applyViewFilters } from "@/lib/filters";
 import { normalizeSourceValue, toContactList } from "@/lib/transforms";
 
 const CONTRIBUTOR_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
-const CONTRIBUTOR_EDITABLE_COLUMN_TYPES = new Set(["TEXT_NUMBER", "PICKLIST", "PHONE"]);
-const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>(["text", "multiline_text", "badge", "phone"]);
+const CONTRIBUTOR_EDITABLE_COLUMN_TYPES = new Set([
+  "TEXT_NUMBER",
+  "PICKLIST",
+  "PHONE",
+  "CONTACT_LIST",
+  "MULTI_CONTACT_LIST",
+]);
+const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>([
+  "text",
+  "multiline_text",
+  "badge",
+  "phone",
+  "mailto",
+  "mailto_list",
+]);
+
+/** Transforms that are safe for contact columns: display value can be reversed to objectValue. */
+const CONTACT_SAFE_TRANSFORMS = new Set(["contact_emails", "contact_names"]);
+
+export type ContactDisplayMode = "email" | "name";
 
 export interface ContributorEditableFieldDefinition {
   columnId: number;
-  columnType: "TEXT_NUMBER" | "PICKLIST" | "PHONE";
+  columnType: "TEXT_NUMBER" | "PICKLIST" | "PHONE" | "CONTACT_LIST" | "MULTI_CONTACT_LIST";
   fieldKey: string;
   label: string;
-  renderType: "text" | "multiline_text" | "badge" | "phone";
+  renderType: "text" | "multiline_text" | "badge" | "phone" | "mailto" | "mailto_list";
   options?: string[];
+  /** For CONTACT_LIST/MULTI_CONTACT_LIST: whether display shows emails or names. Used to reverse transform on write. */
+  contactDisplayMode?: ContactDisplayMode;
 }
 
 export interface ContributorEditingClientConfig {
@@ -80,6 +100,43 @@ export function parseMultiPersonRow(
   }
 
   return persons;
+}
+
+const CONTACT_DISPLAY_DELIMITERS = /[,;]+/;
+
+/**
+ * Convert edited display string back to Smartsheet objectValue for CONTACT_LIST / MULTI_CONTACT_LIST.
+ * Used when contributor edits a contact field (emails or names) and we need to write objectValue.
+ */
+export function serializeContactDisplayToObjectValue(
+  displayValue: string,
+  columnType: "CONTACT_LIST" | "MULTI_CONTACT_LIST",
+  contactDisplayMode: ContactDisplayMode,
+): { objectType: "CONTACT" | "MULTI_CONTACT"; email?: string; name?: string; value?: unknown[] } {
+  const tokens = displayValue
+    .split(CONTACT_DISPLAY_DELIMITERS)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (tokens.length === 0) {
+    return columnType === "CONTACT_LIST"
+      ? { objectType: "CONTACT" }
+      : { objectType: "MULTI_CONTACT", value: [] };
+  }
+
+  if (columnType === "CONTACT_LIST") {
+    const first = tokens[0]!;
+    return contactDisplayMode === "email"
+      ? { objectType: "CONTACT", email: first }
+      : { objectType: "CONTACT", name: first };
+  }
+
+  const value = tokens.map((token) =>
+    contactDisplayMode === "email"
+      ? { objectType: "CONTACT" as const, email: token }
+      : { objectType: "CONTACT" as const, name: token },
+  );
+  return { objectType: "MULTI_CONTACT", value };
 }
 
 /** Serialize person entries back to cell values. Always uses comma as delimiter. */
@@ -149,34 +206,73 @@ export function getEditableRowIdsForView(rows: SmartsheetRow[], view: ViewConfig
     .map((row) => row.id);
 }
 
-export function isContributorEditableRenderType(renderType: RenderType): renderType is "text" | "multiline_text" | "badge" | "phone" {
+export function isContributorEditableRenderType(renderType: RenderType): renderType is "text" | "multiline_text" | "badge" | "phone" | "mailto" | "mailto_list" {
   return CONTRIBUTOR_EDITABLE_RENDER_TYPES.has(renderType);
 }
 
-export function isEditableFieldDirectMapped(field: ViewFieldConfig) {
+function hasEditableSafeTransforms(field: ViewFieldConfig, columnType: string): { ok: boolean; contactDisplayMode?: ContactDisplayMode } {
+  const transforms = field.transforms ?? [];
+  if (transforms.length === 0) {
+    return { ok: true };
+  }
+  if (!CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(columnType)) {
+    return { ok: false };
+  }
+  if (transforms.length !== 1) {
+    return { ok: false };
+  }
+  const op = transforms[0]?.op;
+  if (op === "contact_emails") {
+    return { ok: true, contactDisplayMode: "email" };
+  }
+  if (op === "contact_names") {
+    return { ok: true, contactDisplayMode: "name" };
+  }
+  return { ok: false };
+}
+
+/** True when field is direct-mapped and eligible for contributor editing (no transforms, or safe contact transforms). */
+export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: SmartsheetColumn | null) {
+  if (
+    typeof field.source.columnId !== "number" ||
+    field.render.type === "hidden" ||
+    field.source.preferredColumnId ||
+    field.source.preferredColumnTitle ||
+    field.source.preferredColumnType ||
+    field.source.fallbackColumnId ||
+    field.source.fallbackColumnTitle ||
+    field.source.fallbackColumnType ||
+    (field.source.coalesce?.length ?? 0) > 0
+  ) {
+    return false;
+  }
+
+  const columnType = column?.type ?? "";
+  const transformCheck = hasEditableSafeTransforms(field, columnType);
+
+  if (CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(columnType)) {
+    return (
+      transformCheck.ok &&
+      (field.render.type === "mailto" || field.render.type === "mailto_list")
+    );
+  }
+
   return (
-    typeof field.source.columnId === "number" &&
-    field.render.type !== "hidden" &&
-    !field.source.preferredColumnId &&
-    !field.source.preferredColumnTitle &&
-    !field.source.preferredColumnType &&
-    !field.source.fallbackColumnId &&
-    !field.source.fallbackColumnTitle &&
-    !field.source.fallbackColumnType &&
-    !(field.source.coalesce?.length) &&
     !(field.transforms?.length) &&
     isContributorEditableRenderType(field.render.type)
   );
 }
 
-function buildDirectMappedFieldCounts(view: ViewConfig) {
+function buildDirectMappedFieldCounts(view: ViewConfig, columns: SmartsheetColumn[]) {
+  const columnsById = new Map(columns.map((c) => [c.id, c]));
   const counts = new Map<number, number>();
 
   for (const field of view.fields) {
-    if (!isEditableFieldDirectMapped(field)) {
+    const columnId = field.source.columnId as number;
+    const column = columnsById.get(columnId);
+    if (!isEditableFieldDirectMapped(field, column)) {
       continue;
     }
-    const columnId = field.source.columnId as number;
     counts.set(columnId, (counts.get(columnId) ?? 0) + 1);
   }
 
@@ -189,40 +285,81 @@ export function getEligibleEditableFieldDefinitions(
   editableColumnIds?: number[],
 ) {
   const columnsById = new Map(columns.map((column) => [column.id, column]));
-  const directFieldCounts = buildDirectMappedFieldCounts(view);
+  const directFieldCounts = buildDirectMappedFieldCounts(view, columns);
   const requestedEditableIds = editableColumnIds ? new Set(editableColumnIds) : null;
 
   const eligibleFields: ContributorEditableFieldDefinition[] = [];
 
   for (const field of view.fields) {
-    if (!isEditableFieldDirectMapped(field)) {
+    const columnId = field.source.columnId as number;
+    const column = columnsById.get(columnId);
+    if (!isEditableFieldDirectMapped(field, column)) {
       continue;
     }
-
-    const columnId = field.source.columnId as number;
     if (directFieldCounts.get(columnId) !== 1) {
       continue;
     }
     if (requestedEditableIds && !requestedEditableIds.has(columnId)) {
       continue;
     }
-
-    const column = columnsById.get(columnId);
     if (!column || !CONTRIBUTOR_EDITABLE_COLUMN_TYPES.has(column.type)) {
       continue;
     }
 
-    eligibleFields.push({
+    const transformCheck = hasEditableSafeTransforms(field, column.type);
+    const def: ContributorEditableFieldDefinition = {
       columnId,
       columnType: column.type as ContributorEditableFieldDefinition["columnType"],
       fieldKey: field.key,
       label: field.label || field.key,
       renderType: field.render.type as ContributorEditableFieldDefinition["renderType"],
       options: column.options,
-    });
+    };
+    if (transformCheck.contactDisplayMode) {
+      def.contactDisplayMode = transformCheck.contactDisplayMode;
+    }
+    eligibleFields.push(def);
   }
 
   return eligibleFields;
+}
+
+/** Column types for multi-person groups: TEXT_NUMBER, PICKLIST, PHONE only. Contact columns use objectValue. */
+const MULTI_PERSON_GROUP_COLUMN_TYPES = new Set(["TEXT_NUMBER", "PICKLIST", "PHONE"]);
+
+/**
+ * Broader field list for multi-person groups. Includes fields that map to TEXT_NUMBER/PICKLIST/PHONE
+ * even if they have transforms or multiple fields share a column. Use when eligibleEditableFields
+ * is empty but the view has text-like columns (e.g. coordinator names, emails).
+ * Excludes CONTACT_LIST/MULTI_CONTACT_LIST since those use objectValue, not comma-separated value.
+ */
+export function getFieldsForMultiPersonGroup(
+  view: ViewConfig,
+  columns: SmartsheetColumn[],
+): Array<{ columnId: number; fieldKey: string; label: string; columnType: string }> {
+  const columnsById = new Map(columns.map((c) => [c.id, c]));
+  const result: Array<{ columnId: number; fieldKey: string; label: string; columnType: string }> = [];
+  const seen = new Set<number>();
+
+  for (const field of view.fields) {
+    if (field.render.type === "hidden") continue;
+    const columnId =
+      (typeof field.source.columnId === "number" ? field.source.columnId : null) ??
+      (typeof field.source.preferredColumnId === "number" ? field.source.preferredColumnId : null);
+    if (columnId == null || seen.has(columnId)) continue;
+
+    const column = columnsById.get(columnId);
+    if (!column || !MULTI_PERSON_GROUP_COLUMN_TYPES.has(column.type)) continue;
+
+    seen.add(columnId);
+    result.push({
+      columnId,
+      fieldKey: field.key,
+      label: field.label || field.key,
+      columnType: column.type,
+    });
+  }
+  return result;
 }
 
 export function buildContributorEditingClientConfig(view: ViewConfig, columns: SmartsheetColumn[]) {
@@ -290,7 +427,7 @@ export function getContributorEditingValidationErrors(view: ViewConfig, columns:
     }
     if (!eligibleByColumnId.has(columnId)) {
       errors.push(
-        `Editable column "${column.title}" must be a visible direct-mapped TEXT_NUMBER, PICKLIST, or PHONE field with no transforms.`
+        `Editable column "${column.title}" must be a visible direct-mapped TEXT_NUMBER, PICKLIST, PHONE, or CONTACT_LIST/MULTI_CONTACT_LIST field (contact columns require contact_emails or contact_names transform).`
       );
     }
   }

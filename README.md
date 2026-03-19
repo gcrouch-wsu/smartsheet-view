@@ -13,6 +13,7 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
 - **Universal Embed**: Standalone pages or iframe embeds for WordPress/CMS with automatic height reporting.
+- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit their assigned rows from the public view. WSU email + password auth; row ownership from contact columns; editable fields and multi-person field groups configurable per view.
 
 ## Documentation
 
@@ -75,6 +76,6 @@ After saving, use **Test connection** to verify the Smartsheet API can reach the
 - `src/app/` – Next.js App Router (Public views and Admin API)
 - `src/components/` – UI components (Public layouts and Admin Builder)
 - `src/lib/` – Business logic (Smartsheet client, transforms, filters)
-- `config/sources/` – Source configuration files (JSON)
-- `config/views/` – View configuration files (JSON)
+- `config/sources/` – Source configuration files (JSON, fallback when DB not used)
+- `config/views/` – View configuration files (JSON, fallback when DB not used)
 - `config/themes/` – Custom theme preset files (JSON)
