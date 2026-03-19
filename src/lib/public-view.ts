@@ -221,21 +221,23 @@ export async function loadPublicPage(slug: string, options?: { includePrivate?: 
   const sourceConfig = sourceId ? await getSourceConfigById(sourceId) : null;
 
   if (!sourceConfig) {
-    throw new Error(`Source config "${sourceId}" was not found.`);
+    throw new Error(`The data source for this view ("${sourceId}") could not be found or is no longer registered.`);
   }
 
-  const mismatchedSource = views.find((view) => view.sourceId !== sourceConfig.id);
-  if (mismatchedSource) {
-    throw new Error(`All public views for slug "${slug}" must share the same source.`);
+  // Filter to only views that share the same source to prevent data fetching errors
+  const compatibleViews = views.filter((view) => view.sourceId === sourceConfig.id);
+  
+  if (compatibleViews.length < views.length) {
+    console.warn(`[smartsheets_view] Slug "${slug}" contains views with different sources. Only views for source "${sourceId}" will be shown.`);
   }
 
   const dataset = await getSmartsheetDataset(sourceConfig);
 
-  for (const view of views) {
+  for (const view of compatibleViews) {
     logSchemaDriftWarnings(slug, view.id, collectSchemaDriftWarnings(view, dataset.columns));
   }
 
-  const resolvedViews = views.map((view) => resolveView(view, dataset.rows));
+  const resolvedViews = compatibleViews.map((view) => resolveView(view, dataset.rows));
 
   return {
     slug,

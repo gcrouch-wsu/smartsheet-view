@@ -210,7 +210,6 @@ export function HeaderCustomTextEditor({
       FontFamily,
       FontSize,
       Highlight.configure({ multicolor: true }),
-      BubbleMenuExtension,
     ],
     content: value || "",
     immediatelyRender: false,
@@ -464,35 +463,6 @@ export function HeaderCustomTextEditor({
           </ToolbarButton>
         </div>
       </div>
-
-      {/* Bubble Menu (Inline Formatting) */}
-      {editor && (
-        <BubbleMenuComponent editor={editor}>
-          <div className="flex items-center gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-white p-1 shadow-xl ring-1 ring-black/5">
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              active={editor.isActive("bold")}
-              title="Bold"
-            >
-              <BoldIcon />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              active={editor.isActive("italic")}
-              title="Italic"
-            >
-              <ItalicIcon />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={openLinkMenu}
-              active={editor.isActive("link")}
-              title="Link"
-            >
-              <LinkIcon />
-            </ToolbarButton>
-          </div>
-        </BubbleMenuComponent>
-      )}
 
       <EditorContent editor={editor} />
 

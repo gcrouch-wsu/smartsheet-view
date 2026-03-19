@@ -44,7 +44,29 @@ export default async function PublicViewPage({
 }) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const page = await loadPublicPage(slug, { includePrivate: true });
+  
+  let page;
+  try {
+    page = await loadPublicPage(slug, { includePrivate: true });
+  } catch (error) {
+    console.error(`[smartsheets_view] Failed to load public page "${slug}":`, error);
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[color:var(--wsu-stone)] px-4 text-center">
+        <div className="max-w-md space-y-4 rounded-3xl border border-[color:var(--wsu-border)] bg-white p-8 shadow-xl">
+          <h1 className="text-2xl font-bold text-[color:var(--wsu-crimson)]">Application Error</h1>
+          <p className="text-sm text-[color:var(--wsu-muted)]">
+            We encountered a problem loading this data view. This usually happens if the Smartsheet source is unavailable or the configuration is incomplete.
+          </p>
+          <div className="text-[10px] font-mono text-left bg-gray-50 p-2 rounded overflow-auto max-h-32">
+            {error instanceof Error ? error.message : String(error)}
+          </div>
+          <Link href="/" className="btn-crimson inline-block rounded-full bg-[color:var(--wsu-crimson)] px-6 py-2 text-sm font-medium">
+            Return home
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   if (!page) {
     notFound();
