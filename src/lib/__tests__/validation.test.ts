@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { validateViewConfig } from "@/lib/config/validation";
 
 describe("validateViewConfig", () => {
@@ -100,7 +100,52 @@ describe("validateViewConfig", () => {
       enabled: true,
       contactColumnIds: [101],
       editableColumnIds: [102, 103],
+      editableFieldGroups: [],
       showLoginLink: false,
+    });
+  });
+
+  it("parses editableFieldGroups in editing config", () => {
+    const result = validateViewConfig(
+      {
+        id: "directory-groups",
+        slug: "directory",
+        sourceId: "grad-programs",
+        label: "Directory with groups",
+        layout: "table",
+        public: false,
+        fields: [
+          { key: "coordinator", label: "Coordinator", source: { columnId: 201 }, render: { type: "text" } },
+          { key: "coordinator_email", label: "Coordinator email", source: { columnId: 202 }, render: { type: "text" } },
+        ],
+        editing: {
+          enabled: true,
+          contactColumnIds: [101],
+          editableColumnIds: [],
+          editableFieldGroups: [
+            {
+              id: "coordinators",
+              label: "Grad program coordinators",
+              attributes: [
+                { attribute: "name", fieldKey: "coordinator", columnId: 201 },
+                { attribute: "email", fieldKey: "coordinator_email", columnId: 202 },
+              ],
+            },
+          ],
+        },
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.editing?.editableFieldGroups).toHaveLength(1);
+    expect(result.data?.editing?.editableFieldGroups?.[0]).toEqual({
+      id: "coordinators",
+      label: "Grad program coordinators",
+      attributes: [
+        { attribute: "name", fieldKey: "coordinator", columnId: 201 },
+        { attribute: "email", fieldKey: "coordinator_email", columnId: 202 },
+      ],
     });
   });
 });

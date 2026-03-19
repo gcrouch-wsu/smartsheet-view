@@ -6,6 +6,11 @@ import { useToast } from "@/components/admin/Toast";
 import { FieldValue } from "@/components/public/FieldValue";
 import { useContributorContext } from "@/components/public/ContributorContext";
 import type { ResolvedViewRow } from "@/lib/config/types";
+import {
+  parseMultiPersonRow,
+  serializeMultiPersonToCells,
+  type MultiPersonEntry,
+} from "@/lib/contributor-utils";
 
 export function EditRowDrawer({
   slug,
@@ -22,9 +27,11 @@ export function EditRowDrawer({
   const toast = useToast();
   const contributor = useContributorContext();
   const [formValues, setFormValues] = useState<Record<number, string>>({});
+  const [groupValues, setGroupValues] = useState<Record<string, MultiPersonEntry[]>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const editableFieldGroups = contributor?.editingConfig?.editableFieldGroups ?? [];
   const editableFields = useMemo(() => {
     if (!row || !contributor?.editingConfig) {
       return [];
@@ -46,8 +53,14 @@ export function EditRowDrawer({
       return values;
     }, {});
     setFormValues(nextValues);
+
+    const nextGroups: Record<string, MultiPersonEntry[]> = {};
+    for (const group of editableFieldGroups) {
+      nextGroups[group.id] = parseMultiPersonRow(row, group);
+    }
+    setGroupValues(nextGroups);
     setError(null);
-  }, [contributor?.editingConfig, editableFields, open, row]);
+  }, [contributor?.editingConfig, editableFields, editableFieldGroups, open, row]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +83,16 @@ export function EditRowDrawer({
     setIsSaving(true);
     setError(null);
 
+    const cells: Array<{ columnId: number; value: string }> = [
+      ...editableFields.map((field) => ({
+        columnId: field.columnId,
+        value: formValues[field.columnId] ?? "",
+      })),
+      ...editableFieldGroups.flatMap((group) =>
+        serializeMultiPersonToCells(groupValues[group.id] ?? [], group),
+      ),
+    ];
+
     try {
       const response = await fetch(`/api/public/views/${slug}/rows/${row.id}`, {
         method: "PATCH",
@@ -78,10 +101,7 @@ export function EditRowDrawer({
         },
         body: JSON.stringify({
           viewId: contributor.viewId,
-          cells: editableFields.map((field) => ({
-            columnId: field.columnId,
-            value: formValues[field.columnId] ?? "",
-          })),
+          cells,
         }),
       });
 
@@ -135,62 +155,170 @@ export function EditRowDrawer({
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6">
-            {editableFields.length === 0 ? (
+            {editableFields.length === 0 && editableFieldGroups.length === 0 ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 No editable fields are available for this row.
               </div>
             ) : (
-              <section className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                    Editable Fields
-                  </h4>
-                  <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                    Changes save directly to the live Smartsheet row.
-                  </p>
-                </div>
-                {editableFields.map((field) => {
-                  const value = formValues[field.columnId] ?? "";
+              <>
+                {editableFields.length > 0 && (
+                  <section className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                        Editable Fields
+                      </h4>
+                      <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                        Changes save directly to the live Smartsheet row.
+                      </p>
+                    </div>
+                    {editableFields.map((field) => {
+                      const value = formValues[field.columnId] ?? "";
+                      return (
+                        <label key={field.columnId} className="block space-y-2 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
+                          <span className="block text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</span>
+                          {field.columnType === "PICKLIST" && field.options && field.options.length > 0 ? (
+                            <select
+                              value={value}
+                              onChange={(event) =>
+                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
+                              }
+                              className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                            >
+                              <option value="">Select value</option>
+                              {field.options.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          ) : field.renderType === "multiline_text" ? (
+                            <textarea
+                              value={value}
+                              onChange={(event) =>
+                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
+                              }
+                              rows={4}
+                              className="w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                            />
+                          ) : (
+                            <input
+                              value={value}
+                              onChange={(event) =>
+                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
+                              }
+                              className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                            />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </section>
+                )}
+
+                {editableFieldGroups.map((group) => {
+                  const persons = groupValues[group.id] ?? [];
+                  const hasName = group.attributes.some((a) => a.attribute === "name");
+                  const hasEmail = group.attributes.some((a) => a.attribute === "email");
+                  const hasPhone = group.attributes.some((a) => a.attribute === "phone");
+
                   return (
-                    <label key={field.columnId} className="block space-y-2 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
-                      <span className="block text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</span>
-                      {field.columnType === "PICKLIST" && field.options && field.options.length > 0 ? (
-                        <select
-                          value={value}
-                          onChange={(event) =>
-                            setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                          }
-                          className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                    <section key={group.id} className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                          {group.label}
+                        </h4>
+                        <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                          One card per person. Values are saved comma-separated in Smartsheet.
+                        </p>
+                      </div>
+                      <div className="space-y-4">
+                        {persons.map((person, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-[color:var(--wsu-muted)]">
+                                Person {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGroupValues((prev) => ({
+                                    ...prev,
+                                    [group.id]: persons.filter((_, i) => i !== idx),
+                                  }));
+                                }}
+                                className="text-xs text-rose-600 hover:text-rose-800"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <div className="grid gap-3">
+                              {hasName && (
+                                <label className="block space-y-1">
+                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Name</span>
+                                  <input
+                                    value={person.name}
+                                    onChange={(e) => {
+                                      const next = [...persons];
+                                      next[idx] = { ...next[idx]!, name: e.target.value };
+                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                    }}
+                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                  />
+                                </label>
+                              )}
+                              {hasEmail && (
+                                <label className="block space-y-1">
+                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Email</span>
+                                  <input
+                                    type="email"
+                                    value={person.email}
+                                    onChange={(e) => {
+                                      const next = [...persons];
+                                      next[idx] = { ...next[idx]!, email: e.target.value };
+                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                    }}
+                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                  />
+                                </label>
+                              )}
+                              {hasPhone && (
+                                <label className="block space-y-1">
+                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Phone</span>
+                                  <input
+                                    type="tel"
+                                    value={person.phone}
+                                    onChange={(e) => {
+                                      const next = [...persons];
+                                      next[idx] = { ...next[idx]!, phone: e.target.value };
+                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                    }}
+                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGroupValues((prev) => ({
+                              ...prev,
+                              [group.id]: [...persons, { name: "", email: "", phone: "" }],
+                            }));
+                          }}
+                          className="w-full rounded-xl border border-dashed border-[color:var(--wsu-border)] py-3 text-sm font-medium text-[color:var(--wsu-muted)] hover:bg-[color:var(--wsu-stone)]/10"
                         >
-                          <option value="">Select value</option>
-                          {field.options.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : field.renderType === "multiline_text" ? (
-                        <textarea
-                          value={value}
-                          onChange={(event) =>
-                            setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                          }
-                          rows={4}
-                          className="w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                        />
-                      ) : (
-                        <input
-                          value={value}
-                          onChange={(event) =>
-                            setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                          }
-                          className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                        />
-                      )}
-                    </label>
+                          Add person
+                        </button>
+                      </div>
+                    </section>
                   );
                 })}
-              </section>
+              </>
             )}
 
             {readOnlyFields.length > 0 && (
@@ -234,7 +362,10 @@ export function EditRowDrawer({
             </button>
             <button
               type="submit"
-              disabled={isSaving || editableFields.length === 0}
+              disabled={
+                isSaving ||
+                (editableFields.length === 0 && editableFieldGroups.length === 0)
+              }
               className="rounded-full bg-[color:var(--wsu-crimson)] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save changes"}

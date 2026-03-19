@@ -1,4 +1,6 @@
 import type {
+  EditableFieldGroup,
+  EditableFieldGroupAttribute,
   RenderType,
   ResolvedViewRow,
   SmartsheetCell,
@@ -11,15 +13,15 @@ import { applyViewFilters } from "@/lib/filters";
 import { normalizeSourceValue, toContactList } from "@/lib/transforms";
 
 const CONTRIBUTOR_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
-const CONTRIBUTOR_EDITABLE_COLUMN_TYPES = new Set(["TEXT_NUMBER", "PICKLIST"]);
-const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>(["text", "multiline_text", "badge"]);
+const CONTRIBUTOR_EDITABLE_COLUMN_TYPES = new Set(["TEXT_NUMBER", "PICKLIST", "PHONE"]);
+const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>(["text", "multiline_text", "badge", "phone"]);
 
 export interface ContributorEditableFieldDefinition {
   columnId: number;
-  columnType: "TEXT_NUMBER" | "PICKLIST";
+  columnType: "TEXT_NUMBER" | "PICKLIST" | "PHONE";
   fieldKey: string;
   label: string;
-  renderType: "text" | "multiline_text" | "badge";
+  renderType: "text" | "multiline_text" | "badge" | "phone";
   options?: string[];
 }
 
@@ -28,6 +30,73 @@ export interface ContributorEditingClientConfig {
   editableColumnIds: number[];
   fieldColumnMap: Record<number, string>;
   editableFields: ContributorEditableFieldDefinition[];
+  editableFieldGroups: EditableFieldGroup[];
+}
+
+/** Person object for multi-person fields: name, email, phone. */
+export interface MultiPersonEntry {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+const MULTI_PERSON_DELIMITERS = /[,;]+/;
+
+/** Parse a cell value into an array of strings (one per person/position). Handles comma and semicolon. */
+export function parseMultiPersonValue(value: string | null | undefined): string[] {
+  if (value == null || typeof value !== "string") return [];
+  return value
+    .split(MULTI_PERSON_DELIMITERS)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Parse a row's field values into person entries. Aligns by index across attributes. */
+export function parseMultiPersonRow(
+  row: ResolvedViewRow,
+  group: EditableFieldGroup,
+): MultiPersonEntry[] {
+  const attrArrays = group.attributes.map((attr) => {
+    const val = row.fieldMap[attr.fieldKey]?.textValue ?? "";
+    return parseMultiPersonValue(val);
+  });
+
+  const maxLen = Math.max(1, ...attrArrays.map((a) => a.length));
+  const persons: MultiPersonEntry[] = [];
+
+  const defaults: MultiPersonEntry = { name: "", email: "", phone: "" };
+
+  for (let i = 0; i < maxLen; i++) {
+    const entry: MultiPersonEntry = { ...defaults };
+    for (let j = 0; j < group.attributes.length; j++) {
+      const attr = group.attributes[j];
+      const arr = attrArrays[j];
+      const val = arr?.[i] ?? "";
+      if (attr.attribute === "name") entry.name = val;
+      else if (attr.attribute === "email") entry.email = val;
+      else if (attr.attribute === "phone") entry.phone = val;
+    }
+    persons.push(entry);
+  }
+
+  return persons;
+}
+
+/** Serialize person entries back to cell values. Always uses comma as delimiter. */
+export function serializeMultiPersonToCells(
+  persons: MultiPersonEntry[],
+  group: EditableFieldGroup,
+): Array<{ columnId: number; value: string }> {
+  return group.attributes.map((attr) => {
+    const values = persons.map((p) => {
+      if (attr.attribute === "name") return p.name.trim();
+      if (attr.attribute === "email") return p.email.trim();
+      if (attr.attribute === "phone") return p.phone.trim();
+      return "";
+    });
+    const value = values.filter(Boolean).join(", ") || "";
+    return { columnId: attr.columnId, value };
+  });
 }
 
 export function normalizeContributorEmail(value: string) {
@@ -80,7 +149,7 @@ export function getEditableRowIdsForView(rows: SmartsheetRow[], view: ViewConfig
     .map((row) => row.id);
 }
 
-export function isContributorEditableRenderType(renderType: RenderType): renderType is "text" | "multiline_text" | "badge" {
+export function isContributorEditableRenderType(renderType: RenderType): renderType is "text" | "multiline_text" | "badge" | "phone" {
   return CONTRIBUTOR_EDITABLE_RENDER_TYPES.has(renderType);
 }
 
@@ -162,8 +231,15 @@ export function buildContributorEditingClientConfig(view: ViewConfig, columns: S
     return null;
   }
 
-  const editableFields = getEligibleEditableFieldDefinitions(view, columns, editing.editableColumnIds);
-  const editableColumnIds = editableFields.map((field) => field.columnId);
+  const groups = editing.editableFieldGroups ?? [];
+  const groupColumnIds = new Set(
+    groups.flatMap((g) => g.attributes.map((a) => a.columnId)),
+  );
+
+  const allEditableFields = getEligibleEditableFieldDefinitions(view, columns, editing.editableColumnIds);
+  const editableFields = allEditableFields.filter((f) => !groupColumnIds.has(f.columnId));
+  const simpleColumnIds = editableFields.map((field) => field.columnId);
+  const editableColumnIds = [...simpleColumnIds, ...groupColumnIds];
   const fieldColumnMap = editableFields.reduce<Record<number, string>>((map, field) => {
     map[field.columnId] = field.fieldKey;
     return map;
@@ -174,6 +250,7 @@ export function buildContributorEditingClientConfig(view: ViewConfig, columns: S
     editableColumnIds,
     fieldColumnMap,
     editableFields,
+    editableFieldGroups: groups,
   } satisfies ContributorEditingClientConfig;
 }
 
@@ -200,7 +277,12 @@ export function getContributorEditingValidationErrors(view: ViewConfig, columns:
   const eligibleFields = getEligibleEditableFieldDefinitions(view, columns);
   const eligibleByColumnId = new Map(eligibleFields.map((field) => [field.columnId, field]));
 
+  const groupColumnIds = new Set(
+    (editing.editableFieldGroups ?? []).flatMap((g) => g.attributes.map((a) => a.columnId)),
+  );
+
   for (const columnId of editing.editableColumnIds) {
+    if (groupColumnIds.has(columnId)) continue;
     const column = columnsById.get(columnId);
     if (!column) {
       errors.push(`Editable column ${columnId} does not exist in the current source schema.`);
@@ -208,8 +290,20 @@ export function getContributorEditingValidationErrors(view: ViewConfig, columns:
     }
     if (!eligibleByColumnId.has(columnId)) {
       errors.push(
-        `Editable column "${column.title}" must be a visible direct-mapped TEXT_NUMBER or PICKLIST field with no transforms.`
+        `Editable column "${column.title}" must be a visible direct-mapped TEXT_NUMBER, PICKLIST, or PHONE field with no transforms.`
       );
+    }
+  }
+
+  const fieldKeys = new Set(view.fields.map((f) => f.key));
+  for (const group of editing.editableFieldGroups ?? []) {
+    for (const attr of group.attributes) {
+      if (!fieldKeys.has(attr.fieldKey)) {
+        errors.push(`Editable field group "${group.label}": field key "${attr.fieldKey}" does not exist in the view.`);
+      }
+      if (!columnsById.has(attr.columnId)) {
+        errors.push(`Editable field group "${group.label}": column ${attr.columnId} does not exist in the source schema.`);
+      }
     }
   }
 

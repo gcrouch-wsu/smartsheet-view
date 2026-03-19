@@ -151,6 +151,7 @@ function createEditingConfigState(current?: ViewEditingConfig): ViewEditingConfi
     enabled: current?.enabled ?? false,
     contactColumnIds: current?.contactColumnIds ?? [],
     editableColumnIds: current?.editableColumnIds ?? [],
+    editableFieldGroups: current?.editableFieldGroups ?? [],
     showLoginLink: current?.showLoginLink !== false,
   };
 }
@@ -2239,6 +2240,96 @@ export function ViewBuilder({
                                 );
                               })
                             )}
+                          </div>
+                        </section>
+
+                        <section className="space-y-4 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
+                          <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                              Multi-person field groups
+                            </h3>
+                            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                              For columns like &quot;Coordinator&quot; and &quot;Coordinator email&quot; that hold comma-separated values. Contributors edit one card per person; values save comma-separated.
+                            </p>
+                          </div>
+                          <div className="space-y-4">
+                            {(view.editing?.editableFieldGroups ?? []).map((group, groupIdx) => (
+                              <div
+                                key={group.id}
+                                className="rounded-xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <input
+                                    type="text"
+                                    value={group.label}
+                                    onChange={(e) => {
+                                      const next = [...(view.editing?.editableFieldGroups ?? [])];
+                                      next[groupIdx] = { ...next[groupIdx]!, label: e.target.value };
+                                      updateEditing({ ...createEditingConfigState(view.editing), enabled: true, editableFieldGroups: next });
+                                    }}
+                                    placeholder="Group label (e.g. Grad program coordinators)"
+                                    className="flex-1 rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = (view.editing?.editableFieldGroups ?? []).filter((_, i) => i !== groupIdx);
+                                      updateEditing({ ...createEditingConfigState(view.editing), enabled: true, editableFieldGroups: next });
+                                    }}
+                                    className="rounded-full border border-rose-200 px-3 py-1.5 text-xs text-rose-700"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <div className="grid gap-2 text-sm">
+                                  {(["name", "email", "phone"] as const).map((attr) => {
+                                    const current = group.attributes.find((a) => a.attribute === attr);
+                                    return (
+                                      <div key={attr} className="flex items-center gap-2">
+                                        <span className="w-14 shrink-0 capitalize text-[color:var(--wsu-muted)]">{attr}:</span>
+                                        <select
+                                          value={current?.fieldKey ?? ""}
+                                          onChange={(e) => {
+                                            const fieldKey = e.target.value;
+                                            const field = view.fields.find((f) => f.key === fieldKey);
+                                            const columnId = typeof field?.source?.columnId === "number" ? field.source.columnId : 0;
+                                            const next = [...(view.editing?.editableFieldGroups ?? [])];
+                                            const attrs = [...(next[groupIdx]?.attributes ?? [])];
+                                            const existingIdx = attrs.findIndex((a) => a.attribute === attr);
+                                            const newAttr = { attribute: attr, fieldKey: fieldKey || "", columnId };
+                                            if (existingIdx >= 0) {
+                                              attrs[existingIdx] = newAttr;
+                                            } else {
+                                              attrs.push(newAttr);
+                                            }
+                                            next[groupIdx] = { ...next[groupIdx]!, attributes: attrs };
+                                            updateEditing({ ...createEditingConfigState(view.editing), enabled: true, editableFieldGroups: next });
+                                          }}
+                                          className="flex-1 rounded-lg border border-[color:var(--wsu-border)] px-2 py-1.5 text-sm"
+                                        >
+                                          <option value="">— Select field —</option>
+                                          {eligibleEditableFields.map((f) => (
+                                            <option key={f.columnId} value={f.fieldKey}>
+                                              {f.label} (column {f.columnId})
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...(view.editing?.editableFieldGroups ?? []), { id: `group-${Date.now()}`, label: "New group", attributes: [] }];
+                                updateEditing({ ...createEditingConfigState(view.editing), enabled: true, editableFieldGroups: next });
+                              }}
+                              className="w-full rounded-xl border border-dashed border-[color:var(--wsu-border)] py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:bg-white"
+                            >
+                              Add multi-person group
+                            </button>
                           </div>
                         </section>
                       </div>

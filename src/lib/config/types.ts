@@ -173,10 +173,25 @@ export interface ThemeConfig {
   tokens: Partial<ViewStyleConfig>;
 }
 
+export type EditableFieldGroupAttributeType = "name" | "email" | "phone";
+
+export interface EditableFieldGroupAttribute {
+  attribute: EditableFieldGroupAttributeType;
+  fieldKey: string;
+  columnId: number;
+}
+
+export interface EditableFieldGroup {
+  id: string;
+  label: string;
+  attributes: EditableFieldGroupAttribute[];
+}
+
 export interface ViewEditingConfig {
   enabled: boolean;
   contactColumnIds: number[];
   editableColumnIds: number[];
+  editableFieldGroups?: EditableFieldGroup[];
   showLoginLink?: boolean;
 }
 

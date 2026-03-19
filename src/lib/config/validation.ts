@@ -1,5 +1,7 @@
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import type {
+  EditableFieldGroup,
+  EditableFieldGroupAttribute,
   FilterOperator,
   LayoutType,
   RenderType,
@@ -493,8 +495,12 @@ function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig 
     errors.push("editing.contactColumnIds must include at least one column when editing is enabled.");
   }
 
-  if (enabled && editableColumnIds.values.length === 0) {
-    errors.push("editing.editableColumnIds must include at least one column when editing is enabled.");
+  const editableFieldGroups = parseEditableFieldGroups(input.editableFieldGroups);
+  errors.push(...editableFieldGroups.errors);
+
+  const hasEditableContent = editableColumnIds.values.length > 0 || editableFieldGroups.data.length > 0;
+  if (enabled && !hasEditableContent) {
+    errors.push("editing must include at least one editable column or editable field group when editing is enabled.");
   }
 
   return {
@@ -506,9 +512,80 @@ function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig 
           enabled,
           contactColumnIds: contactColumnIds.values,
           editableColumnIds: editableColumnIds.values,
+          editableFieldGroups: editableFieldGroups.data,
           showLoginLink: asBoolean(input.showLoginLink, true),
         },
   };
+}
+
+function parseEditableFieldGroups(input: unknown): {
+  errors: string[];
+  data: EditableFieldGroup[];
+} {
+  const errors: string[] = [];
+  const data: EditableFieldGroup[] = [];
+
+  if (input === undefined || input === null || input === "") {
+    return { errors: [], data: [] };
+  }
+
+  if (!Array.isArray(input)) {
+    return { errors: ["editing.editableFieldGroups must be an array."], data: [] };
+  }
+
+  const attrTypes = new Set(["name", "email", "phone"]);
+
+  for (let i = 0; i < input.length; i++) {
+    const item = input[i];
+    if (!isRecord(item)) {
+      errors.push(`editing.editableFieldGroups[${i}] must be an object.`);
+      continue;
+    }
+
+    const id = String(item.id ?? `group-${i}`).trim() || `group-${i}`;
+    const label = String(item.label ?? "").trim() || `Group ${i + 1}`;
+    const attrsInput = Array.isArray(item.attributes) ? item.attributes : [];
+
+    if (attrsInput.length === 0) {
+      errors.push(`editing.editableFieldGroups[${i}].attributes must have at least one attribute.`);
+      continue;
+    }
+
+    const attributes: import("@/lib/config/types").EditableFieldGroupAttribute[] = [];
+    for (let j = 0; j < attrsInput.length; j++) {
+      const a = attrsInput[j];
+      if (!isRecord(a)) {
+        errors.push(`editing.editableFieldGroups[${i}].attributes[${j}] must be an object.`);
+        continue;
+      }
+      const attribute = String(a.attribute ?? "").trim().toLowerCase();
+      if (!attrTypes.has(attribute)) {
+        errors.push(`editing.editableFieldGroups[${i}].attributes[${j}].attribute must be "name", "email", or "phone".`);
+        continue;
+      }
+      const fieldKey = String(a.fieldKey ?? "").trim();
+      if (!fieldKey) {
+        errors.push(`editing.editableFieldGroups[${i}].attributes[${j}].fieldKey is required.`);
+        continue;
+      }
+      const columnId = asOptionalNumber(a.columnId);
+      if (columnId === undefined) {
+        errors.push(`editing.editableFieldGroups[${i}].attributes[${j}].columnId must be a number.`);
+        continue;
+      }
+      attributes.push({
+        attribute: attribute as EditableFieldGroupAttribute["attribute"],
+        fieldKey,
+        columnId,
+      });
+    }
+
+    if (attributes.length > 0) {
+      data.push({ id, label, attributes });
+    }
+  }
+
+  return { errors, data };
 }
 
 export function validateSourceConfig(input: unknown): ValidationResult<SourceConfig> {
