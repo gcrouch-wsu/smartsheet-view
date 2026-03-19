@@ -2295,12 +2295,13 @@ export function ViewBuilder({
                                           value={current?.fieldKey ?? ""}
                                           onChange={(e) => {
                                             const fieldKey = e.target.value;
-                                            const mpField = fieldsForMultiPersonGroup.find((f) => f.fieldKey === fieldKey);
+                                            const mpField = (fieldsForMultiPersonGroup.length > 0 ? fieldsForMultiPersonGroup : eligibleEditableFields).find((f) => f.fieldKey === fieldKey);
                                             const columnId = mpField?.columnId ?? 0;
+                                            const columnType = mpField && "columnType" in mpField ? mpField.columnType : undefined;
                                             const next = [...(view.editing?.editableFieldGroups ?? [])];
                                             const attrs = [...(next[groupIdx]?.attributes ?? [])];
                                             const existingIdx = attrs.findIndex((a) => a.attribute === attr);
-                                            const newAttr = { attribute: attr, fieldKey: fieldKey || "", columnId };
+                                            const newAttr = { attribute: attr, fieldKey: fieldKey || "", columnId, columnType };
                                             if (existingIdx >= 0) {
                                               attrs[existingIdx] = newAttr;
                                             } else {
@@ -2314,7 +2315,7 @@ export function ViewBuilder({
                                           <option value="">— Select field —</option>
                                           {(fieldsForMultiPersonGroup.length > 0 ? fieldsForMultiPersonGroup : eligibleEditableFields).map((f) => (
                                             <option key={`${f.fieldKey}-${f.columnId}`} value={f.fieldKey}>
-                                              {f.label} (column {f.columnId})
+                                              {f.label}
                                             </option>
                                           ))}
                                         </select>

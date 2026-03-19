@@ -187,6 +187,8 @@ export interface EditableFieldGroupAttribute {
   attribute: EditableFieldGroupAttributeType;
   fieldKey: string;
   columnId: number;
+  /** Column type (e.g. TEXT_NUMBER, CONTACT_LIST). Used for objectValue write-back on contact columns. */
+  columnType?: string;
 }
 
 export interface EditableFieldGroup {

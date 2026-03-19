@@ -579,10 +579,12 @@ function parseEditableFieldGroups(input: unknown): {
         errors.push(`editing.editableFieldGroups[${i}].attributes[${j}].columnId must be a number.`);
         continue;
       }
+      const columnType = asOptionalString(a.columnType);
       attributes.push({
         attribute: attribute as EditableFieldGroupAttribute["attribute"],
         fieldKey,
         columnId,
+        ...(columnType && { columnType }),
       });
     }
 

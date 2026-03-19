@@ -139,21 +139,58 @@ export function serializeContactDisplayToObjectValue(
   return { objectType: "MULTI_CONTACT", value };
 }
 
-/** Serialize person entries back to cell values. Always uses comma as delimiter. */
+/** Serialize person entries back to cell values. Uses value for TEXT_NUMBER/PHONE, objectValue for CONTACT_LIST/MULTI_CONTACT_LIST. */
 export function serializeMultiPersonToCells(
   persons: MultiPersonEntry[],
-  group: EditableFieldGroup,
-): Array<{ columnId: number; value: string }> {
-  return group.attributes.map((attr) => {
+  group: EditableFieldGroup & { attributes: Array<EditableFieldGroupAttribute & { columnType?: string }> },
+): Array<{ columnId: number; value?: string; objectValue?: unknown }> {
+  const isContact = (t?: string) =>
+    t === "CONTACT_LIST" || t === "MULTI_CONTACT_LIST";
+
+  const contactAttrsByColumn = new Map<number, Array<typeof group.attributes[0]>>();
+  const nonContactAttrs: Array<typeof group.attributes[0]> = [];
+
+  for (const attr of group.attributes) {
+    if (isContact(attr.columnType)) {
+      const arr = contactAttrsByColumn.get(attr.columnId) ?? [];
+      arr.push(attr);
+      contactAttrsByColumn.set(attr.columnId, arr);
+    } else {
+      nonContactAttrs.push(attr);
+    }
+  }
+
+  const result: Array<{ columnId: number; value?: string; objectValue?: unknown }> = [];
+
+  for (const [columnId, attrs] of contactAttrsByColumn) {
+    const hasEmail = attrs.some((a) => a.attribute === "email");
+    const hasName = attrs.some((a) => a.attribute === "name");
+    const value = persons.map((p) => {
+      const c: { objectType: "CONTACT"; email?: string; name?: string } = {
+        objectType: "CONTACT",
+      };
+      if (hasEmail && p.email.trim()) c.email = p.email.trim();
+      if (hasName && p.name.trim()) c.name = p.name.trim();
+      return c;
+    });
+    const objectValue =
+      (attrs[0]!.columnType as string) === "CONTACT_LIST"
+        ? value[0] ?? { objectType: "CONTACT" as const }
+        : { objectType: "MULTI_CONTACT" as const, value };
+    result.push({ columnId, objectValue });
+  }
+
+  for (const attr of nonContactAttrs) {
     const values = persons.map((p) => {
       if (attr.attribute === "name") return p.name.trim();
       if (attr.attribute === "email") return p.email.trim();
       if (attr.attribute === "phone") return p.phone.trim();
       return "";
     });
-    const value = values.filter(Boolean).join(", ") || "";
-    return { columnId: attr.columnId, value };
-  });
+    result.push({ columnId: attr.columnId, value: values.filter(Boolean).join(", ") || "" });
+  }
+
+  return result;
 }
 
 export function normalizeContributorEmail(value: string) {
@@ -363,14 +400,19 @@ export function getEligibleEditableFieldDefinitions(
   return eligibleFields;
 }
 
-/** Column types for multi-person groups: TEXT_NUMBER, PICKLIST, PHONE only. Contact columns use objectValue. */
-const MULTI_PERSON_GROUP_COLUMN_TYPES = new Set(["TEXT_NUMBER", "PICKLIST", "PHONE"]);
+/** Column types for multi-person groups. Contact columns need objectValue write-back. */
+const MULTI_PERSON_GROUP_COLUMN_TYPES = new Set([
+  "TEXT_NUMBER",
+  "PICKLIST",
+  "PHONE",
+  "CONTACT_LIST",
+  "MULTI_CONTACT_LIST",
+]);
 
 /**
- * Broader field list for multi-person groups. Includes fields that map to TEXT_NUMBER/PICKLIST/PHONE
- * even if they have transforms or multiple fields share a column. Use when eligibleEditableFields
- * is empty but the view has text-like columns (e.g. coordinator names, emails).
- * Excludes CONTACT_LIST/MULTI_CONTACT_LIST since those use objectValue, not comma-separated value.
+ * Field list for multi-person groups. Includes TEXT_NUMBER, PICKLIST, PHONE, and CONTACT_LIST/MULTI_CONTACT_LIST.
+ * For contact columns, only includes fields with contact_emails or contact_names transform; allows multiple
+ * fields per column (e.g. one for names, one for emails).
  */
 export function getFieldsForMultiPersonGroup(
   view: ViewConfig,
@@ -378,19 +420,33 @@ export function getFieldsForMultiPersonGroup(
 ): Array<{ columnId: number; fieldKey: string; label: string; columnType: string }> {
   const columnsById = new Map(columns.map((c) => [c.id, c]));
   const result: Array<{ columnId: number; fieldKey: string; label: string; columnType: string }> = [];
-  const seen = new Set<number>();
+  const seenNonContact = new Set<number>();
+  const seenContact = new Set<string>();
 
   for (const field of view.fields) {
     if (field.render.type === "hidden") continue;
     const columnId =
       (typeof field.source.columnId === "number" ? field.source.columnId : null) ??
       (typeof field.source.preferredColumnId === "number" ? field.source.preferredColumnId : null);
-    if (columnId == null || seen.has(columnId)) continue;
+    if (columnId == null) continue;
 
     const column = columnsById.get(columnId);
     if (!column || !MULTI_PERSON_GROUP_COLUMN_TYPES.has(column.type)) continue;
 
-    seen.add(columnId);
+    const isContact = CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(column.type);
+    if (isContact) {
+      const hasContactTransform = field.transforms?.some(
+        (t) => t.op === "contact_emails" || t.op === "contact_names",
+      );
+      if (!hasContactTransform) continue;
+      const key = `${columnId}:${field.key}`;
+      if (seenContact.has(key)) continue;
+      seenContact.add(key);
+    } else {
+      if (seenNonContact.has(columnId)) continue;
+      seenNonContact.add(columnId);
+    }
+
     result.push({
       columnId,
       fieldKey: field.key,
@@ -407,7 +463,14 @@ export function buildContributorEditingClientConfig(view: ViewConfig, columns: S
     return null;
   }
 
-  const groups = editing.editableFieldGroups ?? [];
+  const columnsById = new Map(columns.map((c) => [c.id, c]));
+  const groups = (editing.editableFieldGroups ?? []).map((group) => ({
+    ...group,
+    attributes: group.attributes.map((attr) => ({
+      ...attr,
+      columnType: attr.columnType ?? columnsById.get(attr.columnId)?.type,
+    })),
+  }));
   const groupColumnIds = new Set(
     groups.flatMap((g) => g.attributes.map((a) => a.columnId)),
   );
