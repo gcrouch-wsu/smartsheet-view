@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent, Node, mergeAttributes } from "@tiptap/react";
+import { useEditor, EditorContent, Node, mergeAttributes, Extension } from "@tiptap/react";
 import { BubbleMenu as BubbleMenuComponent } from "@tiptap/react/menus";
 import { BubbleMenu as BubbleMenuExtension } from "@tiptap/extension-bubble-menu";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -11,7 +11,84 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
+import FontFamily from "@tiptap/extension-font-family";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+/** Custom Font Size Extension */
+const FontSize = Extension.create({
+  name: "fontSize",
+  addOptions() {
+    return {
+      types: ["textStyle"],
+    };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize?.replace(/['"]+/g, ""),
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) {
+                return {};
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        (fontSize: string) =>
+        ({ chain }) => {
+          return chain().setMark("textStyle", { fontSize }).run();
+        },
+      unsetFontSize:
+        () =>
+        ({ chain }) => {
+          return chain().setMark("textStyle", { fontSize: null }).removeEmptyTextStyle().run();
+        },
+    };
+  },
+});
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    fontSize: {
+      setFontSize: (size: string) => ReturnType;
+      unsetFontSize: () => ReturnType;
+    };
+  }
+}
+
+const FONT_FAMILIES = [
+  { label: "Default Font", value: "" },
+  { label: "Serif", value: "serif" },
+  { label: "Sans-Serif", value: "sans-serif" },
+  { label: "Monospace", value: "monospace" },
+  { label: "Geist Sans", value: "var(--font-geist-sans)" },
+  { label: "Geist Mono", value: "var(--font-geist-mono)" },
+];
+
+const FONT_SIZES = [
+  { label: "Default Size", value: "" },
+  { label: "10px", value: "10px" },
+  { label: "12px", value: "12px" },
+  { label: "14px", value: "14px" },
+  { label: "16px", value: "16px" },
+  { label: "18px", value: "18px" },
+  { label: "20px", value: "20px" },
+  { label: "24px", value: "24px" },
+  { label: "32px", value: "32px" },
+  { label: "48px", value: "48px" },
+];
 
 // Icon helper components
 function BoldIcon() {
@@ -130,6 +207,8 @@ export function HeaderCustomTextEditor({
       }),
       TextStyle,
       Color,
+      FontFamily,
+      FontSize,
       Highlight.configure({ multicolor: true }),
       BubbleMenuExtension,
     ],
@@ -187,6 +266,40 @@ export function HeaderCustomTextEditor({
     <div className="space-y-2">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-2 py-1.5">
+        <div className="flex items-center gap-1 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
+          <select
+            className="rounded border border-[color:var(--wsu-border)] bg-white px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-[color:var(--wsu-crimson)] min-w-[80px]"
+            onChange={(e) => {
+              if (e.target.value) {
+                editor.chain().focus().setFontFamily(e.target.value).run();
+              } else {
+                editor.chain().focus().unsetFontFamily().run();
+              }
+            }}
+            value={editor.getAttributes("textStyle").fontFamily || ""}
+          >
+            {FONT_FAMILIES.map((f) => (
+              <option key={f.label} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+
+          <select
+            className="rounded border border-[color:var(--wsu-border)] bg-white px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-[color:var(--wsu-crimson)] w-[70px]"
+            onChange={(e) => {
+              if (e.target.value) {
+                editor.chain().focus().setFontSize(e.target.value).run();
+              } else {
+                editor.chain().focus().unsetFontSize().run();
+              }
+            }}
+            value={editor.getAttributes("textStyle").fontSize || ""}
+          >
+            {FONT_SIZES.map((s) => (
+              <option key={s.label} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex items-center gap-0.5 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -334,8 +447,18 @@ export function HeaderCustomTextEditor({
             <div className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-yellow-200 text-[8px] font-bold text-black">H</div>
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().unsetColor().unsetHighlight().run()}
-            title="Clear Styles"
+            onClick={() => {
+              editor.chain()
+                .focus()
+                .unsetAllMarks()
+                .clearNodes()
+                .unsetColor()
+                .unsetHighlight()
+                .unsetFontFamily()
+                .unsetFontSize()
+                .run();
+            }}
+            title="Clear All Styles"
           >
             <span className="text-[10px] font-bold">CLR</span>
           </ToolbarButton>

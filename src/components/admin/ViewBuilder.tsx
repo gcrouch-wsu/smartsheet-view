@@ -1029,7 +1029,7 @@ export function ViewBuilder({
                         if (!e.target.checked) {
                           update("presentation", { ...view.presentation, headerCustomText: undefined });
                         } else {
-                          update("presentation", { ...view.presentation, headerCustomText: "Public URL: {{PUBLIC_URL}}" });
+                          update("presentation", { ...view.presentation, headerCustomText: "" });
                         }
                       }}
                       className="rounded border-[color:var(--wsu-border)]"

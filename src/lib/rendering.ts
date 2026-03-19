@@ -90,7 +90,14 @@ export function isHtmlContent(text: string): boolean {
     trimmed.startsWith("<span") || 
     trimmed.startsWith("<a") ||
     trimmed.startsWith("<strong") ||
-    trimmed.startsWith("<em")
+    trimmed.startsWith("<em") ||
+    trimmed.startsWith("<h1") ||
+    trimmed.startsWith("<h2") ||
+    trimmed.startsWith("<h3") ||
+    trimmed.startsWith("<ul") ||
+    trimmed.startsWith("<ol") ||
+    trimmed.startsWith("<li") ||
+    trimmed.startsWith("<u")
   );
 }
 
