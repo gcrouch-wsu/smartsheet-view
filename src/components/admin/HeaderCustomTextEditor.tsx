@@ -257,7 +257,7 @@ export function HeaderCustomTextEditor({
 
       {/* Bubble Menu (Inline Formatting) */}
       {editor && (
-        <BubbleMenuComponent editor={editor} tippyOptions={{ duration: 100 }}>
+        <BubbleMenuComponent editor={editor}>
           <div className="flex items-center gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-white p-1 shadow-xl ring-1 ring-black/5">
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleBold().run()}
