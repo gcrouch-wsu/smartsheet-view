@@ -279,6 +279,16 @@ function buildDirectMappedFieldCounts(view: ViewConfig, columns: SmartsheetColum
   return counts;
 }
 
+/** Prefer contact_emails over contact_names when multiple fields map to same contact column. */
+function pickContactFieldForEditing(
+  fields: Array<{ field: ViewFieldConfig; column: SmartsheetColumn }>,
+): { field: ViewFieldConfig; column: SmartsheetColumn } | null {
+  if (fields.length === 0) return null;
+  const withEmails = fields.find((f) => f.field.transforms?.some((t) => t.op === "contact_emails"));
+  const withNames = fields.find((f) => f.field.transforms?.some((t) => t.op === "contact_names"));
+  return withEmails ?? withNames ?? fields[0] ?? null;
+}
+
 export function getEligibleEditableFieldDefinitions(
   view: ViewConfig,
   columns: SmartsheetColumn[],
@@ -289,14 +299,12 @@ export function getEligibleEditableFieldDefinitions(
   const requestedEditableIds = editableColumnIds ? new Set(editableColumnIds) : null;
 
   const eligibleFields: ContributorEditableFieldDefinition[] = [];
+  const contactFieldsByColumn = new Map<number, Array<{ field: ViewFieldConfig; column: SmartsheetColumn }>>();
 
   for (const field of view.fields) {
     const columnId = field.source.columnId as number;
     const column = columnsById.get(columnId);
     if (!isEditableFieldDirectMapped(field, column)) {
-      continue;
-    }
-    if (directFieldCounts.get(columnId) !== 1) {
       continue;
     }
     if (requestedEditableIds && !requestedEditableIds.has(columnId)) {
@@ -306,6 +314,37 @@ export function getEligibleEditableFieldDefinitions(
       continue;
     }
 
+    const isContactColumn = CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(column.type);
+    const count = directFieldCounts.get(columnId) ?? 0;
+
+    if (isContactColumn) {
+      if (count >= 1) {
+        const arr = contactFieldsByColumn.get(columnId) ?? [];
+        arr.push({ field, column });
+        contactFieldsByColumn.set(columnId, arr);
+      }
+    } else {
+      if (count !== 1) continue;
+      const transformCheck = hasEditableSafeTransforms(field, column.type);
+      const def: ContributorEditableFieldDefinition = {
+        columnId,
+        columnType: column.type as ContributorEditableFieldDefinition["columnType"],
+        fieldKey: field.key,
+        label: field.label || field.key,
+        renderType: field.render.type as ContributorEditableFieldDefinition["renderType"],
+        options: column.options,
+      };
+      if (transformCheck.contactDisplayMode) {
+        def.contactDisplayMode = transformCheck.contactDisplayMode;
+      }
+      eligibleFields.push(def);
+    }
+  }
+
+  for (const [columnId, fields] of contactFieldsByColumn) {
+    const picked = pickContactFieldForEditing(fields);
+    if (!picked) continue;
+    const { field, column } = picked;
     const transformCheck = hasEditableSafeTransforms(field, column.type);
     const def: ContributorEditableFieldDefinition = {
       columnId,

@@ -25,14 +25,22 @@ export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
 
 /** Font weight options for body and heading. */
 export const FONT_WEIGHT_OPTIONS: { value: string; label: string }[] = [
-  { value: "normal", label: "Normal" },
-  { value: "bold", label: "Bold" },
+  { value: "100", label: "Thin (100)" },
+  { value: "200", label: "Extra light (200)" },
+  { value: "300", label: "Light (300)" },
+  { value: "400", label: "Normal (400)" },
+  { value: "500", label: "Medium (500)" },
+  { value: "600", label: "Semibold (600)" },
+  { value: "700", label: "Bold (700)" },
+  { value: "800", label: "Extra bold (800)" },
+  { value: "900", label: "Black (900)" },
 ];
 
 /** Font style options for body and heading. */
 export const FONT_STYLE_OPTIONS: { value: string; label: string }[] = [
   { value: "normal", label: "Normal" },
   { value: "italic", label: "Italic" },
+  { value: "oblique", label: "Oblique" },
 ];
 
 /** Border radius presets for cards and buttons. */

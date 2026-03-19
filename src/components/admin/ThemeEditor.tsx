@@ -67,6 +67,13 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
   const getValue = (token: keyof ViewStyleConfig) =>
     view.style?.[token] ?? (currentPreset.tokens[token] as string) ?? "";
 
+  const getFontWeightValue = (token: "fontWeight" | "headingFontWeight") => {
+    const v = getValue(token);
+    if (v === "normal") return "400";
+    if (v === "bold") return "700";
+    return v || "400";
+  };
+
   const renderContrastIndicator = (token: keyof ViewStyleConfig, value: string) => {
     if (token !== "accentColor" && token !== "textColor") return null;
     const bgToken: keyof ViewStyleConfig = token === "accentColor" ? "backgroundColor" : "cardBackground";
@@ -222,7 +229,7 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body weight</label>
                   <select
-                    value={getValue("fontWeight")}
+                    value={getFontWeightValue("fontWeight")}
                     onChange={(e) => updateStyle("fontWeight", e.target.value)}
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
@@ -234,7 +241,7 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading weight</label>
                   <select
-                    value={getValue("headingFontWeight")}
+                    value={getFontWeightValue("headingFontWeight")}
                     onChange={(e) => updateStyle("headingFontWeight", e.target.value)}
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
