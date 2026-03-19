@@ -47,7 +47,7 @@ export default async function PublicViewPage({
   
   let page;
   try {
-    page = await loadPublicPage(slug, { includePrivate: true });
+    page = await loadPublicPage(slug);
   } catch (error) {
     console.error(`[smartsheets_view] Failed to load public page "${slug}":`, error);
     return (

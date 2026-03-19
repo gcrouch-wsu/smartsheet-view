@@ -1,54 +1,82 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
-/** 
+const ALLOWED_TAGS = ["p", "br", "strong", "em", "s", "a", "span", "h1", "h2", "h3", "ul", "ol", "li", "u"];
+const ALLOWED_ATTR: Record<string, string[]> = {
+  a: ["href", "target", "rel", "class"],
+  p: ["class", "style"],
+  span: ["class", "style"],
+  h1: ["class", "style"],
+  h2: ["class", "style"],
+  h3: ["class", "style"],
+  ul: ["class", "style"],
+  ol: ["class", "style"],
+  li: ["class", "style"],
+  strong: ["class"],
+  em: ["class"],
+  s: ["class"],
+  u: ["class"],
+};
+
+/**
  * Safely render the custom header text with {{PUBLIC_URL}} replacement.
- * Prevents XSS and ensures a robust, clickable link.
+ * Uses sanitize-html (no jsdom) to avoid ESM/CommonJS issues on Vercel.
  */
 export function renderHeaderCustomText(html: string, publicUrl: string): string {
-  // 1. Strict protocol check: only allow http(s) or relative URLs
-  const isSafeProtocol = publicUrl.startsWith("http://") || 
-                        publicUrl.startsWith("https://") || 
-                        publicUrl.startsWith("/");
-  
+  const isSafeProtocol =
+    publicUrl.startsWith("http://") || publicUrl.startsWith("https://") || publicUrl.startsWith("/");
+
   if (!isSafeProtocol) {
-    return DOMPurify.sanitize(html);
+    return sanitizeHtml(html, { allowedTags: ALLOWED_TAGS, allowedAttributes: ALLOWED_ATTR });
   }
 
-  // 2. Use an extremely unique placeholder for sanitization
   const randomSuffix = Math.random().toString(36).slice(2, 10);
   const tempPlaceholder = `___PUBLIC_URL_LINK_${Date.now()}_${randomSuffix}___`;
-  
   const withTemp = html.replace(/\{\{PUBLIC_URL\}\}/g, tempPlaceholder);
 
-  // 3. Initial sanitization for user-provided HTML
-  const sanitized = DOMPurify.sanitize(withTemp, {
-    ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "a", "span", "h1", "h2", "h3", "ul", "ol", "li", "u"],
-    ALLOWED_ATTR: ["href", "target", "rel", "class", "style"],
-    ADD_ATTR: ["target", "rel"],
+  const sanitized = sanitizeHtml(withTemp, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: ALLOWED_ATTR,
+    transformTags: {
+      a: (tagName, attribs) => {
+        const href = attribs.href || "";
+        const lower = href.toLowerCase();
+        if (
+          lower.startsWith("javascript:") ||
+          lower.startsWith("data:") ||
+          lower.startsWith("vbscript:")
+        ) {
+          delete attribs.href;
+        }
+        return {
+          tagName: "a",
+          attribs: {
+            ...attribs,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        };
+      },
+    },
   });
 
-  // 4. Build a secure link. Escape href and text.
-  // href: escape quotes, &, <, >
   const safeHref = publicUrl
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-    
-  // text: escape < and >
   const safeText = publicUrl.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const finalLink = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="custom-header-link cursor-pointer relative z-[1] text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]">${safeText}</a>`;
 
-  const finalPublicUrlLink = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="custom-header-link cursor-pointer relative z-[1] text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]">${safeText}</a>`;
-
-  // 5. Final replacement using a global regex to handle multiple occurrences
-  return sanitized.replace(new RegExp(tempPlaceholder, "g"), finalPublicUrlLink);
+  return sanitized.replace(new RegExp(tempPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), finalLink);
 }
 
-/** 
+/**
  * Legacy text parsing for bold, italic, and URLs.
- * Used when the content is not HTML.
  */
-export function parseFormattedHeaderText(text: string, publicUrl: string): Array<string | { t: "b" | "i" | "a"; c: string }> {
+export function parseFormattedHeaderText(
+  text: string,
+  publicUrl: string
+): Array<string | { t: "b" | "i" | "a"; c: string }> {
   const parts: Array<string | { t: "a"; c: string }> = [];
   const segments = text.split(/\{\{PUBLIC_URL\}\}/g);
   for (let i = 0; i < segments.length; i++) {
@@ -79,15 +107,15 @@ export function parseFormattedHeaderText(text: string, publicUrl: string): Array
   return result;
 }
 
-/** 
+/**
  * Heuristic to detect if text is TipTap HTML content.
  */
 export function isHtmlContent(text: string): boolean {
   const trimmed = text.trimStart();
   return (
-    trimmed.startsWith("<p") || 
-    trimmed.startsWith("<div") || 
-    trimmed.startsWith("<span") || 
+    trimmed.startsWith("<p") ||
+    trimmed.startsWith("<div") ||
+    trimmed.startsWith("<span") ||
     trimmed.startsWith("<a") ||
     trimmed.startsWith("<strong") ||
     trimmed.startsWith("<em") ||
@@ -100,21 +128,3 @@ export function isHtmlContent(text: string): boolean {
     trimmed.startsWith("<u")
   );
 }
-
-/** 
- * DOMPurify hook to ensure all <a> tags are safe.
- */
-DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-  if (node.tagName === "A") {
-    node.setAttribute("target", "_blank");
-    node.setAttribute("rel", "noopener noreferrer");
-    
-    // Safety check: remove dangerous protocols in href
-    const href = node.getAttribute("href") || "";
-    if (href.toLowerCase().startsWith("javascript:") || 
-        href.toLowerCase().startsWith("data:") || 
-        href.toLowerCase().startsWith("vbscript:")) {
-      node.removeAttribute("href");
-    }
-  }
-});
