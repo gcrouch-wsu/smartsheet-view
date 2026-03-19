@@ -26,6 +26,35 @@ function createEmptyTransform(): TransformConfig {
   return { op: "trim" };
 }
 
+function VisibilitySelect({ 
+  label, 
+  value, 
+  onChange, 
+  description 
+}: { 
+  label: string; 
+  value: boolean; 
+  onChange: (show: boolean) => void;
+  description?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{label}</span>
+        <select
+          value={value ? "show" : "hide"}
+          onChange={(e) => onChange(e.target.value === "show")}
+          className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[color:var(--wsu-crimson)]"
+        >
+          <option value="show">Show</option>
+          <option value="hide">Hide</option>
+        </select>
+      </div>
+      {description && <p className="text-[10px] text-[color:var(--wsu-muted)]">{description}</p>}
+    </div>
+  );
+}
+
 function createEmptyField(): ViewFieldConfig {
   return {
     key: "",
@@ -1048,7 +1077,7 @@ export function ViewBuilder({
                   <HeaderCustomTextEditor
                     value={view.presentation?.headerCustomText ?? ""}
                     onChange={(v) => update("presentation", { ...view.presentation, headerCustomText: v || undefined })}
-                    placeholder="Public URL: {{PUBLIC_URL}}"
+                    placeholder="Enter branding, instructions, or extra links..."
                   />
                 )}
               </div>
@@ -1056,67 +1085,122 @@ export function ViewBuilder({
               <div className="grid gap-8 md:grid-cols-2">
                 {/* Visibility Toggles */}
                 <div className="space-y-4">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Show/Hide Elements</span>
-                  <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderBackLink ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderBackLink: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Back link</span></label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderSourceLabel ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderSourceLabel: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Source label</span></label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderPageTitle ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderPageTitle: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Page title</span></label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderLiveDataText ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderLiveDataText: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Live data text</span></label>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Header Elements</span>
+                  <div className="space-y-3">
+                    <VisibilitySelect
+                      label="Back link"
+                      value={!view.presentation?.hideHeaderBackLink}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideHeaderBackLink: !show })}
+                    />
+                    <VisibilitySelect
+                      label="Source label"
+                      value={!view.presentation?.hideHeaderSourceLabel}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideHeaderSourceLabel: !show })}
+                    />
+                    <VisibilitySelect
+                      label="Page title"
+                      value={!view.presentation?.hideHeaderPageTitle}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideHeaderPageTitle: !show })}
+                    />
+                    <VisibilitySelect
+                      label="Live data text"
+                      value={!view.presentation?.hideHeaderLiveDataText}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideHeaderLiveDataText: !show })}
+                    />
                   </div>
                 </div>
 
                 {/* Info Box Toggles */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Status/Info Box</span>
-                    <label className="flex items-center gap-2 text-xs font-medium text-[color:var(--wsu-muted)] cursor-pointer">
-                      <input type="checkbox" checked={view.presentation?.hideHeaderInfoBox ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderInfoBox: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" />
-                      Hide entire box
-                    </label>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Status/Info Box</span>
+                  <div className="space-y-3">
+                    <VisibilitySelect
+                      label="Status Box"
+                      value={!view.presentation?.hideHeaderInfoBox}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideHeaderInfoBox: !show })}
+                      description="Shows active view, row count, and refresh time."
+                    />
+                    
+                    {!view.presentation?.hideHeaderInfoBox && (
+                      <div className="ml-4 space-y-3 border-l-2 border-[color:var(--wsu-border)] pl-4 animate-in fade-in slide-in-from-left-2 duration-200">
+                        <VisibilitySelect
+                          label="Active view name"
+                          value={!view.presentation?.hideHeaderActiveView}
+                          onChange={(show) => update("presentation", { ...view.presentation, hideHeaderActiveView: !show })}
+                        />
+                        <VisibilitySelect
+                          label="Row count"
+                          value={!view.presentation?.hideHeaderRows}
+                          onChange={(show) => update("presentation", { ...view.presentation, hideHeaderRows: !show })}
+                        />
+                        <VisibilitySelect
+                          label="Refresh time"
+                          value={!view.presentation?.hideHeaderRefreshed}
+                          onChange={(show) => update("presentation", { ...view.presentation, hideHeaderRefreshed: !show })}
+                        />
+                      </div>
+                    )}
                   </div>
-                  {!view.presentation?.hideHeaderInfoBox && (
-                    <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
-                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderActiveView ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderActiveView: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Active view</span></label>
-                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderRows ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRows: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Row count</span></label>
-                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideHeaderRefreshed ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideHeaderRefreshed: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Refresh time</span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 md:col-span-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Content Area (below header)</h3>
+            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Control the title, tabs, and layout switcher displayed above your data.</p>
+            
+            <div className="mt-6 space-y-6">
+              <VisibilitySelect
+                label="View title section"
+                value={!view.presentation?.hideViewTitleSection}
+                onChange={(show) => update("presentation", { ...view.presentation, hideViewTitleSection: !show })}
+                description="The h2 title and optional description below the tabs."
+              />
+
+              <div className="space-y-4 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+                <VisibilitySelect
+                  label="View tabs"
+                  value={!view.presentation?.hideViewTabs}
+                  onChange={(show) => update("presentation", { ...view.presentation, hideViewTabs: !show })}
+                  description="Navigation tabs when multiple views share a slug."
+                />
+                
+                {!view.presentation?.hideViewTabs && (
+                  <div className="ml-4 space-y-4 border-l-2 border-[color:var(--wsu-border)] pl-4 animate-in fade-in slide-in-from-left-2 duration-200">
+                    <VisibilitySelect
+                      label="Row count on tabs"
+                      value={!view.presentation?.hideViewTabCount}
+                      onChange={(show) => update("presentation", { ...view.presentation, hideViewTabCount: !show })}
+                    />
+                    <div className="space-y-1">
+                      <span className="text-xs font-medium text-[color:var(--wsu-ink)]">Custom tab label</span>
+                      <input 
+                        type="text" 
+                        value={view.presentation?.viewTabLabel ?? ""} 
+                        onChange={(e) => update("presentation", { ...view.presentation, viewTabLabel: e.target.value || undefined })} 
+                        placeholder={view.label} 
+                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm" 
+                      />
+                      <p className="text-[10px] text-[color:var(--wsu-muted)]">Overrides the view label on the tab.</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <VisibilitySelect
+                  label="Layout switcher"
+                  value={!view.fixedLayout}
+                  onChange={(show) => update("fixedLayout", !show)}
+                  description="Allow viewers to switch between table, cards, and list views."
+                />
               </div>
             </div>
           </div>
 
-          {/* View section & tabs */}
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">View section</h3>
-            <div className="mt-3 space-y-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={view.presentation?.hideViewTitleSection ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTitleSection: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" />
-                <span>Hide view title (h2 + description below tabs)</span>
-              </label>
-              <div>
-                <span className="block text-xs font-medium text-[color:var(--wsu-muted)]">View tabs</span>
-                <div className="mt-1 flex flex-wrap gap-x-6 gap-y-2">
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideViewTabs ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTabs: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide tabs</span></label>
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={view.presentation?.hideViewTabCount ?? false} onChange={(e) => update("presentation", { ...view.presentation, hideViewTabCount: e.target.checked })} className="rounded border-[color:var(--wsu-border)]" /><span>Hide row count on tab</span></label>
-                </div>
-                <label className="mt-2 flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[color:var(--wsu-ink)]">Custom tab label</span>
-                  <input type="text" value={view.presentation?.viewTabLabel ?? ""} onChange={(e) => update("presentation", { ...view.presentation, viewTabLabel: e.target.value || undefined })} placeholder={view.label} className="rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2" />
-                </label>
-              </div>
             </div>
-          </div>
-
-          {/* Layout lock */}
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={view.fixedLayout ?? false} onChange={(e) => update("fixedLayout", e.target.checked)} className="rounded border-[color:var(--wsu-border)]" />
-              <span className="font-medium text-[color:var(--wsu-ink)]">Lock layout for viewers</span>
-            </label>
-            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Prevent viewers from switching table/cards/list layout.</p>
-          </div>
-        </div>
 
           <ThemeEditor view={view} update={update} />
 
@@ -1232,6 +1316,31 @@ export function ViewBuilder({
                                 </div>
                               )}
                             </div>
+                            {/* Info Box */}
+                            {!view.presentation?.hideHeaderInfoBox && 
+                              (!view.presentation?.hideHeaderActiveView || 
+                               !view.presentation?.hideHeaderRows || 
+                               !view.presentation?.hideHeaderRefreshed) && (
+                              <div className="shrink-0">
+                                <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-[10px] text-[color:var(--wsu-muted)] leading-tight">
+                                  {!view.presentation?.hideHeaderActiveView && (
+                                    <p>
+                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                    </p>
+                                  )}
+                                  {!view.presentation?.hideHeaderRows && (
+                                    <p className={!view.presentation?.hideHeaderActiveView ? "mt-1.5" : ""}>
+                                      <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {livePreview.resolvedView.rowCount}
+                                    </p>
+                                  )}
+                                  {!view.presentation?.hideHeaderRefreshed && (
+                                    <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-1.5" : ""}>
+                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </header>
                         <div className="mt-4">
@@ -1624,6 +1733,31 @@ export function ViewBuilder({
                                 </div>
                               )}
                             </div>
+                            {/* Info Box */}
+                            {!view.presentation?.hideHeaderInfoBox && 
+                              (!view.presentation?.hideHeaderActiveView || 
+                               !view.presentation?.hideHeaderRows || 
+                               !view.presentation?.hideHeaderRefreshed) && (
+                              <div className="shrink-0">
+                                <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-[10px] text-[color:var(--wsu-muted)] leading-tight">
+                                  {!view.presentation?.hideHeaderActiveView && (
+                                    <p>
+                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                    </p>
+                                  )}
+                                  {!view.presentation?.hideHeaderRows && (
+                                    <p className={!view.presentation?.hideHeaderActiveView ? "mt-1.5" : ""}>
+                                      <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {livePreview.resolvedView.rowCount}
+                                    </p>
+                                  )}
+                                  {!view.presentation?.hideHeaderRefreshed && (
+                                    <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-1.5" : ""}>
+                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </header>
                         <div className="mt-4">
@@ -1906,23 +2040,29 @@ export function ViewBuilder({
                             </div>
                           )}
                         </div>
-                        {!view.presentation?.hideHeaderInfoBox && (
-                          <div className="shrink-0 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                            {!view.presentation?.hideHeaderActiveView && (
-                              <p>
-                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
-                              </p>
-                            )}
-                            {!view.presentation?.hideHeaderRows && (
-                              <p className={!view.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                                <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {previewData.resolvedView.rowCount}
-                              </p>
-                            )}
-                            {!view.presentation?.hideHeaderRefreshed && (
-                              <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-2" : ""}>
-                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
-                              </p>
-                            )}
+                        {/* Info Box */}
+                        {!view.presentation?.hideHeaderInfoBox && 
+                          (!view.presentation?.hideHeaderActiveView || 
+                           !view.presentation?.hideHeaderRows || 
+                           !view.presentation?.hideHeaderRefreshed) && (
+                          <div className="shrink-0">
+                            <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                              {!view.presentation?.hideHeaderActiveView && (
+                                <p>
+                                  <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                </p>
+                              )}
+                              {!view.presentation?.hideHeaderRows && (
+                                <p className={!view.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                                  <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {previewData.resolvedView.rowCount}
+                                </p>
+                              )}
+                              {!view.presentation?.hideHeaderRefreshed && (
+                                <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-2" : ""}>
+                                  <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1944,6 +2084,25 @@ export function ViewBuilder({
                             {view.description && (
                               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{view.description}</p>
                             )}
+                          </div>
+                        )}
+                        {!view.fixedLayout && (
+                          <div className="flex flex-wrap gap-2">
+                            {LAYOUT_OPTIONS.map((option) => {
+                              const active = option === previewData.resolvedView.layout;
+                              return (
+                                <span
+                                  key={option}
+                                  className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
+                                    active
+                                      ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                                      : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)]"
+                                  }`}
+                                >
+                                  {formatLayoutLabel(option)}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

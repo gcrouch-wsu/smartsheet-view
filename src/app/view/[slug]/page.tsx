@@ -174,26 +174,29 @@ export default async function PublicViewPage({
                     </div>
                   ))}
               </div>
-              {!activeView.presentation?.hideHeaderInfoBox &&
-                (!(activeView.presentation?.hideHeaderActiveView ?? false) ||
-                  !(activeView.presentation?.hideHeaderRows ?? false) ||
-                  !(activeView.presentation?.hideHeaderRefreshed ?? false)) && (
-                <div className="shrink-0 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                  {!activeView.presentation?.hideHeaderActiveView && (
-                    <p>
-                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                    </p>
-                  )}
-                  {!activeView.presentation?.hideHeaderRows && (
-                    <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                      <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
-                    </p>
-                  )}
-                  {!activeView.presentation?.hideHeaderRefreshed && (
-                    <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
-                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
-                    </p>
-                  )}
+              {/* Info Box */}
+              {!activeView.presentation?.hideHeaderInfoBox && 
+                (!activeView.presentation?.hideHeaderActiveView || 
+                 !activeView.presentation?.hideHeaderRows || 
+                 !activeView.presentation?.hideHeaderRefreshed) && (
+                <div className="shrink-0">
+                  <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                    {!activeView.presentation?.hideHeaderActiveView && (
+                      <p>
+                        <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                      </p>
+                    )}
+                    {!activeView.presentation?.hideHeaderRows && (
+                      <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                        <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                      </p>
+                    )}
+                    {!activeView.presentation?.hideHeaderRefreshed && (
+                      <p className={!activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows ? "mt-2" : ""}>
+                        <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {formatTimestamp(page.fetchedAt)}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
