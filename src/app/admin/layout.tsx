@@ -44,7 +44,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/sources/new" className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">
                 New source
               </Link>
-              <Link href="/admin/views/new" className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]">
+              <Link href="/admin/views/new" className="btn-crimson rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium hover:bg-[color:var(--wsu-crimson-dark)]">
                 New view
               </Link>
               <AdminLogoutButton />

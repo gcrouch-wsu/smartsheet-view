@@ -24,7 +24,7 @@ export default async function SourcesIndexPage() {
           <p className="text-sm font-medium uppercase tracking-[0.22em] text-[color:var(--wsu-muted)]">Admin routes</p>
           <h2 className="mt-1 text-2xl font-semibold text-[color:var(--wsu-ink)]">Sources</h2>
         </div>
-        <Link href="/admin/sources/new" className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]">Create source</Link>
+        <Link href="/admin/sources/new" className="btn-crimson rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium hover:bg-[color:var(--wsu-crimson-dark)]">Create source</Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {sources.map((source) => (

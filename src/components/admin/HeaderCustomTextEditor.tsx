@@ -8,32 +8,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const PUBLIC_URL_TEXT = "{{PUBLIC_URL}}";
-// Escape regex special characters in the placeholder text for safe replacement
-const PUBLIC_URL_REGEX = /\{\{PUBLIC_URL\}\}/g;
-
-/** 
- * Custom Node to render {{PUBLIC_URL}} as a protected "chip".
- * This node is 'atomic' (atom: true), meaning it's treated as a single 
- * unit by the editor — users can't delete individual characters 
- * within the brackets, preventing syntax errors.
- */
-const PublicUrlNode = Node.create({
-  name: "publicUrl",
-  group: "inline",
-  inline: true,
-  selectable: true,
-  atom: true,
-
-  parseHTML() {
-    return [{ tag: "span[data-public-url]" }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes, { "data-public-url": "", class: "public-url-chip" }), PUBLIC_URL_TEXT];
-  },
-});
-
 // Icon helper components
 function BoldIcon() {
   return (
@@ -100,7 +74,7 @@ export function HeaderCustomTextEditor({
         bulletList: false,
         orderedList: false,
       }),
-      Placeholder.configure({ placeholder: placeholder ?? "Public URL: {{PUBLIC_URL}}" }),
+      Placeholder.configure({ placeholder: placeholder ?? "Enter custom header instructions or text..." }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -108,7 +82,6 @@ export function HeaderCustomTextEditor({
         },
       }),
       BubbleMenuExtension,
-      PublicUrlNode,
     ],
     content: value || "",
     immediatelyRender: false,
@@ -120,30 +93,16 @@ export function HeaderCustomTextEditor({
     },
     onUpdate: ({ editor }) => {
       if (isInternalUpdate.current) return;
-      
-      // When serializing to HTML for storage, we convert the <span data-public-url> 
-      // back to the plain text placeholder {{PUBLIC_URL}}. This ensures the 
-      // database stays clean and the public rendering logic only needs to 
-      // know about the simple text token.
-      const rawHtml = editor.getHTML();
-      const sanitizedHtml = rawHtml.replace(/<span[^>]*data-public-url[^>]*>{{PUBLIC_URL}}<\/span>/g, PUBLIC_URL_TEXT);
-      
-      onChange(sanitizedHtml === "<p></p>" ? "" : sanitizedHtml);
+      const html = editor.getHTML();
+      onChange(html === "<p></p>" ? "" : html);
     },
   });
 
   useEffect(() => {
     if (!editor) return;
     if (isInternalUpdate.current) return;
-    
-    // When loading from storage (plain HTML), convert any {{PUBLIC_URL}} 
-    // text tokens back into our protected TipTap Node (the span).
-    const normalized = (value || "<p></p>").replace(
-      PUBLIC_URL_REGEX, 
-      `<span data-public-url>${PUBLIC_URL_TEXT}</span>`
-    );
-    
     const current = editor.getHTML();
+    const normalized = value || "<p></p>";
     if (current !== normalized) {
       isInternalUpdate.current = true;
       editor.commands.setContent(normalized, { emitUpdate: false });
@@ -243,16 +202,6 @@ export function HeaderCustomTextEditor({
             <UnlinkIcon />
           </ToolbarButton>
         </div>
-
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().insertContent({ type: "publicUrl" }).run()}
-          className="flex h-7 items-center gap-1.5 rounded bg-[color:var(--wsu-crimson)]/5 px-2.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-crimson)] transition hover:bg-[color:var(--wsu-crimson)]/10"
-          title="Insert protected live public URL placeholder"
-        >
-          <PlusIcon />
-          Public URL
-        </button>
       </div>
 
       {/* Bubble Menu (Inline Formatting) */}
@@ -286,25 +235,8 @@ export function HeaderCustomTextEditor({
 
       <EditorContent editor={editor} />
 
-      <style jsx global>{`
-        .public-url-chip {
-          display: inline-flex;
-          align-items: center;
-          background-color: rgba(166, 15, 45, 0.08);
-          color: #a60f2d;
-          border: 1px solid rgba(166, 15, 45, 0.2);
-          border-radius: 4px;
-          padding: 0 4px;
-          margin: 0 1px;
-          font-weight: 600;
-          font-size: 0.9em;
-          user-select: none;
-          pointer-events: none;
-        }
-      `}</style>
-
       <p className="text-[10px] font-medium text-[color:var(--wsu-muted)] italic">
-        Highlight text to see inline formatting. The {PUBLIC_URL_TEXT} chip is protected and will render as a live link on the public page.
+        Highlight text to see inline formatting. Use the Link button to add clickable URLs.
       </p>
     </div>
   );

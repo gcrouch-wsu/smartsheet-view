@@ -560,7 +560,7 @@ export function ViewBuilder({
               type="button"
               onClick={() => void saveView()}
               disabled={isSaving}
-              className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)] disabled:opacity-50"
+              className="btn-crimson rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium hover:bg-[color:var(--wsu-crimson-dark)] disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save View"}
             </button>
@@ -1133,7 +1133,21 @@ export function ViewBuilder({
             <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 text-sm text-[color:var(--wsu-muted)]">
               <p className="font-semibold text-[color:var(--wsu-ink)]">Publish outputs</p>
               <p className="mt-2"><span className="font-medium">Preview:</span> {previewHref ?? "Save the view to enable preview."}</p>
-              <p className="mt-1"><span className="font-medium">Public URL:</span> {view.public ? `${typeof window !== "undefined" ? window.location.origin : ""}/view/${view.slug}?view=${view.id}` : "Not published."}</p>
+              <p className="mt-1">
+                <span className="font-medium">Public URL:</span>{" "}
+                {view.public ? (
+                  <a
+                    href={`${typeof window !== "undefined" ? window.location.origin : ""}/view/${view.slug}?view=${view.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]"
+                  >
+                    {typeof window !== "undefined" ? window.location.origin : ""}/view/{view.slug}?view={view.id}
+                  </a>
+                ) : (
+                  "Not published."
+                )}
+              </p>
               <p className="mt-3 font-medium text-[color:var(--wsu-ink)]">WordPress embed</p>
               <textarea
                 readOnly

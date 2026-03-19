@@ -53,10 +53,12 @@ a {
 }
 
 /* Crimson primary buttons: white text for contrast (overrides a { color: inherit }) */
-a.btn-crimson {
+.btn-crimson,
+.bg-\[color\:var\(--wsu-crimson\)\] {
   color: white !important;
 }
-a.btn-crimson:hover {
+.btn-crimson:hover,
+.bg-\[color\:var\(--wsu-crimson\)\]:hover {
   color: white !important;
 }
 
