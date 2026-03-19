@@ -1164,10 +1164,74 @@ export function ViewBuilder({
                 {livePreviewLoading ? (
                   <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Loading…</p>
                 ) : livePreview ? (
-                  <div className="mt-3 max-h-64 overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
-                    <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
-                      <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
-                    </ViewStyleWrapper>
+                  <div className="mt-3 max-h-[500px] overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
+                    <div className="scale-[0.85] origin-top">
+                      <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                        <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+                          <div className="flex flex-wrap items-start justify-between gap-6">
+                            <div className="min-w-0 flex-1 space-y-3">
+                              {!view.presentation?.hideHeaderBackLink && (
+                                <span className="text-[10px] font-medium text-[color:var(--wsu-muted)]">
+                                  Back to configured pages
+                                </span>
+                              )}
+                              <div>
+                                {!view.presentation?.hideHeaderSourceLabel && (
+                                  <p className="font-view-heading text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                                    {sourceMap.get(view.sourceId) ?? "Source Label"}
+                                  </p>
+                                )}
+                                {!view.presentation?.hideHeaderPageTitle && (
+                                  <h1 className="font-view-heading mt-1 text-xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
+                                    {view.label || "Page Title"}
+                                  </h1>
+                                )}
+                              </div>
+                              {view.presentation?.headerCustomText && (
+                                <div className="mt-2 text-xs leading-5 text-[color:var(--wsu-ink)]">
+                                  {isHtmlContent(view.presentation.headerCustomText) ? (
+                                    <div
+                                      className="custom-header-text [&_a]:text-[color:var(--wsu-crimson)] [&_a]:underline"
+                                      dangerouslySetInnerHTML={{
+                                        __html: renderHeaderCustomText(
+                                          view.presentation.headerCustomText,
+                                          `https://example.com/view/${view.slug || "slug"}?view=${view.id}`
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="custom-header-text">
+                                      {view.presentation.headerCustomText.split("\n").map((line, i) => (
+                                        <p key={i} className="whitespace-pre-wrap">
+                                          {parseFormattedHeaderText(
+                                            line, 
+                                            `https://example.com/view/${view.slug || "slug"}?view=${view.id}`
+                                          ).map((part, j) =>
+                                            typeof part === "string" ? (
+                                              <span key={j}>{part}</span>
+                                            ) : (
+                                              <span
+                                                key={j}
+                                                className="text-[color:var(--wsu-crimson)] underline"
+                                              >
+                                                {part.c}
+                                              </span>
+                                            )
+                                          )}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </header>
+                        <div className="mt-4">
+                          <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
+                        </div>
+                      </ViewStyleWrapper>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -1488,10 +1552,74 @@ export function ViewBuilder({
                 {livePreviewLoading ? (
                   <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Loading…</p>
                 ) : livePreview ? (
-                  <div className="mt-3 max-h-80 overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
-                    <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
-                      <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
-                    </ViewStyleWrapper>
+                  <div className="mt-3 max-h-[500px] overflow-auto rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-3">
+                    <div className="scale-[0.85] origin-top">
+                      <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
+                        <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+                          <div className="flex flex-wrap items-start justify-between gap-6">
+                            <div className="min-w-0 flex-1 space-y-3">
+                              {!view.presentation?.hideHeaderBackLink && (
+                                <span className="text-[10px] font-medium text-[color:var(--wsu-muted)]">
+                                  Back to configured pages
+                                </span>
+                              )}
+                              <div>
+                                {!view.presentation?.hideHeaderSourceLabel && (
+                                  <p className="font-view-heading text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
+                                    {sourceMap.get(view.sourceId) ?? "Source Label"}
+                                  </p>
+                                )}
+                                {!view.presentation?.hideHeaderPageTitle && (
+                                  <h1 className="font-view-heading mt-1 text-xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
+                                    {view.label || "Page Title"}
+                                  </h1>
+                                )}
+                              </div>
+                              {view.presentation?.headerCustomText && (
+                                <div className="mt-2 text-xs leading-5 text-[color:var(--wsu-ink)]">
+                                  {isHtmlContent(view.presentation.headerCustomText) ? (
+                                    <div
+                                      className="custom-header-text [&_a]:text-[color:var(--wsu-crimson)] [&_a]:underline"
+                                      dangerouslySetInnerHTML={{
+                                        __html: renderHeaderCustomText(
+                                          view.presentation.headerCustomText,
+                                          `https://example.com/view/${view.slug || "slug"}?view=${view.id}`
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="custom-header-text">
+                                      {view.presentation.headerCustomText.split("\n").map((line, i) => (
+                                        <p key={i} className="whitespace-pre-wrap">
+                                          {parseFormattedHeaderText(
+                                            line, 
+                                            `https://example.com/view/${view.slug || "slug"}?view=${view.id}`
+                                          ).map((part, j) =>
+                                            typeof part === "string" ? (
+                                              <span key={j}>{part}</span>
+                                            ) : (
+                                              <span
+                                                key={j}
+                                                className="text-[color:var(--wsu-crimson)] underline"
+                                              >
+                                                {part.c}
+                                              </span>
+                                            )
+                                          )}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </header>
+                        <div className="mt-4">
+                          <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
+                        </div>
+                      </ViewStyleWrapper>
+                    </div>
                   </div>
                 ) : null}
               </div>

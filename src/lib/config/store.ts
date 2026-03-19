@@ -10,5 +10,5 @@ export const listSourceConfigs = () => getStore().listSourceConfigs();
 export const listViewConfigs = () => getStore().listViewConfigs();
 export const getSourceConfigById = (id: string) => getStore().getSourceConfigById(id);
 export const getViewConfigById = (id: string) => getStore().getViewConfigById(id);
-export const getPublicViewsBySlug = (slug: string) => getStore().getPublicViewsBySlug(slug);
+export const getPublicViewsBySlug = (slug: string, options?: { includePrivate?: boolean }) => getStore().getPublicViewsBySlug(slug, options);
 export const listPublicPageSummaries = () => getStore().listPublicPageSummaries();

@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const page = await loadPublicPage(slug);
+  const page = await loadPublicPage(slug, { includePrivate: true });
 
   if (!page) {
     return NextResponse.json({ error: `View slug \"${slug}\" was not found.` }, { status: 404 });

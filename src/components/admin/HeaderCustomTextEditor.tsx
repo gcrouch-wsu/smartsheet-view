@@ -6,6 +6,11 @@ import { BubbleMenu as BubbleMenuExtension } from "@tiptap/extension-bubble-menu
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Icon helper components
@@ -18,6 +23,12 @@ function BoldIcon() {
 function ItalicIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+  );
+}
+
+function UnderlineIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
   );
 }
 
@@ -39,15 +50,51 @@ function UnlinkIcon() {
   );
 }
 
-function PlusIcon() {
+function AlignLeftIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+  );
+}
+
+function AlignCenterIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+  );
+}
+
+function AlignRightIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+  );
+}
+
+function Heading1Icon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>
+  );
+}
+
+function Heading2Icon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
   );
 }
 
 function CheckIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  );
+}
+
+function ColorIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 6.12-.14-.13a8 8 0 0 0-11.44 0l-.14.13a8 8 0 0 0 0 11.44l.14.13a8 8 0 0 0 11.44 0l.14-.13a8 8 0 0 0 0-11.44Z"/><path d="m21 21-3.5-3.5"/><circle cx="12" cy="12" r="2"/></svg>
   );
 }
 
@@ -67,12 +114,8 @@ export function HeaderCustomTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false,
         codeBlock: false,
         blockquote: false,
-        horizontalRule: false,
-        bulletList: false,
-        orderedList: false,
       }),
       Placeholder.configure({ placeholder: placeholder ?? "Enter custom header instructions or text..." }),
       Link.configure({
@@ -81,6 +124,13 @@ export function HeaderCustomTextEditor({
           class: "text-[color:var(--wsu-crimson)] underline cursor-pointer",
         },
       }),
+      Underline,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
       BubbleMenuExtension,
     ],
     content: value || "",
@@ -88,7 +138,7 @@ export function HeaderCustomTextEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none min-h-[120px] rounded-b-lg rounded-t-none border border-t-0 border-[color:var(--wsu-border)] bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]",
+          "prose prose-sm max-w-none min-h-[150px] rounded-b-lg rounded-t-none border border-t-0 border-[color:var(--wsu-border)] bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]",
       },
     },
     onUpdate: ({ editor }) => {
@@ -122,7 +172,11 @@ export function HeaderCustomTextEditor({
     if (linkUrl === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
     } else {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
+      let url = linkUrl;
+      if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/") && !url.startsWith("mailto:")) {
+        url = `https://${url}`;
+      }
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
     }
     setShowLinkInput(false);
   }, [editor, linkUrl]);
@@ -133,6 +187,23 @@ export function HeaderCustomTextEditor({
     <div className="space-y-2">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-2 py-1.5">
+        <div className="flex items-center gap-0.5 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            active={editor.isActive("heading", { level: 1 })}
+            title="Heading 1"
+          >
+            <Heading1Icon />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            active={editor.isActive("heading", { level: 2 })}
+            title="Heading 2"
+          >
+            <Heading2Icon />
+          </ToolbarButton>
+        </div>
+
         <div className="flex items-center gap-0.5 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -149,11 +220,52 @@ export function HeaderCustomTextEditor({
             <ItalicIcon />
           </ToolbarButton>
           <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            active={editor.isActive("underline")}
+            title="Underline (Ctrl+U)"
+          >
+            <UnderlineIcon />
+          </ToolbarButton>
+          <ToolbarButton
             onClick={() => editor.chain().focus().toggleStrike().run()}
             active={editor.isActive("strike")}
             title="Strikethrough"
           >
             <StrikeIcon />
+          </ToolbarButton>
+        </div>
+
+        <div className="flex items-center gap-0.5 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            active={editor.isActive({ textAlign: "left" })}
+            title="Align Left"
+          >
+            <AlignLeftIcon />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            active={editor.isActive({ textAlign: "center" })}
+            title="Align Center"
+          >
+            <AlignCenterIcon />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            active={editor.isActive({ textAlign: "right" })}
+            title="Align Right"
+          >
+            <AlignRightIcon />
+          </ToolbarButton>
+        </div>
+
+        <div className="flex items-center gap-0.5 border-r border-[color:var(--wsu-border)] pr-1.5 mr-1">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            active={editor.isActive("bulletList")}
+            title="Bullet List"
+          >
+            <ListIcon />
           </ToolbarButton>
         </div>
 
@@ -202,6 +314,32 @@ export function HeaderCustomTextEditor({
             <UnlinkIcon />
           </ToolbarButton>
         </div>
+
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            onClick={() => {
+              const color = window.prompt("Color (hex or name)", "#a60f2d");
+              if (color) editor.chain().focus().setColor(color).run();
+            }}
+            active={editor.isActive("textStyle", { color: true })}
+            title="Text Color"
+          >
+            <ColorIcon />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            active={editor.isActive("highlight")}
+            title="Highlight"
+          >
+            <div className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-yellow-200 text-[8px] font-bold text-black">H</div>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().unsetColor().unsetHighlight().run()}
+            title="Clear Styles"
+          >
+            <span className="text-[10px] font-bold">CLR</span>
+          </ToolbarButton>
+        </div>
       </div>
 
       {/* Bubble Menu (Inline Formatting) */}
@@ -236,7 +374,7 @@ export function HeaderCustomTextEditor({
       <EditorContent editor={editor} />
 
       <p className="text-[10px] font-medium text-[color:var(--wsu-muted)] italic">
-        Highlight text to see inline formatting. Use the Link button to add clickable URLs.
+        Highlight text to see inline formatting. Use the toolbar for headings, alignment, and colors.
       </p>
     </div>
   );
@@ -276,4 +414,3 @@ function ToolbarButton({
     </div>
   );
 }
-

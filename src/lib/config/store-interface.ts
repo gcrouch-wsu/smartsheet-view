@@ -5,6 +5,6 @@ export interface ConfigStore {
   listViewConfigs(): Promise<ViewConfig[]>;
   getSourceConfigById(sourceId: string): Promise<SourceConfig | null>;
   getViewConfigById(viewId: string): Promise<ViewConfig | null>;
-  getPublicViewsBySlug(slug: string): Promise<ViewConfig[]>;
+  getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }): Promise<ViewConfig[]>;
   listPublicPageSummaries(): Promise<PublicPageSummary[]>;
 }

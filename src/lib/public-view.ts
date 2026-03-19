@@ -211,8 +211,8 @@ export async function getPublicPageSummaries(): Promise<PublicPageSummary[]> {
   return listPublicPageSummaries();
 }
 
-export async function loadPublicPage(slug: string): Promise<ResolvedPublicPage | null> {
-  const views = await getPublicViewsBySlug(slug);
+export async function loadPublicPage(slug: string, options?: { includePrivate?: boolean }): Promise<ResolvedPublicPage | null> {
+  const views = await getPublicViewsBySlug(slug, options);
   if (views.length === 0) {
     return null;
   }

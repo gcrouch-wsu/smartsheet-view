@@ -89,10 +89,10 @@ export async function getViewConfigById(viewId: string) {
   return views.find((view) => view.id === viewId) ?? null;
 }
 
-export async function getPublicViewsBySlug(slug: string) {
+export async function getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }) {
   const views = await listViewConfigs();
   return views
-    .filter((view) => view.public && view.slug === slug)
+    .filter((view) => (options?.includePrivate || view.public) && view.slug === slug)
     .sort((left, right) => (left.tabOrder ?? 999) - (right.tabOrder ?? 999) || left.label.localeCompare(right.label));
 }
 

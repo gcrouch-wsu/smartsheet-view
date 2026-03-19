@@ -7,6 +7,7 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 ## Key Features
 
 - **Visual Admin Builder**: Configure data sources and public views with a four-tab builder (Setup, Fields, Filters, Preview).
+- **Custom Header WYSIWYG**: Rich text editor for page headers with headings, bold, italic, underline, alignment, bullet lists, text color, highlighting, and links. Use `{{PUBLIC_URL}}` to insert a live, clickable link to the current view.
 - **Flexible Layouts**: Display data as Tables, Cards, Lists, Accordions, Tabbed panels, or List-Detail views.
 - **Advanced Theme System**: 12 customizable design tokens (colors, fonts, radius) with live WCAG AA contrast validation.
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
@@ -16,7 +17,7 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 ## Documentation
 
 For a full technical specification, including the data model, implementation phases, and future roadmap, please refer to:
-- **[project_spec.md](./project_spec.md)**
+- **[PROJECT_SPEC.md](./PROJECT_SPEC.md)**
 
 ## Getting Started
 

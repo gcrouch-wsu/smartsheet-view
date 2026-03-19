@@ -44,7 +44,7 @@ export default async function PublicViewPage({
 }) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const page = await loadPublicPage(slug);
+  const page = await loadPublicPage(slug, { includePrivate: true });
 
   if (!page) {
     notFound();

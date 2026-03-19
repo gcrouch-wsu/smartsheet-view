@@ -111,10 +111,10 @@ export async function getViewConfigById(viewId: string): Promise<ViewConfig | nu
   return row ? parseViewConfig(row.data, row.id, knownSourceIds) : null;
 }
 
-export async function getPublicViewsBySlug(slug: string): Promise<ViewConfig[]> {
+export async function getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }): Promise<ViewConfig[]> {
   const views = await listViewConfigs();
   return views
-    .filter((v) => v.public && v.slug === slug)
+    .filter((v) => (options?.includePrivate || v.public) && v.slug === slug)
     .sort((a, b) => (a.tabOrder ?? 999) - (b.tabOrder ?? 999) || (a.label ?? "").localeCompare(b.label ?? ""));
 }
 

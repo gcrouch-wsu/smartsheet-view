@@ -22,8 +22,8 @@ export function renderHeaderCustomText(html: string, publicUrl: string): string 
 
   // 3. Initial sanitization for user-provided HTML
   const sanitized = DOMPurify.sanitize(withTemp, {
-    ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "a", "span"],
-    ALLOWED_ATTR: ["href", "target", "rel", "class"],
+    ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "a", "span", "h1", "h2", "h3", "ul", "ol", "li", "u"],
+    ALLOWED_ATTR: ["href", "target", "rel", "class", "style"],
     ADD_ATTR: ["target", "rel"],
   });
 
