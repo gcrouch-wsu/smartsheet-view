@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import DOMPurify from "isomorphic-dompurify";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
@@ -11,61 +10,7 @@ import type { LayoutType } from "@/lib/config/types";
 import { mergeThemeTokens } from "@/lib/config/themes";
 import { loadPublicPage } from "@/lib/public-view";
 import { notFound } from "next/navigation";
-
-/** Parse **bold**, *italic*, and {{PUBLIC_URL}} in text. {{PUBLIC_URL}} always becomes a live link. */
-function parseFormattedHeaderText(text: string, publicUrl: string): Array<string | { t: "b" | "i" | "a"; c: string }> {
-  const parts: Array<string | { t: "a"; c: string }> = [];
-  const segments = text.split(/\{\{PUBLIC_URL\}\}/g);
-  for (let i = 0; i < segments.length; i++) {
-    parts.push(segments[i]!);
-    if (i < segments.length - 1) {
-      parts.push({ t: "a" as const, c: publicUrl });
-    }
-  }
-  const result: Array<string | { t: "b" | "i" | "a"; c: string }> = [];
-  const re = /\*\*(.+?)\*\*|\*(.+?)\*|(https?:\/\/[^\s<>"']+)/g;
-  for (const part of parts) {
-    if (typeof part === "object") {
-      result.push(part);
-      continue;
-    }
-    let lastEnd = 0;
-    let m;
-    re.lastIndex = 0;
-    while ((m = re.exec(part)) !== null) {
-      if (m.index > lastEnd) result.push(part.slice(lastEnd, m.index));
-      if (m[1] !== undefined) result.push({ t: "b" as const, c: m[1] });
-      else if (m[2] !== undefined) result.push({ t: "i" as const, c: m[2] });
-      else if (m[3] !== undefined) result.push({ t: "a" as const, c: m[3] });
-      lastEnd = re.lastIndex;
-    }
-    if (lastEnd < part.length) result.push(part.slice(lastEnd));
-  }
-  return result;
-}
-
-function isHtmlContent(text: string): boolean {
-  return text.trimStart().startsWith("<");
-}
-
-DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-  if (node.tagName === "A") {
-    node.setAttribute("target", "_blank");
-    node.setAttribute("rel", "noopener noreferrer");
-  }
-});
-
-function renderHeaderCustomText(html: string, publicUrl: string): string {
-  const withUrl = html.replace(
-    /\{\{PUBLIC_URL\}\}/g,
-    `<a href="${publicUrl.replace(/"/g, "&quot;")}" target="_blank" rel="noopener noreferrer" class="custom-header-link">${publicUrl.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</a>`
-  );
-  return DOMPurify.sanitize(withUrl, {
-    ALLOWED_TAGS: ["p", "br", "strong", "em", "s", "a", "span"],
-    ALLOWED_ATTR: ["href", "target", "rel", "class"],
-    ADD_ATTR: ["target", "rel"],
-  });
-}
+import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
