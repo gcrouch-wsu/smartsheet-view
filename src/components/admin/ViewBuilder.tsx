@@ -407,6 +407,7 @@ export function ViewBuilder({
   const [previewViewport, setPreviewViewport] = useState<"full" | "768" | "375">("full");
   const [livePreview, setLivePreview] = useState<{ resolvedView: ResolvedView; warnings: string[] } | null>(null);
   const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+  const [livePreviewError, setLivePreviewError] = useState<string | null>(null);
 
   const fetchPreview = useCallback(async () => {
     setPreviewLoading(true);
@@ -470,6 +471,7 @@ export function ViewBuilder({
     if (activeTab !== "setup" && activeTab !== "fields") return;
     if (!view.sourceId || view.fields.length === 0) {
       setLivePreview(null);
+      setLivePreviewError(null);
       return;
     }
     const timer = setTimeout(() => {
@@ -487,8 +489,9 @@ export function ViewBuilder({
         body: JSON.stringify(previewBody),
       })
         .then((r) => r.json())
-        .then((payload: { rows?: ResolvedView["rows"]; fields?: ResolvedView["fields"]; warnings?: string[]; rowCount?: number }) => {
+        .then((payload: { rows?: ResolvedView["rows"]; fields?: ResolvedView["fields"]; warnings?: string[]; rowCount?: number; error?: string }) => {
           if (payload.rows && payload.fields) {
+            setLivePreviewError(null);
             setLivePreview({
               resolvedView: {
                 id: view.id,
@@ -507,9 +510,13 @@ export function ViewBuilder({
             });
           } else {
             setLivePreview(null);
+            setLivePreviewError(payload.error ?? "No preview data");
           }
         })
-        .catch(() => setLivePreview(null))
+        .catch(() => {
+          setLivePreview(null);
+          setLivePreviewError("Failed to load preview");
+        })
         .finally(() => setLivePreviewLoading(false));
     }, 1000);
     return () => clearTimeout(timer);
@@ -1024,7 +1031,7 @@ export function ViewBuilder({
                   <label className="flex items-center gap-2 text-xs font-medium text-[color:var(--wsu-muted)] cursor-pointer hover:text-[color:var(--wsu-crimson)]">
                     <input 
                       type="checkbox" 
-                      checked={!!view.presentation?.headerCustomText} 
+                      checked={view.presentation?.headerCustomText !== undefined} 
                       onChange={(e) => {
                         if (!e.target.checked) {
                           update("presentation", { ...view.presentation, headerCustomText: undefined });
@@ -1157,7 +1164,7 @@ export function ViewBuilder({
               />
             </div>
 
-            {(livePreview || livePreviewLoading) && view.sourceId && view.fields.length > 0 && (
+            {view.sourceId && view.fields.length > 0 && (
               <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
                 <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">Live preview</p>
                 <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Updates as you edit (1s delay)</p>
@@ -1233,7 +1240,11 @@ export function ViewBuilder({
                       </ViewStyleWrapper>
                     </div>
                   </div>
-                ) : null}
+                ) : livePreviewError ? (
+                  <p className="mt-4 text-sm text-amber-600">{livePreviewError}</p>
+                ) : (
+                  <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Preview will appear when data is loaded. Ensure the view is saved and the source has data.</p>
+                )}
               </div>
             )}
           </div>
