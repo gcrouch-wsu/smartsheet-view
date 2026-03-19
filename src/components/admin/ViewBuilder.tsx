@@ -1351,7 +1351,44 @@ export function ViewBuilder({
                           </div>
                         </header>
                         )}
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-4">
+                          {!view.presentation?.hideViewTabs && (
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              <span className="rounded-full border border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] px-4 py-2 text-[10px] font-medium text-white whitespace-nowrap">
+                                {view.presentation?.viewTabLabel ?? view.label}
+                                {!view.presentation?.hideViewTabCount && ` ${livePreview.resolvedView.rowCount}`}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            {!view.presentation?.hideViewTitleSection && (
+                              <div>
+                                <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{view.label}</h2>
+                                {view.description && (
+                                  <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">{view.description}</p>
+                                )}
+                              </div>
+                            )}
+                            {!view.fixedLayout && (
+                              <div className="flex flex-wrap gap-2">
+                                {LAYOUT_OPTIONS.map((option) => {
+                                  const active = option === livePreview.resolvedView.layout;
+                                  return (
+                                    <span
+                                      key={option}
+                                      className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
+                                        active
+                                          ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                                          : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)]"
+                                      }`}
+                                    >
+                                      {formatLayoutLabel(option)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                           <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
                         </div>
                       </ViewStyleWrapper>
@@ -1770,7 +1807,44 @@ export function ViewBuilder({
                           </div>
                         </header>
                         )}
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-4">
+                          {!view.presentation?.hideViewTabs && (
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              <span className="rounded-full border border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] px-4 py-2 text-[10px] font-medium text-white whitespace-nowrap">
+                                {view.presentation?.viewTabLabel ?? view.label}
+                                {!view.presentation?.hideViewTabCount && ` ${livePreview.resolvedView.rowCount}`}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            {!view.presentation?.hideViewTitleSection && (
+                              <div>
+                                <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{view.label}</h2>
+                                {view.description && (
+                                  <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">{view.description}</p>
+                                )}
+                              </div>
+                            )}
+                            {!view.fixedLayout && (
+                              <div className="flex flex-wrap gap-2">
+                                {LAYOUT_OPTIONS.map((option) => {
+                                  const active = option === livePreview.resolvedView.layout;
+                                  return (
+                                    <span
+                                      key={option}
+                                      className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
+                                        active
+                                          ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                                          : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)]"
+                                      }`}
+                                    >
+                                      {formatLayoutLabel(option)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                           <ViewWithSearchAndIndex view={livePreview.resolvedView} layout={livePreview.resolvedView.layout} embed={false} />
                         </div>
                       </ViewStyleWrapper>
