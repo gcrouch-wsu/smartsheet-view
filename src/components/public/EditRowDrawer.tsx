@@ -144,6 +144,9 @@ export function EditRowDrawer({
     };
   }, [open, contributor, row, returnFocusRef]);
 
+  const isContactEditableField = (columnType: string) =>
+    columnType === "CONTACT_LIST" || columnType === "MULTI_CONTACT_LIST";
+
   if (!contributor || !open || !row) {
     return null;
   }
