@@ -211,20 +211,23 @@ export default async function PublicViewPage({
                       </div>
                     ))}
                 </div>
-                {loginHref && !contributorEmail && (
+                {(loginHref && !contributorEmail && activeView.presentation?.hideHeaderInfoBox && (
                   <div className="shrink-0">
-                    <Link
-                      href={loginHref}
-                      className="inline-flex rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)] hover:text-white"
-                    >
-                      Contributor sign in
-                    </Link>
+                    <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4">
+                      <Link
+                        href={loginHref}
+                        className="text-sm font-semibold text-[color:var(--wsu-crimson)] hover:underline"
+                      >
+                        Contributor sign in
+                      </Link>
+                    </div>
                   </div>
-                )}
-                {!activeView.presentation?.hideHeaderInfoBox &&
+                )) ||
+                (!activeView.presentation?.hideHeaderInfoBox &&
                   (!activeView.presentation?.hideHeaderActiveView ||
                     !activeView.presentation?.hideHeaderRows ||
-                    !activeView.presentation?.hideHeaderRefreshed) && (
+                    !activeView.presentation?.hideHeaderRefreshed ||
+                    (loginHref && !contributorEmail)) && (
                     <div className="shrink-0">
                       <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
                         {!activeView.presentation?.hideHeaderActiveView && (
@@ -249,9 +252,27 @@ export default async function PublicViewPage({
                             {formatTimestamp(page.fetchedAt)}
                           </p>
                         )}
+                        {loginHref && !contributorEmail && (
+                          <p
+                            className={
+                              !activeView.presentation?.hideHeaderActiveView ||
+                              !activeView.presentation?.hideHeaderRows ||
+                              !activeView.presentation?.hideHeaderRefreshed
+                                ? "mt-2"
+                                : ""
+                            }
+                          >
+                            <Link
+                              href={loginHref}
+                              className="font-view-heading font-semibold text-[color:var(--wsu-crimson)] hover:underline"
+                            >
+                              Contributor sign in
+                            </Link>
+                          </p>
+                        )}
                       </div>
                     </div>
-                  )}
+                  ))}
               </div>
             </header>
           )}

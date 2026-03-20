@@ -1193,6 +1193,20 @@ export function ViewBuilder({
                           value={!view.presentation?.hideHeaderRefreshed}
                           onChange={(show) => update("presentation", { ...view.presentation, hideHeaderRefreshed: !show })}
                         />
+                        {view.editing?.enabled && (
+                          <VisibilitySelect
+                            label="Contributor sign in"
+                            value={view.editing.showLoginLink !== false}
+                            onChange={(show) =>
+                              update("editing", {
+                                ...createEditingConfigState(view.editing),
+                                enabled: true,
+                                showLoginLink: show,
+                              })
+                            }
+                            description="Shows login link in status box. Same setting as Editing tab."
+                          />
+                        )}
                       </div>
                     )}
                   </div>
