@@ -7,7 +7,7 @@ import {
   extractSmartsheetErrorMessage,
   getSmartsheetDataset,
   httpStatusForSmartsheetContributorError,
-  coerceRowUpdateCellsToValueOnly,
+  formatCellsForSmartsheetRowPut,
   normalizeCellsForSmartsheetRowUpdate,
   resolveSheetIdForRowUpdate,
   testSmartsheetConnection,
@@ -242,34 +242,40 @@ describe("normalizeCellsForSmartsheetRowUpdate", () => {
   });
 });
 
-describe("coerceRowUpdateCellsToValueOnly", () => {
-  it("matches scholarship-review-platform shape: contact objectValue becomes string value", () => {
+describe("formatCellsForSmartsheetRowPut", () => {
+  it("keeps objectValue for CONTACT_LIST columns", () => {
+    const types = new Map<number, string>([
+      [101, "CONTACT_LIST"],
+    ]);
     expect(
-      coerceRowUpdateCellsToValueOnly([
-        { columnId: 101, objectValue: { objectType: "CONTACT", email: "a@wsu.edu" } },
-      ]),
-    ).toEqual([{ columnId: 101, value: "a@wsu.edu" }]);
+      formatCellsForSmartsheetRowPut(
+        [{ columnId: 101, objectValue: { objectType: "CONTACT", email: "a@wsu.edu" } }],
+        types,
+      ),
+    ).toEqual([{ columnId: 101, objectValue: { objectType: "CONTACT", email: "a@wsu.edu" } }]);
   });
 
-  it("joins MULTI_CONTACT emails with comma and space", () => {
-    expect(
-      coerceRowUpdateCellsToValueOnly([
-        {
-          columnId: 102,
-          objectValue: {
-            objectType: "MULTI_CONTACT",
-            value: [
-              { objectType: "CONTACT", email: "a@wsu.edu" },
-              { objectType: "CONTACT", email: "b@wsu.edu" },
-            ],
-          },
-        },
-      ]),
-    ).toEqual([{ columnId: 102, value: "a@wsu.edu, b@wsu.edu" }]);
+  it("keeps objectValue for MULTI_CONTACT_LIST columns", () => {
+    const types = new Map<number, string>([
+      [102, "MULTI_CONTACT_LIST"],
+    ]);
+    const ov = {
+      objectType: "MULTI_CONTACT",
+      value: [
+        { objectType: "CONTACT", email: "a@wsu.edu" },
+        { objectType: "CONTACT", email: "b@wsu.edu" },
+      ],
+    };
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 102, objectValue: ov }], types)).toEqual([
+      { columnId: 102, objectValue: ov },
+    ]);
   });
 
-  it("passes through plain text cells", () => {
-    expect(coerceRowUpdateCellsToValueOnly([{ columnId: 10, value: "Hello" }])).toEqual([
+  it("uses value for TEXT_NUMBER columns", () => {
+    const types = new Map<number, string>([
+      [10, "TEXT_NUMBER"],
+    ]);
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 10, value: "Hello" }], types)).toEqual([
       { columnId: 10, value: "Hello" },
     ]);
   });

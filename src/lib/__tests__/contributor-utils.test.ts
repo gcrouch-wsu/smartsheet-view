@@ -74,7 +74,7 @@ describe("parseMultiPersonRow", () => {
     ]);
   });
 
-  it("returns one empty person when all values empty", () => {
+  it("returns no persons when all values empty so the role can stay cleared", () => {
     const row = makeRow({
       coordinator: { textValue: "" },
       coordinator_email: { textValue: "" },
@@ -88,7 +88,7 @@ describe("parseMultiPersonRow", () => {
       ],
     };
     const result = parseMultiPersonRow(row, group);
-    expect(result).toEqual([{ name: "", email: "", phone: "" }]);
+    expect(result).toEqual([]);
   });
 });
 
@@ -124,5 +124,41 @@ describe("serializeMultiPersonToCells", () => {
     };
     const cells = serializeMultiPersonToCells(persons, group);
     expect(cells[0]?.value).toBe("lisa lujan, deb marsh");
+  });
+
+  it("clears all columns when persons list is empty", () => {
+    const group: EditableFieldGroup = {
+      id: "g1",
+      label: "Coordinators",
+      attributes: [
+        { attribute: "name", fieldKey: "coordinator", columnId: 101 },
+        { attribute: "email", fieldKey: "coordinator_email", columnId: 102 },
+      ],
+    };
+    const result = serializeMultiPersonToCells([], group);
+    expect(result).toEqual([
+      { columnId: 101, value: "" },
+      { columnId: 102, value: "" },
+    ]);
+  });
+
+  it("drops blank person slots when serializing contacts", () => {
+    const group: EditableFieldGroup = {
+      id: "g1",
+      label: "Coordinators",
+      attributes: [
+        { attribute: "name", fieldKey: "coordinator", columnId: 101 },
+        { attribute: "email", fieldKey: "coordinator_email", columnId: 102, columnType: "CONTACT_LIST" },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [
+      { name: "", email: "", phone: "" },
+      { name: "Ada", email: "ada@wsu.edu", phone: "" },
+    ];
+    const result = serializeMultiPersonToCells(persons, group);
+    expect(result).toEqual([
+      { columnId: 102, objectValue: { objectType: "CONTACT", email: "ada@wsu.edu" } },
+      { columnId: 101, value: "Ada" },
+    ]);
   });
 });

@@ -110,8 +110,10 @@ export async function PATCH(
     );
   }
 
+  const columnTypeById = new Map(dataset.columns.map((c) => [c.id, c.type]));
+
   try {
-    await updateSmartsheetRow(collection.sourceConfig, sheetId, row.id, filteredCells);
+    await updateSmartsheetRow(collection.sourceConfig, sheetId, row.id, filteredCells, columnTypeById);
   } catch (error) {
     if (error instanceof SmartsheetRequestError && error.status === 429) {
       return NextResponse.json({ error: "Smartsheet rate limit. Try again shortly." }, { status: 429 });

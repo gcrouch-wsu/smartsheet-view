@@ -257,14 +257,33 @@ export function EditRowDrawer({
                         Editable Fields
                       </h4>
                       <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                        Changes save directly to the live Smartsheet row.
+                        Changes save directly to the live Smartsheet row. For contact fields, use{" "}
+                        <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong> to remove everyone
+                        from that column.
                       </p>
                     </div>
                     {editableFields.map((field) => {
                       const value = formValues[field.columnId] ?? "";
+                      const showContactClear = isContactEditableField(field.columnType);
                       return (
-                        <label key={field.columnId} className="block space-y-2 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">
-                          <span className="block text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</span>
+                        <div
+                          key={field.columnId}
+                          className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-2"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</span>
+                            {showContactClear && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormValues((current) => ({ ...current, [field.columnId]: "" }))
+                                }
+                                className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                              >
+                                Clear this role
+                              </button>
+                            )}
+                          </div>
                           {field.columnType === "PICKLIST" && field.options && field.options.length > 0 ? (
                             <select
                               value={value}
@@ -298,7 +317,7 @@ export function EditRowDrawer({
                               className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
                             />
                           )}
-                        </label>
+                        </div>
                       );
                     })}
                   </section>
@@ -317,10 +336,19 @@ export function EditRowDrawer({
                           {group.label}
                         </h4>
                         <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                          One card per person. Values are saved comma-separated in Smartsheet.
+                          One card per person. Use <strong className="font-medium text-[color:var(--wsu-ink)]">Remove</strong> on a
+                          card to drop that person, or <strong className="font-medium text-[color:var(--wsu-ink)]">
+                            Clear everyone in this role
+                          </strong>{" "}
+                          below to empty the whole group. Save to update Smartsheet.
                         </p>
                       </div>
                       <div className="space-y-4">
+                        {persons.length === 0 && (
+                          <p className="rounded-xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 px-4 py-5 text-center text-sm text-[color:var(--wsu-muted)]">
+                            No one is listed in this role. Add a person, or save to keep it empty.
+                          </p>
+                        )}
                         {persons.map((person, idx) => (
                           <fieldset
                             key={idx}
@@ -341,9 +369,9 @@ export function EditRowDrawer({
                                     [group.id]: persons.filter((_, i) => i !== idx),
                                   }));
                                 }}
-                                className="text-xs text-rose-600 hover:text-rose-800"
+                                className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
                               >
-                                Remove
+                                Remove person
                               </button>
                             </div>
                             <div className="grid gap-3">
@@ -394,18 +422,31 @@ export function EditRowDrawer({
                             </div>
                           </fieldset>
                         ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setGroupValues((prev) => ({
-                              ...prev,
-                              [group.id]: [...persons, { name: "", email: "", phone: "" }],
-                            }));
-                          }}
-                          className="w-full rounded-xl border border-dashed border-[color:var(--wsu-border)] py-3 text-sm font-medium text-[color:var(--wsu-muted)] hover:bg-[color:var(--wsu-stone)]/10"
-                        >
-                          Add person
-                        </button>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                          {persons.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGroupValues((prev) => ({ ...prev, [group.id]: [] }));
+                              }}
+                              className="w-full rounded-xl border border-rose-200 bg-rose-50 py-3 text-sm font-medium text-rose-900 hover:bg-rose-100 sm:w-auto sm:px-4"
+                            >
+                              Clear everyone in this role
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGroupValues((prev) => ({
+                                ...prev,
+                                [group.id]: [...persons, { name: "", email: "", phone: "" }],
+                              }));
+                            }}
+                            className="w-full rounded-xl border border-dashed border-[color:var(--wsu-border)] py-3 text-sm font-medium text-[color:var(--wsu-muted)] hover:bg-[color:var(--wsu-stone)]/10 sm:flex-1"
+                          >
+                            Add person
+                          </button>
+                        </div>
                       </div>
                     </section>
                   );

@@ -456,22 +456,61 @@ function contactObjectValueToSmartsheetScalar(objectValue: unknown): string {
   return "";
 }
 
+function stringifyCellScalar(cell: { value?: unknown }): string {
+  const v = cell.value;
+  if (v === undefined || v === null) {
+    return "";
+  }
+  return String(v).trim();
+}
+
+const SMARTSHEET_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
+
 /**
- * Same wire shape as scholarship-review-platform `updateRowCells`: only `{ columnId, value }`.
- * Smartsheet accepts string values for contact columns; `objectValue` in PUT bodies often yields 1008.
+ * Build Smartsheet row-update cells: TEXT_NUMBER / PICKLIST / PHONE use `{ value }`.
+ * CONTACT_LIST / MULTI_CONTACT_LIST require `{ objectValue }` — plain `value` is rejected by the API.
  */
-export function coerceRowUpdateCellsToValueOnly(
+export function formatCellsForSmartsheetRowPut(
   cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
-): Array<{ columnId: number; value: unknown }> {
+  columnTypeById: Map<number, string>,
+): Array<{ columnId: number; value: unknown } | { columnId: number; objectValue: unknown }> {
   const normalized = normalizeCellsForSmartsheetRowUpdate(cells);
   return normalized.map((cell) => {
-    if ("objectValue" in cell) {
+    const columnId = cell.columnId;
+    const columnType = columnTypeById.get(columnId) ?? "";
+
+    if (SMARTSHEET_CONTACT_COLUMN_TYPES.has(columnType)) {
+      if ("objectValue" in cell) {
+        return { columnId, objectValue: cell.objectValue };
+      }
+      const s = stringifyCellScalar(cell);
+      if (columnType === "MULTI_CONTACT_LIST") {
+        if (!s) {
+          return { columnId, objectValue: { objectType: "MULTI_CONTACT", value: [] } };
+        }
+        const tokens = s.split(/[,;]+/).map((t) => t.trim()).filter(Boolean);
+        const value = tokens.map((token) =>
+          token.includes("@")
+            ? { objectType: "CONTACT" as const, email: token }
+            : { objectType: "CONTACT" as const, name: token },
+        );
+        return { columnId, objectValue: { objectType: "MULTI_CONTACT", value } };
+      }
+      if (!s) {
+        return { columnId, objectValue: { objectType: "CONTACT" } };
+      }
       return {
-        columnId: cell.columnId,
-        value: contactObjectValueToSmartsheetScalar(cell.objectValue),
+        columnId,
+        objectValue: s.includes("@")
+          ? { objectType: "CONTACT", email: s }
+          : { objectType: "CONTACT", name: s },
       };
     }
-    return { columnId: cell.columnId, value: cell.value ?? "" };
+
+    if ("objectValue" in cell) {
+      return { columnId, value: contactObjectValueToSmartsheetScalar(cell.objectValue) };
+    }
+    return { columnId, value: cell.value ?? "" };
   });
 }
 
@@ -479,11 +518,12 @@ export async function updateSmartsheetRow(
   source: SourceConfig,
   sheetId: number,
   rowId: number,
-  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>
+  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
+  columnTypeById: Map<number, string>,
 ) {
   const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
   const url = `${apiBaseUrl.replace(/\/$/, "")}/sheets/${sheetId}/rows`;
-  const valueOnlyCells = coerceRowUpdateCellsToValueOnly(cells);
+  const outgoingCells = formatCellsForSmartsheetRowPut(cells, columnTypeById);
   const response = await fetch(url, {
     method: "PUT",
     headers: {
@@ -495,7 +535,7 @@ export async function updateSmartsheetRow(
     body: JSON.stringify([
       {
         id: rowId,
-        cells: valueOnlyCells,
+        cells: outgoingCells,
       },
     ]),
   });

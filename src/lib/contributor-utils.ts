@@ -81,7 +81,12 @@ export function parseMultiPersonRow(
     return parseMultiPersonValue(val);
   });
 
-  const maxLen = Math.max(1, ...attrArrays.map((a) => a.length));
+  const lengths = attrArrays.map((a) => a.length);
+  const maxLen = Math.max(0, ...lengths);
+  if (maxLen === 0) {
+    return [];
+  }
+
   const persons: MultiPersonEntry[] = [];
 
   const defaults: MultiPersonEntry = { name: "", email: "", phone: "" };
@@ -165,14 +170,21 @@ export function serializeMultiPersonToCells(
   for (const [columnId, attrs] of contactAttrsByColumn) {
     const hasEmail = attrs.some((a) => a.attribute === "email");
     const hasName = attrs.some((a) => a.attribute === "name");
-    const value = persons.map((p) => {
-      const c: { objectType: "CONTACT"; email?: string; name?: string } = {
-        objectType: "CONTACT",
-      };
-      if (hasEmail && p.email.trim()) c.email = p.email.trim();
-      if (hasName && p.name.trim()) c.name = p.name.trim();
-      return c;
-    });
+    const value = persons
+      .map((p) => {
+        const c: { objectType: "CONTACT"; email?: string; name?: string } = {
+          objectType: "CONTACT",
+        };
+        if (hasEmail && p.email.trim()) c.email = p.email.trim();
+        if (hasName && p.name.trim()) c.name = p.name.trim();
+        return c;
+      })
+      .filter((c) => {
+        const hasAny = Boolean(
+          (typeof c.email === "string" && c.email.trim()) || (typeof c.name === "string" && c.name.trim()),
+        );
+        return hasAny;
+      });
     const objectValue =
       (attrs[0]!.columnType as string) === "CONTACT_LIST"
         ? value[0] ?? { objectType: "CONTACT" as const }
@@ -187,7 +199,8 @@ export function serializeMultiPersonToCells(
       if (attr.attribute === "phone") return p.phone.trim();
       return "";
     });
-    result.push({ columnId: attr.columnId, value: values.filter(Boolean).join(", ") || "" });
+    const joined = values.filter(Boolean).join(", ");
+    result.push({ columnId: attr.columnId, value: joined });
   }
 
   return result;
