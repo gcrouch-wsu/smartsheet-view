@@ -53,6 +53,19 @@ export function getRowHeadingText(view: ResolvedView, row: ResolvedViewRow) {
   return text || `Row ${row.id}`;
 }
 
+/**
+ * Human-friendly title for the contributor edit drawer. Uses the same heading field as list/cards;
+ * does not use the raw Smartsheet row id as the visible label (that id stays in sr-only for support).
+ */
+export function getContributorEditRowHeading(view: ResolvedView, row: ResolvedViewRow) {
+  const heading = getRowHeadingField(view, row);
+  const text = heading ? describeResolvedField(heading).trim() : "";
+  if (text) {
+    return text;
+  }
+  return null;
+}
+
 /** Field used for A-Z index. Uses indexFieldKey if set, else headingFieldKey, else first field. */
 export function getIndexField(view: ResolvedView, row: ResolvedViewRow) {
   const key = view.presentation?.indexFieldKey ?? view.presentation?.headingFieldKey;

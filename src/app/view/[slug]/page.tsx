@@ -123,6 +123,8 @@ export default async function PublicViewPage({
   const editingEnabled = activeViewConfig.editing?.enabled && !contributorConfigurationError;
   const showContributorLoginLink = editingEnabled && activeViewConfig.editing?.showLoginLink !== false;
   const loginHref = showContributorLoginLink ? `/view/${slug}/contributor/login?view=${activeView.id}` : null;
+  const showContributorInstructions =
+    editingEnabled && activeViewConfig.editing?.showContributorInstructions !== false;
 
   let contributorEmail: string | null = null;
   let editingConfig = null;
@@ -140,6 +142,14 @@ export default async function PublicViewPage({
         editableRowIds = getEditableRowIdsForView(dataset.rows, activeViewConfig, contributorEmail);
       }
     }
+  }
+
+  /** Signed-in contributors only see rows they are allowed to edit (no scrolling through everyone). */
+  let viewForDisplay = activeView;
+  if (contributorEmail && editableRowIds.length > 0) {
+    const editableSet = new Set(editableRowIds);
+    const rows = activeView.rows.filter((row) => editableSet.has(row.id));
+    viewForDisplay = { ...activeView, rows, rowCount: rows.length };
   }
 
   return (
@@ -160,11 +170,23 @@ export default async function PublicViewPage({
               <div className="flex flex-wrap items-start justify-between gap-6">
                 <div className="min-w-0 flex-1 space-y-3">
                   <PublicHeaderBrandStrip presentation={activeView.presentation} />
-                  {!activeView.presentation?.hideHeaderBackLink && (
-                    <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
-                      Back to configured pages
-                    </Link>
-                  )}
+                  {!activeView.presentation?.hideHeaderBackLink &&
+                    (contributorEmail ? (
+                      <p className="text-sm text-[color:var(--wsu-muted)]">
+                        <Link href="/" className="font-medium text-[color:var(--wsu-crimson)] hover:underline">
+                          Published views home
+                        </Link>
+                        <span className="mt-1 block text-xs text-[color:var(--wsu-muted)]">
+                          Use <strong className="font-medium text-[color:var(--wsu-ink)]">Sign out</strong> below to
+                          change accounts. Browser Back may go to other sites you opened earlier—use this link to stay
+                          in public views.
+                        </span>
+                      </p>
+                    ) : (
+                      <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
+                        Back to configured pages
+                      </Link>
+                    ))}
                   <div>
                     {!activeView.presentation?.hideHeaderSourceLabel && (
                       <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
@@ -247,7 +269,15 @@ export default async function PublicViewPage({
                         )}
                         {!activeView.presentation?.hideHeaderRows && (
                           <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                            <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span> {activeView.rowCount}
+                            <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span>{" "}
+                            {contributorEmail && editableRowIds.length > 0 ? (
+                              <>
+                                {viewForDisplay.rowCount} assigned to you
+                                <span className="text-[color:var(--wsu-muted)]"> ({activeView.rowCount} in this view)</span>
+                              </>
+                            ) : (
+                              activeView.rowCount
+                            )}
                           </p>
                         )}
                         {!activeView.presentation?.hideHeaderRefreshed && (
@@ -347,9 +377,24 @@ export default async function PublicViewPage({
               )}
             </div>
 
+            {showContributorInstructions && (
+              <p className={embed ? "text-xs text-[color:var(--wsu-muted)]" : "text-sm text-[color:var(--wsu-muted)]"}>
+                <a
+                  href="/instructions/contributor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Opens in a new window"
+                  className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2 hover:no-underline"
+                >
+                  Contributor instructions
+                </a>
+                {!embed && <span className="text-[color:var(--wsu-muted)]"> (opens in a new window)</span>}
+              </p>
+            )}
+
             <ToastProvider>
               <ViewWithSearchAndIndex
-                view={activeView}
+                view={viewForDisplay}
                 layout={layout}
                 embed={embed}
                 slug={slug}
@@ -357,6 +402,7 @@ export default async function PublicViewPage({
                 contributorEmail={contributorEmail}
                 editingConfig={editingConfig}
                 editableRowIds={editableRowIds}
+                contributorRowsFiltered={Boolean(contributorEmail && editableRowIds.length > 0)}
               />
             </ToastProvider>
           </section>

@@ -82,6 +82,14 @@ function sanitizeClientErrorSnippet(text: string, maxLen: number): string {
   return `${oneLine.slice(0, Math.max(0, maxLen - 1))}…`;
 }
 
+function appendSmartsheetRefForLogs(message: string, refId: string | undefined, maxLen: number): string {
+  const base = sanitizeClientErrorSnippet(message, refId ? Math.max(60, maxLen - 48) : maxLen);
+  if (!refId) {
+    return base;
+  }
+  return `${base} (Smartsheet ref: ${refId})`;
+}
+
 /**
  * Parses Smartsheet API error bodies for a short, user-safe message.
  * Avoids echoing HTML error pages or huge payloads.
@@ -96,18 +104,20 @@ export function extractSmartsheetErrorMessage(body: string | undefined, maxLen =
   }
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const refId =
+      typeof parsed.refId === "string" && parsed.refId.trim() ? parsed.refId.trim() : undefined;
     const fromRoot =
       (typeof parsed.message === "string" && parsed.message.trim()) ||
       (typeof parsed.errorMessage === "string" && parsed.errorMessage.trim()) ||
       "";
     if (fromRoot) {
-      return sanitizeClientErrorSnippet(fromRoot, maxLen);
+      return appendSmartsheetRefForLogs(fromRoot, refId, maxLen);
     }
     const errObj = parsed.error;
     if (errObj && typeof errObj === "object" && "message" in errObj) {
       const m = (errObj as { message?: unknown }).message;
       if (typeof m === "string" && m.trim()) {
-        return sanitizeClientErrorSnippet(m.trim(), maxLen);
+        return appendSmartsheetRefForLogs(m.trim(), refId, maxLen);
       }
     }
     const result = parsed.result;
@@ -118,7 +128,7 @@ export function extractSmartsheetErrorMessage(body: string | undefined, maxLen =
         (typeof first.message === "string" && first.message.trim()) ||
         "";
       if (nested) {
-        return sanitizeClientErrorSnippet(nested, maxLen);
+        return appendSmartsheetRefForLogs(nested, refId, maxLen);
       }
     }
   } catch {
@@ -392,6 +402,79 @@ async function buildDataset(
   };
 }
 
+/**
+ * Smartsheet error 1008 ("Unable to parse request") often comes from cells that mix
+ * `value` + `objectValue` or include JSON `null` in a way the API rejects. Send only one
+ * payload shape per cell.
+ */
+export function normalizeCellsForSmartsheetRowUpdate(
+  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
+): Array<{ columnId: number; value?: unknown } | { columnId: number; objectValue: unknown }> {
+  return cells.map((cell) => {
+    const columnId = cell.columnId;
+    const hasObject = cell.objectValue !== undefined && cell.objectValue !== null;
+    if (hasObject) {
+      return { columnId, objectValue: cell.objectValue };
+    }
+    const v = cell.value;
+    return { columnId, value: v === undefined || v === null ? "" : v };
+  });
+}
+
+function contactObjectValueToSmartsheetScalar(objectValue: unknown): string {
+  if (objectValue == null || typeof objectValue !== "object") {
+    return "";
+  }
+  const ov = objectValue as Record<string, unknown>;
+  if (ov.objectType === "CONTACT") {
+    if (typeof ov.email === "string" && ov.email.trim()) {
+      return ov.email.trim();
+    }
+    if (typeof ov.name === "string" && ov.name.trim()) {
+      return ov.name.trim();
+    }
+    return "";
+  }
+  if (ov.objectType === "MULTI_CONTACT" && Array.isArray(ov.value)) {
+    return (ov.value as unknown[])
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return "";
+        }
+        const c = entry as Record<string, unknown>;
+        if (typeof c.email === "string" && c.email.trim()) {
+          return c.email.trim();
+        }
+        if (typeof c.name === "string" && c.name.trim()) {
+          return c.name.trim();
+        }
+        return "";
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
+  return "";
+}
+
+/**
+ * Same wire shape as scholarship-review-platform `updateRowCells`: only `{ columnId, value }`.
+ * Smartsheet accepts string values for contact columns; `objectValue` in PUT bodies often yields 1008.
+ */
+export function coerceRowUpdateCellsToValueOnly(
+  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
+): Array<{ columnId: number; value: unknown }> {
+  const normalized = normalizeCellsForSmartsheetRowUpdate(cells);
+  return normalized.map((cell) => {
+    if ("objectValue" in cell) {
+      return {
+        columnId: cell.columnId,
+        value: contactObjectValueToSmartsheetScalar(cell.objectValue),
+      };
+    }
+    return { columnId: cell.columnId, value: cell.value ?? "" };
+  });
+}
+
 export async function updateSmartsheetRow(
   source: SourceConfig,
   sheetId: number,
@@ -400,6 +483,7 @@ export async function updateSmartsheetRow(
 ) {
   const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
   const url = `${apiBaseUrl.replace(/\/$/, "")}/sheets/${sheetId}/rows`;
+  const valueOnlyCells = coerceRowUpdateCellsToValueOnly(cells);
   const response = await fetch(url, {
     method: "PUT",
     headers: {
@@ -411,7 +495,7 @@ export async function updateSmartsheetRow(
     body: JSON.stringify([
       {
         id: rowId,
-        cells,
+        cells: valueOnlyCells,
       },
     ]),
   });

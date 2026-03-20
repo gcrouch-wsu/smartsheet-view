@@ -155,6 +155,7 @@ function createEditingConfigState(current?: ViewEditingConfig): ViewEditingConfi
     editableColumnIds: current?.editableColumnIds ?? [],
     editableFieldGroups: current?.editableFieldGroups ?? [],
     showLoginLink: current?.showLoginLink !== false,
+    showContributorInstructions: current?.showContributorInstructions !== false,
   };
 }
 
@@ -1202,18 +1203,32 @@ export function ViewBuilder({
                           onChange={(show) => update("presentation", { ...view.presentation, hideHeaderRefreshed: !show })}
                         />
                         {view.editing?.enabled && (
-                          <VisibilitySelect
-                            label="Contributor sign in"
-                            value={view.editing.showLoginLink !== false}
-                            onChange={(show) =>
-                              update("editing", {
-                                ...createEditingConfigState(view.editing),
-                                enabled: true,
-                                showLoginLink: show,
-                              })
-                            }
-                            description="Shows login link in status box. Same setting as Editing tab."
-                          />
+                          <>
+                            <VisibilitySelect
+                              label="Contributor sign in"
+                              value={view.editing.showLoginLink !== false}
+                              onChange={(show) =>
+                                update("editing", {
+                                  ...createEditingConfigState(view.editing),
+                                  enabled: true,
+                                  showLoginLink: show,
+                                })
+                              }
+                              description="Shows login link in status box. Same setting as Editing tab."
+                            />
+                            <VisibilitySelect
+                              label="Contributor instructions link"
+                              value={view.editing.showContributorInstructions !== false}
+                              onChange={(show) =>
+                                update("editing", {
+                                  ...createEditingConfigState(view.editing),
+                                  enabled: true,
+                                  showContributorInstructions: show,
+                                })
+                              }
+                              description="Shows a link that opens the contributor help page in a new tab (no login to read it). Same setting as Editing tab."
+                            />
+                          </>
                         )}
                       </div>
                     )}
@@ -2165,6 +2180,29 @@ export function ViewBuilder({
                             <p className="text-sm font-medium text-[color:var(--wsu-ink)]">Show contributor login link on the public page</p>
                             <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
                               When hidden, contributor editing still works for direct login URLs and existing signed-in contributors.
+                            </p>
+                          </div>
+                        </label>
+                        <label className="mt-4 flex items-start gap-3 rounded-xl border border-[color:var(--wsu-border)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={view.editing.showContributorInstructions !== false}
+                            onChange={(event) =>
+                              updateEditing({
+                                ...createEditingConfigState(view.editing),
+                                enabled: true,
+                                showContributorInstructions: event.target.checked,
+                              })
+                            }
+                            className="mt-1 rounded border-[color:var(--wsu-border)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[color:var(--wsu-ink)]">
+                              Show contributor instructions link on the public page
+                            </p>
+                            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                              Adds a single link that opens the help guide in a <strong>new window</strong>. Nothing expands on the
+                              page itself. The guide is public—no password to read it. Turn off for a minimal page.
                             </p>
                           </div>
                         </label>

@@ -16,7 +16,7 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 - **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and multi-person groups). Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
 - **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
 - **Header branding (admin)**: In **Setup → Page header & branding**, optional PNG/JPEG logo (≤256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical rule—stored in view config. Shown at the top of the public header when visible.
-- **Instruction pages**: `/instructions/contributor` (linked when a contributor is signed in) and `/instructions/admin` (linked from the admin nav as **Setup guide**) — static, accessible guides that deploy with the app on Vercel.
+- **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) — static, accessible guides that deploy with the app on Vercel.
 
 **Optional local docs (not versioned here):** Teams can keep their own copies of specs or deployment notes (e.g. `PROJECT_SPEC.md`, `VERCEL_DEPLOYMENT.md`, `future_build_view.md`) beside this repo for internal use only.
 

@@ -268,7 +268,11 @@ function hasEditableSafeTransforms(field: ViewFieldConfig, columnType: string): 
   return { ok: false };
 }
 
-/** True when field is direct-mapped and eligible for contributor editing (no transforms, or safe contact transforms). */
+/**
+ * True when field maps to a single Smartsheet column in a way we can write back.
+ * Contact columns require mailto + contact_emails/contact_names. Other columns allow display
+ * transforms (trim, etc.)—we still treat the field as one column for editing.
+ */
 export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: SmartsheetColumn | null) {
   if (
     typeof field.source.columnId !== "number" ||
@@ -294,10 +298,11 @@ export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: Sma
     );
   }
 
-  return (
-    !(field.transforms?.length) &&
-    isContributorEditableRenderType(field.render.type)
-  );
+  // Non-contact: still direct-mapped to one column. Display transforms (trim, case, etc.) only
+  // affect how we show data; contributors edit the rendered text and we write that string back.
+  // Requiring zero transforms incorrectly dropped admin-selected columns (e.g. "Coordinator"
+  // with a trim transform) from the edit UI.
+  return isContributorEditableRenderType(field.render.type);
 }
 
 function buildDirectMappedFieldCounts(view: ViewConfig, columns: SmartsheetColumn[]) {

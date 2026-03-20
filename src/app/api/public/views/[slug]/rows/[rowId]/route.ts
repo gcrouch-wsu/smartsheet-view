@@ -119,10 +119,21 @@ export async function PATCH(
     if (error instanceof SmartsheetRequestError) {
       const message = extractSmartsheetErrorMessage(error.body);
       const status = httpStatusForSmartsheetContributorError(error.status);
+      let refNote = "";
+      try {
+        const parsed = JSON.parse(error.body) as { refId?: string; errorCode?: number };
+        if (parsed.refId || parsed.errorCode != null) {
+          refNote = ` refId=${parsed.refId ?? "n/a"} errorCode=${parsed.errorCode ?? "n/a"}`;
+        }
+      } catch {
+        /* body not JSON */
+      }
       console.error(
-        "[contributor PATCH] Smartsheet error",
+        `[contributor PATCH] Smartsheet error${refNote}`,
+        "httpStatus=",
         error.status,
-        error.body?.slice(0, 800),
+        "body=",
+        error.body?.slice(0, 1200),
       );
       return NextResponse.json({ error: message }, { status });
     }

@@ -216,6 +216,11 @@ export interface ViewEditingConfig {
   editableColumnIds: number[];
   editableFieldGroups?: EditableFieldGroup[];
   showLoginLink?: boolean;
+  /**
+   * When true (default), show a single “Contributor instructions” link on the public page that opens the help guide in a new window.
+   * No inline instructions; the guide itself never requires login to read.
+   */
+  showContributorInstructions?: boolean;
 }
 
 export interface ViewConfig {

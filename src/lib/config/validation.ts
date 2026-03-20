@@ -557,6 +557,7 @@ function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig 
           editableColumnIds: editableColumnIds.values,
           editableFieldGroups: editableFieldGroups.data,
           showLoginLink: asBoolean(input.showLoginLink, true),
+          showContributorInstructions: asBoolean(input.showContributorInstructions, true),
         },
   };
 }

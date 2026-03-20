@@ -45,6 +45,7 @@ export function ViewWithSearchAndIndex({
   contributorEmail = null,
   editingConfig = null,
   editableRowIds = [],
+  contributorRowsFiltered = false,
 }: {
   view: ResolvedView;
   layout: LayoutType;
@@ -54,6 +55,8 @@ export function ViewWithSearchAndIndex({
   contributorEmail?: string | null;
   editingConfig?: ContributorEditingClientConfig | null;
   editableRowIds?: number[];
+  /** When true, `view` is already limited to this contributor's editable rows. */
+  contributorRowsFiltered?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -132,6 +135,7 @@ export function ViewWithSearchAndIndex({
   }
 
   const showSearchAndIndex = !embed && filteredView.rows.length > 0;
+  const showAlphabetIndex = !contributorRowsFiltered || view.rows.length > 15;
   const contributorContextValue = {
     email: contributorEmail,
     viewId,
@@ -147,15 +151,22 @@ export function ViewWithSearchAndIndex({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-medium text-[color:var(--wsu-ink)]">Editing as {contributorEmail}</span>
-              <span>{editableRowIds.length} editable row{editableRowIds.length === 1 ? "" : "s"} in this view</span>
+              <span>
+                {contributorRowsFiltered
+                  ? `Showing only your ${editableRowIds.length} assigned row${editableRowIds.length === 1 ? "" : "s"}`
+                  : `${editableRowIds.length} editable row${editableRowIds.length === 1 ? "" : "s"} in this view`}
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Link
+              <a
                 href="/instructions/contributor"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Opens contributor instructions in a new window"
                 className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:border-[color:var(--wsu-crimson)] hover:underline"
               >
-                Contributor guide
-              </Link>
+                Contributor instructions
+              </a>
               <button
                 type="button"
                 onClick={() => void handleSignOut()}
@@ -175,9 +186,13 @@ export function ViewWithSearchAndIndex({
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search programs, names, emails..."
+                  placeholder={
+                    contributorRowsFiltered
+                      ? "Search within your assigned rows..."
+                      : "Search programs, names, emails..."
+                  }
                   className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-4 py-2.5 pl-10 text-sm text-[color:var(--wsu-ink)] placeholder:text-[color:var(--wsu-muted)] focus:border-[color:var(--wsu-crimson)] focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]/20"
-                  aria-label="Search"
+                  aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
                 />
                 <svg
                   className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--wsu-muted)]"
@@ -190,10 +205,13 @@ export function ViewWithSearchAndIndex({
                 </svg>
               </div>
               <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
-                {filteredView.rowCount} of {view.rowCount} results
+                {contributorRowsFiltered
+                  ? `${filteredView.rowCount} of ${view.rowCount} your rows`
+                  : `${filteredView.rowCount} of ${view.rowCount} results`}
               </span>
             </div>
 
+            {showAlphabetIndex ? (
             <nav
               aria-label="Alphabetical index"
               className="fixed right-4 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]/95 px-1.5 py-2 shadow-lg backdrop-blur-sm"
@@ -224,10 +242,11 @@ export function ViewWithSearchAndIndex({
                 );
               })}
             </nav>
+            ) : null}
           </>
         )}
 
-        <div className={showSearchAndIndex ? "pr-12" : ""}>
+        <div className={showSearchAndIndex && showAlphabetIndex ? "pr-12" : ""}>
           <PublicViewRenderer
             layout={layout}
             view={filteredView}
@@ -238,6 +257,7 @@ export function ViewWithSearchAndIndex({
 
         <EditRowDrawer
           slug={slug}
+          view={filteredView}
           row={editingRow}
           open={editingRow != null}
           onClose={() => setEditingRowId(null)}

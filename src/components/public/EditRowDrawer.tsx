@@ -4,8 +4,9 @@ import { startTransition, useEffect, useMemo, useRef, useState, type MutableRefO
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { FieldValue } from "@/components/public/FieldValue";
+import { getContributorEditRowHeading } from "@/components/public/layout-utils";
 import { useContributorContext } from "@/components/public/ContributorContext";
-import type { ResolvedViewRow } from "@/lib/config/types";
+import type { ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import {
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
@@ -15,12 +16,14 @@ import {
 
 export function EditRowDrawer({
   slug,
+  view,
   row,
   open,
   onClose,
   returnFocusRef,
 }: {
   slug: string;
+  view: ResolvedView;
   row: ResolvedViewRow | null;
   open: boolean;
   onClose: () => void;
@@ -50,6 +53,17 @@ export function EditRowDrawer({
 
   const editableFieldKeys = useMemo(() => new Set(editableFields.map((field) => field.fieldKey)), [editableFields]);
   const readOnlyFields = row ? row.fields.filter((field) => !editableFieldKeys.has(field.key)) : [];
+
+  const editDrawerTitle = useMemo(() => {
+    if (!row) {
+      return { visible: "Edit entry", srOnlySuffix: "" as string };
+    }
+    const heading = getContributorEditRowHeading(view, row);
+    return {
+      visible: heading ? `Edit: ${heading}` : "Edit your entry",
+      srOnlySuffix: ` Smartsheet row ${row.id}`,
+    };
+  }, [view, row]);
 
   useEffect(() => {
     if (!row || !contributor?.editingConfig || !open) {
@@ -213,7 +227,8 @@ export function EditRowDrawer({
               Contributor Editing
             </p>
             <h3 id="edit-row-drawer-title" className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">
-              Edit row {row.id}
+              {editDrawerTitle.visible}
+              <span className="sr-only">{editDrawerTitle.srOnlySuffix}</span>
             </h3>
             <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Signed in as {contributor.email}</p>
           </div>

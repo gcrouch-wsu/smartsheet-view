@@ -44,7 +44,9 @@ export function ContributorLoginForm({
       }
 
       startTransition(() => {
-        router.push(returnHref);
+        // Replace so the login page is not in history; browser Back returns to the prior page
+        // (e.g. the view) instead of trapping the user on the contributor form again.
+        router.replace(returnHref);
         router.refresh();
       });
     } catch (submitError) {

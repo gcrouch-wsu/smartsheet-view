@@ -102,6 +102,7 @@ describe("validateViewConfig", () => {
       editableColumnIds: [102, 103],
       editableFieldGroups: [],
       showLoginLink: false,
+      showContributorInstructions: true,
     });
   });
 

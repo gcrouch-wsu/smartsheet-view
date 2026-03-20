@@ -7,6 +7,8 @@ import {
   extractSmartsheetErrorMessage,
   getSmartsheetDataset,
   httpStatusForSmartsheetContributorError,
+  coerceRowUpdateCellsToValueOnly,
+  normalizeCellsForSmartsheetRowUpdate,
   resolveSheetIdForRowUpdate,
   testSmartsheetConnection,
 } from "@/lib/smartsheet";
@@ -202,8 +204,12 @@ describe("resolveSheetIdForRowUpdate", () => {
 });
 
 describe("extractSmartsheetErrorMessage", () => {
-  it("parses JSON message field", () => {
-    expect(extractSmartsheetErrorMessage('{"errorCode":1006,"message":"Not Found"}')).toBe("Not Found");
+  it("parses JSON message field and appends refId when present", () => {
+    expect(
+      extractSmartsheetErrorMessage(
+        '{"refId":"abc-123","errorCode":1006,"message":"Not Found"}',
+      ),
+    ).toBe("Not Found (Smartsheet ref: abc-123)");
   });
 
   it("returns default for HTML bodies", () => {
@@ -217,5 +223,54 @@ describe("httpStatusForSmartsheetContributorError", () => {
     expect(httpStatusForSmartsheetContributorError(403)).toBe(403);
     expect(httpStatusForSmartsheetContributorError(429)).toBe(429);
     expect(httpStatusForSmartsheetContributorError(500)).toBe(502);
+  });
+});
+
+describe("normalizeCellsForSmartsheetRowUpdate", () => {
+  it("drops value when objectValue is set (avoids mixed cell payloads)", () => {
+    expect(
+      normalizeCellsForSmartsheetRowUpdate([
+        { columnId: 1, value: null, objectValue: { objectType: "CONTACT", email: "a@b.com" } },
+      ]),
+    ).toEqual([{ columnId: 1, objectValue: { objectType: "CONTACT", email: "a@b.com" } }]);
+  });
+
+  it("uses empty string when value is null and there is no objectValue", () => {
+    expect(normalizeCellsForSmartsheetRowUpdate([{ columnId: 2, value: null }])).toEqual([
+      { columnId: 2, value: "" },
+    ]);
+  });
+});
+
+describe("coerceRowUpdateCellsToValueOnly", () => {
+  it("matches scholarship-review-platform shape: contact objectValue becomes string value", () => {
+    expect(
+      coerceRowUpdateCellsToValueOnly([
+        { columnId: 101, objectValue: { objectType: "CONTACT", email: "a@wsu.edu" } },
+      ]),
+    ).toEqual([{ columnId: 101, value: "a@wsu.edu" }]);
+  });
+
+  it("joins MULTI_CONTACT emails with comma and space", () => {
+    expect(
+      coerceRowUpdateCellsToValueOnly([
+        {
+          columnId: 102,
+          objectValue: {
+            objectType: "MULTI_CONTACT",
+            value: [
+              { objectType: "CONTACT", email: "a@wsu.edu" },
+              { objectType: "CONTACT", email: "b@wsu.edu" },
+            ],
+          },
+        },
+      ]),
+    ).toEqual([{ columnId: 102, value: "a@wsu.edu, b@wsu.edu" }]);
+  });
+
+  it("passes through plain text cells", () => {
+    expect(coerceRowUpdateCellsToValueOnly([{ columnId: 10, value: "Hello" }])).toEqual([
+      { columnId: 10, value: "Hello" },
+    ]);
   });
 });
