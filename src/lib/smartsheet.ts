@@ -72,6 +72,95 @@ export class SmartsheetRequestError extends Error {
   }
 }
 
+const DEFAULT_SMARTSHEET_CLIENT_ERROR = "Update failed. Try again.";
+
+function sanitizeClientErrorSnippet(text: string, maxLen: number): string {
+  const oneLine = text.replace(/\s+/g, " ").trim();
+  if (oneLine.length <= maxLen) {
+    return oneLine;
+  }
+  return `${oneLine.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+/**
+ * Parses Smartsheet API error bodies for a short, user-safe message.
+ * Avoids echoing HTML error pages or huge payloads.
+ */
+export function extractSmartsheetErrorMessage(body: string | undefined, maxLen = 500): string {
+  if (body == null || !String(body).trim()) {
+    return DEFAULT_SMARTSHEET_CLIENT_ERROR;
+  }
+  const raw = String(body).trim();
+  if (raw.startsWith("<")) {
+    return DEFAULT_SMARTSHEET_CLIENT_ERROR;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const fromRoot =
+      (typeof parsed.message === "string" && parsed.message.trim()) ||
+      (typeof parsed.errorMessage === "string" && parsed.errorMessage.trim()) ||
+      "";
+    if (fromRoot) {
+      return sanitizeClientErrorSnippet(fromRoot, maxLen);
+    }
+    const errObj = parsed.error;
+    if (errObj && typeof errObj === "object" && "message" in errObj) {
+      const m = (errObj as { message?: unknown }).message;
+      if (typeof m === "string" && m.trim()) {
+        return sanitizeClientErrorSnippet(m.trim(), maxLen);
+      }
+    }
+    const result = parsed.result;
+    if (Array.isArray(result) && result[0] && typeof result[0] === "object") {
+      const first = result[0] as { error?: { message?: string }; message?: string };
+      const nested =
+        (typeof first.error?.message === "string" && first.error.message.trim()) ||
+        (typeof first.message === "string" && first.message.trim()) ||
+        "";
+      if (nested) {
+        return sanitizeClientErrorSnippet(nested, maxLen);
+      }
+    }
+  } catch {
+    // not JSON
+  }
+  if (raw.length <= maxLen && !/[<>]/.test(raw)) {
+    return sanitizeClientErrorSnippet(raw, maxLen);
+  }
+  return DEFAULT_SMARTSHEET_CLIENT_ERROR;
+}
+
+/**
+ * Row updates use PUT /sheets/{sheetId}/rows. For sheet sources, smartsheetId is the sheet id.
+ * For reports, smartsheetId is the report id — we must use each row's sheetId from the API.
+ */
+export function resolveSheetIdForRowUpdate(
+  source: Pick<SourceConfig, "sourceType" | "smartsheetId">,
+  row: Pick<SmartsheetRow, "sheetId">,
+): number | null {
+  if (typeof row.sheetId === "number" && Number.isFinite(row.sheetId) && row.sheetId > 0) {
+    return row.sheetId;
+  }
+  if (source.sourceType === "sheet") {
+    return source.smartsheetId;
+  }
+  return null;
+}
+
+/** HTTP status to return to the client for a failed Smartsheet request (contributor API). */
+export function httpStatusForSmartsheetContributorError(smartsheetStatus: number): number {
+  if (smartsheetStatus === 429) {
+    return 429;
+  }
+  if (smartsheetStatus === 401) {
+    return 502;
+  }
+  if (smartsheetStatus >= 400 && smartsheetStatus < 500) {
+    return smartsheetStatus;
+  }
+  return 502;
+}
+
 function parseConnectionsEnv() {
   const raw = process.env.SMARTSHEET_CONNECTIONS_JSON?.trim();
   if (!raw) {

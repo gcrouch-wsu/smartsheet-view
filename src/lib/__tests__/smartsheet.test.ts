@@ -1,9 +1,15 @@
-﻿import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import reportResponseFixture from "@/lib/__tests__/fixtures/report-response.json";
 import sheetResponseFixture from "@/lib/__tests__/fixtures/sheet-response.json";
 import type { SourceConfig } from "@/lib/config/types";
-import { getSmartsheetDataset, testSmartsheetConnection } from "@/lib/smartsheet";
+import {
+  extractSmartsheetErrorMessage,
+  getSmartsheetDataset,
+  httpStatusForSmartsheetContributorError,
+  resolveSheetIdForRowUpdate,
+  testSmartsheetConnection,
+} from "@/lib/smartsheet";
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -163,5 +169,53 @@ describe("smartsheet normalization", () => {
     expect(requestInit.headers).toEqual({
       Authorization: "Bearer named-token",
     });
+  });
+});
+
+describe("resolveSheetIdForRowUpdate", () => {
+  it("uses row.sheetId when present (report source)", () => {
+    expect(
+      resolveSheetIdForRowUpdate(
+        { sourceType: "report", smartsheetId: 444 },
+        { sheetId: 9999 },
+      ),
+    ).toBe(9999);
+  });
+
+  it("falls back to smartsheetId for sheet sources when row.sheetId is missing", () => {
+    expect(
+      resolveSheetIdForRowUpdate(
+        { sourceType: "sheet", smartsheetId: 7763577444192132 },
+        {},
+      ),
+    ).toBe(7763577444192132);
+  });
+
+  it("returns null for report sources when row.sheetId is missing", () => {
+    expect(
+      resolveSheetIdForRowUpdate(
+        { sourceType: "report", smartsheetId: 444 },
+        {},
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("extractSmartsheetErrorMessage", () => {
+  it("parses JSON message field", () => {
+    expect(extractSmartsheetErrorMessage('{"errorCode":1006,"message":"Not Found"}')).toBe("Not Found");
+  });
+
+  it("returns default for HTML bodies", () => {
+    expect(extractSmartsheetErrorMessage("<html>error</html>")).toBe("Update failed. Try again.");
+  });
+});
+
+describe("httpStatusForSmartsheetContributorError", () => {
+  it("maps 401 to 502 and preserves 403", () => {
+    expect(httpStatusForSmartsheetContributorError(401)).toBe(502);
+    expect(httpStatusForSmartsheetContributorError(403)).toBe(403);
+    expect(httpStatusForSmartsheetContributorError(429)).toBe(429);
+    expect(httpStatusForSmartsheetContributorError(500)).toBe(502);
   });
 });

@@ -12,7 +12,13 @@ import {
   isContributorStillInSheet,
 } from "@/lib/contributor-utils";
 import { loadPublicViewCollection } from "@/lib/public-view";
-import { SmartsheetRequestError, updateSmartsheetRow } from "@/lib/smartsheet";
+import {
+  extractSmartsheetErrorMessage,
+  httpStatusForSmartsheetContributorError,
+  resolveSheetIdForRowUpdate,
+  SmartsheetRequestError,
+  updateSmartsheetRow,
+} from "@/lib/smartsheet";
 import { applyViewFilters } from "@/lib/filters";
 import { CONTRIBUTOR_DATASET_OPTIONS, loadContributorDataset } from "@/lib/contributor-view";
 
@@ -93,12 +99,34 @@ export async function PATCH(
     return NextResponse.json({ error: "No editable cells in request." }, { status: 400 });
   }
 
+  const sheetId = resolveSheetIdForRowUpdate(collection.sourceConfig, row);
+  if (sheetId == null) {
+    return NextResponse.json(
+      {
+        error:
+          "This row is missing sheet information (common with some report data). Saving is not supported for this row — contact your administrator.",
+      },
+      { status: 400 },
+    );
+  }
+
   try {
-    await updateSmartsheetRow(collection.sourceConfig, row.sheetId ?? collection.sourceConfig.smartsheetId, row.id, filteredCells);
+    await updateSmartsheetRow(collection.sourceConfig, sheetId, row.id, filteredCells);
   } catch (error) {
     if (error instanceof SmartsheetRequestError && error.status === 429) {
       return NextResponse.json({ error: "Smartsheet rate limit. Try again shortly." }, { status: 429 });
     }
+    if (error instanceof SmartsheetRequestError) {
+      const message = extractSmartsheetErrorMessage(error.body);
+      const status = httpStatusForSmartsheetContributorError(error.status);
+      console.error(
+        "[contributor PATCH] Smartsheet error",
+        error.status,
+        error.body?.slice(0, 800),
+      );
+      return NextResponse.json({ error: message }, { status });
+    }
+    console.error("[contributor PATCH] Unexpected error", error);
     return NextResponse.json({ error: "Update failed. Try again." }, { status: 502 });
   }
 
