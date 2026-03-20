@@ -23,7 +23,7 @@ export function DataAccordion({
 }: {
   view: ResolvedView;
   editableRowIds?: Set<number>;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
@@ -69,7 +69,8 @@ export function DataAccordion({
                     <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
                   )}
                   <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
-                    {index === 0 ? "Open" : "Expand"}
+                    <span className="group-open:hidden">Expand</span>
+                    <span className="hidden group-open:inline">Collapse</span>
                   </span>
                 </div>
               </summary>
@@ -130,7 +131,8 @@ export function DataAccordion({
                   <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
                 )}
                 <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
-                  {index === 0 ? "Open" : "Expand"}
+                  <span className="group-open:hidden">Expand</span>
+                  <span className="hidden group-open:inline">Collapse</span>
                 </span>
               </div>
             </summary>

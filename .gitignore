@@ -45,13 +45,10 @@ coverage/
 # Generated admin auth fallback data
 config/admin-users/
 
-# Local documentation (keep out of repo)
-PROJECT_SPEC.md
-vercel_check.md
-claude_review.md
-UI.MD
-future_build.md
-future_build_view.md
-next_build.md
+# Markdown: only README.md is tracked in git
+*.md
+!README.md
+
+# Local / scratch (keep out of repo)
 .claude/
 *.txt

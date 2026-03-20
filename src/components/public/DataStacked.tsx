@@ -23,7 +23,7 @@ export function DataStacked({
 }: {
   view: ResolvedView;
   editableRowIds?: Set<number>;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;

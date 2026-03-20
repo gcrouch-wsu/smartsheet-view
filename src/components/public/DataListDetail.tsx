@@ -26,7 +26,7 @@ export function DataListDetail({
 }: {
   view: ResolvedView;
   editableRowIds?: Set<number>;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
 
@@ -58,9 +58,14 @@ export function DataListDetail({
           : "border-t border-[color:var(--wsu-border)] pt-4"
       : "";
 
+  const detailTitleId = `list-detail-record-title-${activeRow.id}`;
+
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className={`overflow-hidden rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}>
+      <aside
+        aria-label="Records list"
+        className={`overflow-hidden rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+      >
         <ul className={listDividerClass}>
           {view.rows.map((row) => {
             const rowHeading = getRowHeadingField(view, row);
@@ -72,6 +77,7 @@ export function DataListDetail({
               <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24">
                 <button
                   type="button"
+                  aria-pressed={active}
                   onClick={() => setActiveRowId(row.id)}
                   className={`w-full px-4 py-4 text-left transition ${
                     active
@@ -95,12 +101,17 @@ export function DataListDetail({
         </ul>
       </aside>
 
-      <article className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
+      <article aria-labelledby={detailTitleId} className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          Selected record: {getRowHeadingText(view, activeRow)}
+        </p>
         <div className="border-b border-[color:var(--wsu-border)] pb-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
-              <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, activeRow)}</h3>
+              <h3 id={detailTitleId} className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">
+                {getRowHeadingText(view, activeRow)}
+              </h3>
               {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
             </div>
             {activeRowEditable && (

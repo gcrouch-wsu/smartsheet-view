@@ -33,13 +33,14 @@ export function ViewTabs({
   embed?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <nav aria-label="Views" className="flex flex-wrap gap-2">
       {views.map((view) => {
         const active = view.id === activeViewId;
         return (
           <Link
             key={view.id}
             href={buildHref(slug, view.id, layout, embed)}
+            aria-current={active ? "page" : undefined}
             className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
               active
                 ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
@@ -55,6 +56,6 @@ export function ViewTabs({
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

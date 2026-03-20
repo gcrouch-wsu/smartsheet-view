@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
+import { PublicHeaderLogo } from "@/components/public/PublicHeaderLogo";
 import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
@@ -11,6 +12,7 @@ import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { getEligibleEditableFieldDefinitions, getFieldsForMultiPersonGroup } from "@/lib/contributor-utils";
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
+import { HeaderLogoBrandingSection } from "./HeaderLogoBrandingSection";
 import { ThemeEditor } from "./ThemeEditor";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
@@ -1137,6 +1139,12 @@ export function ViewBuilder({
                 )}
               </div>
 
+              <HeaderLogoBrandingSection
+                viewLabel={view.label}
+                presentation={view.presentation}
+                onPresentationChange={(next) => update("presentation", next)}
+              />
+
               <div className="grid gap-8 md:grid-cols-2">
                 {/* Visibility Toggles */}
                 <div className="space-y-4">
@@ -1330,7 +1338,9 @@ export function ViewBuilder({
                         {!view.presentation?.hideHeader && (
                         <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
                           <div className="flex flex-wrap items-start justify-between gap-6">
-                            <div className="min-w-0 flex-1 space-y-3">
+                            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-4">
+                              <PublicHeaderLogo presentation={view.presentation} />
+                              <div className="min-w-0 flex-1 space-y-3">
                               {!view.presentation?.hideHeaderBackLink && (
                                 <span className="text-[10px] font-medium text-[color:var(--wsu-muted)]">
                                   Back to configured pages
@@ -1385,6 +1395,7 @@ export function ViewBuilder({
                                   )}
                                 </div>
                               )}
+                            </div>
                             </div>
                             {/* Info Box */}
                             {!view.presentation?.hideHeaderInfoBox && 
@@ -1786,7 +1797,9 @@ export function ViewBuilder({
                         {!view.presentation?.hideHeader && (
                         <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
                           <div className="flex flex-wrap items-start justify-between gap-6">
-                            <div className="min-w-0 flex-1 space-y-3">
+                            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-4">
+                              <PublicHeaderLogo presentation={view.presentation} />
+                              <div className="min-w-0 flex-1 space-y-3">
                               {!view.presentation?.hideHeaderBackLink && (
                                 <span className="text-[10px] font-medium text-[color:var(--wsu-muted)]">
                                   Back to configured pages
@@ -1841,6 +1854,7 @@ export function ViewBuilder({
                                   )}
                                 </div>
                               )}
+                            </div>
                             </div>
                             {/* Info Box */}
                             {!view.presentation?.hideHeaderInfoBox && 
@@ -2453,7 +2467,9 @@ export function ViewBuilder({
                     {!view.presentation?.hideHeader && (
                     <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
                       <div className="flex flex-wrap items-start justify-between gap-6">
-                        <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-start gap-5">
+                          <PublicHeaderLogo presentation={view.presentation} />
+                          <div className="min-w-0 flex-1 space-y-3">
                           {!view.presentation?.hideHeaderBackLink && (
                             <span className="text-sm font-medium text-[color:var(--wsu-muted)]">
                               Back to configured pages
@@ -2513,6 +2529,7 @@ export function ViewBuilder({
                               )}
                             </div>
                           )}
+                          </div>
                         </div>
                         {/* Info Box */}
                         {!view.presentation?.hideHeaderInfoBox && 

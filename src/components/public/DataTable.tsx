@@ -10,7 +10,7 @@ export function DataTable({
 }: {
   view: ResolvedView;
   editableRowIds?: Set<number>;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
@@ -20,18 +20,25 @@ export function DataTable({
     <div className="overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
+          <caption className="sr-only">
+            {view.label}: {view.rowCount} row{view.rowCount === 1 ? "" : "s"}
+          </caption>
           <thead>
             <tr className="border-b border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/80">
               {view.fields.map((field) => (
                 <th
                   key={field.key}
+                  scope="col"
                   className="font-view-heading px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
                 >
                   {field.label}
                 </th>
               ))}
               {onEditRow && (
-                <th className="font-view-heading px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">
+                <th
+                  scope="col"
+                  className="font-view-heading px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
+                >
                   Actions
                 </th>
               )}

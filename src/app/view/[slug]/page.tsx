@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ToastProvider } from "@/components/admin/Toast";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
+import { PublicHeaderLogo } from "@/components/public/PublicHeaderLogo";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { formatLayoutLabel } from "@/components/public/ViewRenderer";
@@ -143,13 +144,23 @@ export default async function PublicViewPage({
 
   return (
     <main className={mainClassName} style={mainStyle}>
+      {!embed && (
+        <a
+          href="#main-view-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:border focus:border-[color:var(--wsu-border)] focus:bg-[color:var(--wsu-paper)] focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-[color:var(--wsu-crimson)] focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
+      )}
       {embed && <EmbedHeightReporter />}
       <div className={containerClassName}>
         <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           {!embed && !activeView.presentation?.hideHeader && (
             <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
               <div className="flex flex-wrap items-start justify-between gap-6">
-                <div className="min-w-0 flex-1 space-y-3">
+                <div className="flex min-w-0 flex-1 flex-wrap items-start gap-5">
+                  <PublicHeaderLogo presentation={activeView.presentation} />
+                  <div className="min-w-0 flex-1 space-y-3">
                   {!activeView.presentation?.hideHeaderBackLink && (
                     <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
                       Back to configured pages
@@ -210,6 +221,7 @@ export default async function PublicViewPage({
                         ))}
                       </div>
                     ))}
+                  </div>
                 </div>
                 {(loginHref && !contributorEmail && activeView.presentation?.hideHeaderInfoBox && (
                   <div className="shrink-0">
@@ -277,7 +289,7 @@ export default async function PublicViewPage({
             </header>
           )}
 
-          <section className={embed ? "space-y-3" : "space-y-4"}>
+          <section id="main-view-content" className={embed ? "space-y-3 scroll-mt-4" : "space-y-4 scroll-mt-4"}>
             {!activeView.presentation?.hideViewTabs && (
               <ViewTabs
                 slug={slug}
@@ -315,13 +327,14 @@ export default async function PublicViewPage({
                 )}
               </div>
               {!activeView.fixedLayout && (
-                <div className="flex flex-wrap gap-2">
+                <nav aria-label="Layout" className="flex flex-wrap gap-2">
                   {LAYOUT_OPTIONS.map((option) => {
                     const active = option === layout;
                     return (
                       <Link
                         key={option}
                         href={buildHref(slug, activeView.id, option, embed)}
+                        aria-current={active ? "page" : undefined}
                         className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                           active
                             ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
@@ -332,7 +345,7 @@ export default async function PublicViewPage({
                       </Link>
                     );
                   })}
-                </div>
+                </nav>
               )}
             </div>
 

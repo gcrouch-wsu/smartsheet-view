@@ -9,7 +9,7 @@ import type { LayoutType, ResolvedView } from "@/lib/config/types";
 
 export interface PublicRowEditingProps {
   editableRowIds?: Set<number>;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }
 
 export function formatLayoutLabel(layout: LayoutType) {

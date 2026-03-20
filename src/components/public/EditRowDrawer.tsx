@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { FieldValue } from "@/components/public/FieldValue";
@@ -18,11 +18,13 @@ export function EditRowDrawer({
   row,
   open,
   onClose,
+  returnFocusRef,
 }: {
   slug: string;
   row: ResolvedViewRow | null;
   open: boolean;
   onClose: () => void;
+  returnFocusRef?: MutableRefObject<HTMLElement | null>;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -31,8 +33,13 @@ export function EditRowDrawer({
   const [groupValues, setGroupValues] = useState<Record<string, MultiPersonEntry[]>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const drawerSurfaceRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const editableFieldGroups = contributor?.editingConfig?.editableFieldGroups ?? [];
+  const editableFieldGroups = useMemo(
+    () => contributor?.editingConfig?.editableFieldGroups ?? [],
+    [contributor?.editingConfig?.editableFieldGroups],
+  );
   const editableFields = useMemo(() => {
     if (!row || !contributor?.editingConfig) {
       return [];
@@ -71,6 +78,57 @@ export function EditRowDrawer({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || !contributor || !row) {
+      return;
+    }
+
+    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const surface = drawerSurfaceRef.current;
+    closeButtonRef.current?.focus();
+
+    function cycleTabFocus(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !surface) {
+        return;
+      }
+      const selector =
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const nodes = Array.from(surface.querySelectorAll(selector)).filter(
+        (el): el is HTMLElement => el instanceof HTMLElement,
+      );
+      if (nodes.length === 0) {
+        return;
+      }
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      if (event.shiftKey) {
+        if (document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", cycleTabFocus);
+    return () => {
+      document.removeEventListener("keydown", cycleTabFocus);
+      const target = returnFocusRef?.current ?? previousActive;
+      if (target && typeof target.focus === "function") {
+        try {
+          target.focus();
+        } catch {
+          /* ignore */
+        }
+      }
+      if (returnFocusRef) {
+        returnFocusRef.current = null;
+      }
+    };
+  }, [open, contributor, row, returnFocusRef]);
 
   if (!contributor || !open || !row) {
     return null;
@@ -142,9 +200,10 @@ export function EditRowDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(35,31,32,0.28)]" onClick={onClose}>
       <aside
+        ref={drawerSurfaceRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Edit row"
+        aria-labelledby="edit-row-drawer-title"
         className="flex h-full w-full max-w-xl flex-col border-l border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -153,10 +212,13 @@ export function EditRowDrawer({
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-crimson)]">
               Contributor Editing
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">Edit row {row.id}</h3>
+            <h3 id="edit-row-drawer-title" className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">
+              Edit row {row.id}
+            </h3>
             <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Signed in as {contributor.email}</p>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm text-[color:var(--wsu-muted)]"
@@ -245,12 +307,15 @@ export function EditRowDrawer({
                       </div>
                       <div className="space-y-4">
                         {persons.map((person, idx) => (
-                          <div
+                          <fieldset
                             key={idx}
                             className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
                           >
+                            <legend className="sr-only">
+                              {group.label}, person {idx + 1} of {persons.length}
+                            </legend>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-[color:var(--wsu-muted)]">
+                              <span className="text-xs font-medium text-[color:var(--wsu-muted)]" aria-hidden>
                                 Person {idx + 1}
                               </span>
                               <button
@@ -312,7 +377,7 @@ export function EditRowDrawer({
                                 </label>
                               )}
                             </div>
-                          </div>
+                          </fieldset>
                         ))}
                         <button
                           type="button"
@@ -358,7 +423,10 @@ export function EditRowDrawer({
             )}
 
             {error && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <div
+                role="alert"
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+              >
                 {error}
               </div>
             )}

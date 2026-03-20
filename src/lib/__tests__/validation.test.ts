@@ -148,4 +148,55 @@ describe("validateViewConfig", () => {
       ],
     });
   });
+
+  const TINY_VALID_PNG =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+  it("accepts header logo with required alt text", () => {
+    const result = validateViewConfig(
+      {
+        id: "with-logo",
+        slug: "logo-page",
+        sourceId: "grad-programs",
+        label: "Logo page",
+        layout: "table",
+        public: false,
+        presentation: {
+          headerLogoDataUrl: TINY_VALID_PNG,
+          headerLogoAlt: "Organization crest",
+        },
+        fields: [
+          { key: "name", label: "Name", source: { columnTitle: "Name" }, render: { type: "text" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.headerLogoAlt).toBe("Organization crest");
+    expect(result.data?.presentation?.headerLogoDataUrl).toBe(TINY_VALID_PNG);
+  });
+
+  it("rejects header logo without alt text", () => {
+    const result = validateViewConfig(
+      {
+        id: "bad-logo",
+        slug: "bad",
+        sourceId: "grad-programs",
+        label: "Bad",
+        layout: "table",
+        public: false,
+        presentation: {
+          headerLogoDataUrl: TINY_VALID_PNG,
+        },
+        fields: [
+          { key: "name", label: "Name", source: { columnTitle: "Name" }, render: { type: "text" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("headerLogoAlt"))).toBe(true);
+  });
 });

@@ -14,7 +14,7 @@ export function ContributorEditButton({
   stopPropagation = false,
 }: {
   rowId: number;
-  onEditRow?: (rowId: number) => void;
+  onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
   className?: string;
   compact?: boolean;
   stopPropagation?: boolean;
@@ -28,7 +28,7 @@ export function ContributorEditButton({
       event.preventDefault();
       event.stopPropagation();
     }
-    onEditRow?.(rowId);
+    onEditRow?.(rowId, event.currentTarget);
   }
 
   return (

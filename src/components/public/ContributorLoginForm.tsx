@@ -56,10 +56,11 @@ export function ContributorLoginForm({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Contributor access options">
         <button
           type="button"
           onClick={() => setMode("sign_in")}
+          aria-pressed={mode === "sign_in"}
           className={`rounded-full border px-4 py-2 text-sm font-medium ${
             mode === "sign_in"
               ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
@@ -71,6 +72,7 @@ export function ContributorLoginForm({
         <button
           type="button"
           onClick={() => setMode("claim")}
+          aria-pressed={mode === "claim"}
           className={`rounded-full border px-4 py-2 text-sm font-medium ${
             mode === "claim"
               ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
@@ -114,7 +116,7 @@ export function ContributorLoginForm({
         </p>
 
         {error && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             {error}
           </div>
         )}

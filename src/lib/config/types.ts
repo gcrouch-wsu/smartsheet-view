@@ -144,6 +144,15 @@ export interface ViewPresentationConfig {
   hideViewTabCount?: boolean;
   /** Custom label for this view's tab (overrides view.label). */
   viewTabLabel?: string;
+  /**
+   * Optional header logo as a PNG or JPEG data URL (managed in admin). Requires headerLogoAlt.
+   * Stored in view config / Postgres JSON — keep files small (≤256KB) for performance.
+   */
+  headerLogoDataUrl?: string;
+  /** Short accessible description of the logo (required when headerLogoDataUrl is set). */
+  headerLogoAlt?: string;
+  /** Hide uploaded logo on the public header without removing it from config. */
+  hideHeaderLogo?: boolean;
 }
 
 export interface ViewStyleConfig {

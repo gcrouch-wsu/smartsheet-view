@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useMemo, useState } from "react";
+import { startTransition, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { ContributorProvider } from "@/components/public/ContributorContext";
@@ -59,6 +60,7 @@ export function ViewWithSearchAndIndex({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [editingRowId, setEditingRowId] = useState<number | null>(null);
+  const editReturnFocusRef = useRef<HTMLElement | null>(null);
 
   const filteredView = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -121,10 +123,11 @@ export function ViewWithSearchAndIndex({
     });
   }
 
-  function handleEditRow(rowId: number) {
+  function handleEditRow(rowId: number, triggerElement?: HTMLElement | null) {
     if (!editableRowIdSet.has(rowId)) {
       return;
     }
+    editReturnFocusRef.current = triggerElement ?? null;
     setEditingRowId(rowId);
   }
 
@@ -146,13 +149,21 @@ export function ViewWithSearchAndIndex({
               <span className="font-medium text-[color:var(--wsu-ink)]">Editing as {contributorEmail}</span>
               <span>{editableRowIds.length} editable row{editableRowIds.length === 1 ? "" : "s"} in this view</span>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-            >
-              Sign out
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/instructions/contributor"
+                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:border-[color:var(--wsu-crimson)] hover:underline"
+              >
+                Contributor guide
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         )}
 
@@ -178,12 +189,15 @@ export function ViewWithSearchAndIndex({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <span className="text-sm text-[color:var(--wsu-muted)]">
+              <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
                 {filteredView.rowCount} of {view.rowCount} results
               </span>
             </div>
 
-            <div className="fixed right-4 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]/95 px-1.5 py-2 shadow-lg backdrop-blur-sm">
+            <nav
+              aria-label="Alphabetical index"
+              className="fixed right-4 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]/95 px-1.5 py-2 shadow-lg backdrop-blur-sm"
+            >
               {["#", ...ALPHABET].map((letter) => {
                 const hasEntries = activeLetters.has(letter);
                 const isActive = activeLetter === letter;
@@ -201,12 +215,15 @@ export function ViewWithSearchAndIndex({
                         : "cursor-default text-[color:var(--wsu-border)]"
                     }`}
                     title={hasEntries ? `Jump to ${letter}` : `No entries for ${letter}`}
+                    aria-label={
+                      hasEntries ? `Jump to entries starting with ${letter === "#" ? "number or symbol" : letter}` : `No entries for ${letter}`
+                    }
                   >
                     {letter}
                   </button>
                 );
               })}
-            </div>
+            </nav>
           </>
         )}
 
@@ -219,7 +236,13 @@ export function ViewWithSearchAndIndex({
           />
         </div>
 
-        <EditRowDrawer slug={slug} row={editingRow} open={editingRow != null} onClose={() => setEditingRowId(null)} />
+        <EditRowDrawer
+          slug={slug}
+          row={editingRow}
+          open={editingRow != null}
+          onClose={() => setEditingRowId(null)}
+          returnFocusRef={editReturnFocusRef}
+        />
       </div>
     </ContributorProvider>
   );

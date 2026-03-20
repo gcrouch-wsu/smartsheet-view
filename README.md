@@ -6,19 +6,19 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 
 ## Key Features
 
-- **Visual Admin Builder**: Configure data sources and public views with a four-tab builder (Setup, Fields, Filters, Preview).
+- **Visual Admin Builder**: Configure sources and public views with a five-section builder (**Setup**, **Fields**, **Filters & Sort**, **Editing**, **Preview**).
 - **Custom Header WYSIWYG**: Rich text editor for page headers with headings, bold, italic, underline, alignment, bullet lists, text color, highlighting, and links. Use `{{PUBLIC_URL}}` to insert a live, clickable link to the current view.
-- **Flexible Layouts**: Display data as Tables, Cards, Lists, Accordions, Tabbed panels, or List-Detail views.
+- **Flexible Layouts**: Tables, Cards, Lists, Stacked, Accordions, Tabbed panels, and List–Detail.
 - **Advanced Theme System**: 12 customizable design tokens (colors, fonts, radius) with live WCAG AA contrast validation.
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
 - **Universal Embed**: Standalone pages or iframe embeds for WordPress/CMS with automatic height reporting.
-- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit their assigned rows from the public view. WSU email + password auth; row ownership from contact columns; editable fields and multi-person field groups configurable per view.
+- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and multi-person groups). Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
+- **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
+- **Header logo (admin)**: Optional PNG/JPEG upload (≤256KB) in **Setup → Page header & branding**, with required **alt text**; stored in the view config (e.g. Postgres JSON). Shown on the public header when the page header is visible.
+- **Instruction pages**: `/instructions/contributor` (linked when a contributor is signed in) and `/instructions/admin` (linked from the admin nav as **Setup guide**) — static, accessible guides that deploy with the app on Vercel.
 
-## Documentation
-
-For a full technical specification, including the data model, implementation phases, and future roadmap, please refer to:
-- **[PROJECT_SPEC.md](./PROJECT_SPEC.md)**
+**Optional local docs (not versioned here):** Teams can keep their own copies of specs or deployment notes (e.g. `PROJECT_SPEC.md`, `VERCEL_DEPLOYMENT.md`, `future_build_view.md`) beside this repo for internal use only.
 
 ## Getting Started
 
@@ -65,11 +65,13 @@ After saving, use **Test connection** to verify the Smartsheet API can reach the
 
 1. Push to GitHub and connect the repository in Vercel.
 2. Configure environment variables in the Vercel project settings.
-3. Deploy. The build uses `npm ci` and `npm run build` as defined in `vercel.json`.
+3. Deploy. The build uses `npm ci` and `npm run build` as defined in `vercel.json` (**production builds use `next build --webpack`**—keep that flag unless you re-validate TipTap and `pg` bundles).
 
 **Note:** For Vercel deployments, set `DATABASE_URL` to persist admin users and enable full config management (create, edit, delete sources and views). Without it, the filesystem is read-only and config changes will not persist.
 
-**Contributor editing note:** Contributor row editing requires both `DATABASE_URL` and `CONTRIBUTOR_SESSION_SECRET`, and the database must be **PostgreSQL 13+** because the schema relies on `gen_random_uuid()`.
+**Contributor editing:** Requires `DATABASE_URL`, **`CONTRIBUTOR_SESSION_SECRET`**, and **PostgreSQL 13+** (`gen_random_uuid()` on contributor tables). Contributor API routes use **`export const runtime = "nodejs"`** (Node-only APIs).
+
+**Rich text (custom header):** Sanitized server-side with **`sanitize-html`** only—avoid introducing **`jsdom`** on the server bundle for Vercel.
 
 ## Project Structure
 

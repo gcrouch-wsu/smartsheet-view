@@ -1,4 +1,5 @@
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
+import { validateHeaderLogoPair } from "@/lib/header-logo";
 import type {
   EditableFieldGroup,
   EditableFieldGroupAttribute,
@@ -325,6 +326,22 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const hideViewTabs = asBoolean(input.hideViewTabs, false);
   const hideViewTabCount = asBoolean(input.hideViewTabCount, false);
   const viewTabLabel = asOptionalString(input.viewTabLabel);
+  const hideHeaderLogo = asBoolean(input.hideHeaderLogo, false);
+
+  const rawLogoUrl =
+    typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
+      ? input.headerLogoDataUrl.trim()
+      : undefined;
+  const rawLogoAlt =
+    typeof input.headerLogoAlt === "string" && input.headerLogoAlt.trim()
+      ? input.headerLogoAlt.trim()
+      : undefined;
+  const logoValidated = validateHeaderLogoPair(rawLogoUrl, rawLogoAlt);
+  if (!logoValidated.ok) {
+    errors.push(...logoValidated.errors);
+  }
+  const headerLogoDataUrl = logoValidated.ok ? logoValidated.dataUrl : undefined;
+  const headerLogoAlt = logoValidated.ok ? logoValidated.alt : undefined;
 
   if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
     errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
@@ -376,7 +393,9 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       hideViewTitleSection ||
       hideViewTabs ||
       hideViewTabCount ||
-      viewTabLabel
+      viewTabLabel ||
+      Boolean(headerLogoDataUrl && headerLogoAlt) ||
+      hideHeaderLogo
   );
 
   return {
@@ -406,6 +425,9 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             hideViewTabs,
             hideViewTabCount,
             viewTabLabel,
+            headerLogoDataUrl,
+            headerLogoAlt,
+            hideHeaderLogo,
           },
   };
 }
