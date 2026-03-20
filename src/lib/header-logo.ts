@@ -1,5 +1,8 @@
 /** Shared validation for optional public header logo (PNG/JPEG data URLs stored in view config). */
 
+/** Max length for header brand subline / title (plain text next to logo). */
+export const HEADER_BRAND_TEXT_MAX_LENGTH = 150;
+
 export const HEADER_LOGO_MAX_DECODED_BYTES = 256 * 1024;
 export const HEADER_LOGO_ALT_MAX_LENGTH = 200;
 /** Upper bound on full data URL string length (base64 + prefix). */

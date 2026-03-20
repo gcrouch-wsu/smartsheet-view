@@ -98,7 +98,7 @@ export default function AdminInstructionsPage() {
             </h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
               <li>
-                <strong>Header logo:</strong> upload PNG or JPEG under 256KB in <strong>Setup → Page header &amp; branding</strong>. Always provide meaningful <strong>alt text</strong> (required for save).
+                <strong>Header branding:</strong> in <strong>Setup → Page header &amp; branding</strong>, upload a PNG/JPEG logo (≤256KB, <strong>alt text</strong> required) and optionally two text lines beside it (organization + unit), similar to a lockup layout.
               </li>
               <li>The public page includes skip links, landmarks, table semantics where applicable, and an accessible edit drawer.</li>
             </ul>

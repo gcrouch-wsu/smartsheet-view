@@ -1,5 +1,5 @@
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
-import { validateHeaderLogoPair } from "@/lib/header-logo";
+import { HEADER_BRAND_TEXT_MAX_LENGTH, validateHeaderLogoPair } from "@/lib/header-logo";
 import type {
   EditableFieldGroup,
   EditableFieldGroupAttribute,
@@ -343,6 +343,17 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const headerLogoDataUrl = logoValidated.ok ? logoValidated.dataUrl : undefined;
   const headerLogoAlt = logoValidated.ok ? logoValidated.alt : undefined;
 
+  let headerBrandSubline = asOptionalString(input.headerBrandSubline);
+  let headerBrandTitle = asOptionalString(input.headerBrandTitle);
+  if (headerBrandSubline && headerBrandSubline.length > HEADER_BRAND_TEXT_MAX_LENGTH) {
+    errors.push(`presentation.headerBrandSubline must be at most ${HEADER_BRAND_TEXT_MAX_LENGTH} characters.`);
+    headerBrandSubline = undefined;
+  }
+  if (headerBrandTitle && headerBrandTitle.length > HEADER_BRAND_TEXT_MAX_LENGTH) {
+    errors.push(`presentation.headerBrandTitle must be at most ${HEADER_BRAND_TEXT_MAX_LENGTH} characters.`);
+    headerBrandTitle = undefined;
+  }
+
   if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
     errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
   }
@@ -395,7 +406,9 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       hideViewTabCount ||
       viewTabLabel ||
       Boolean(headerLogoDataUrl && headerLogoAlt) ||
-      hideHeaderLogo
+      hideHeaderLogo ||
+      headerBrandSubline ||
+      headerBrandTitle
   );
 
   return {
@@ -428,6 +441,8 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             headerLogoDataUrl,
             headerLogoAlt,
             hideHeaderLogo,
+            headerBrandSubline,
+            headerBrandTitle,
           },
   };
 }

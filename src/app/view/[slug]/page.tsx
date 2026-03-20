@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ToastProvider } from "@/components/admin/Toast";
 import { EmbedHeightReporter } from "@/components/public/EmbedHeightReporter";
-import { PublicHeaderLogo } from "@/components/public/PublicHeaderLogo";
+import { PublicHeaderBrandStrip } from "@/components/public/PublicHeaderBrandStrip";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { formatLayoutLabel } from "@/components/public/ViewRenderer";
@@ -158,9 +158,8 @@ export default async function PublicViewPage({
           {!embed && !activeView.presentation?.hideHeader && (
             <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
               <div className="flex flex-wrap items-start justify-between gap-6">
-                <div className="flex min-w-0 flex-1 flex-wrap items-start gap-5">
-                  <PublicHeaderLogo presentation={activeView.presentation} />
-                  <div className="min-w-0 flex-1 space-y-3">
+                <div className="min-w-0 flex-1 space-y-3">
+                  <PublicHeaderBrandStrip presentation={activeView.presentation} />
                   {!activeView.presentation?.hideHeaderBackLink && (
                     <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
                       Back to configured pages
@@ -221,7 +220,6 @@ export default async function PublicViewPage({
                         ))}
                       </div>
                     ))}
-                  </div>
                 </div>
                 {(loginHref && !contributorEmail && activeView.presentation?.hideHeaderInfoBox && (
                   <div className="shrink-0">

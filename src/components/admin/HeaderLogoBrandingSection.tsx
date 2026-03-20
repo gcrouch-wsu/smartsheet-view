@@ -2,8 +2,9 @@
 
 import { useId, useState } from "react";
 import { useToast } from "@/components/admin/Toast";
-import type { ViewConfig, ViewPresentationConfig } from "@/lib/config/types";
+import type { ViewPresentationConfig } from "@/lib/config/types";
 import {
+  HEADER_BRAND_TEXT_MAX_LENGTH,
   HEADER_LOGO_ALT_MAX_LENGTH,
   readLogoFileAsDataUrl,
 } from "@/lib/header-logo";
@@ -59,14 +60,46 @@ export function HeaderLogoBrandingSection({
   }
 
   return (
-    <div className="space-y-4 border-t border-[color:var(--wsu-border)] pt-8">
+    <div className="space-y-6 border-t border-[color:var(--wsu-border)] pt-8">
       <div>
-        <h4 className="text-sm font-semibold text-[color:var(--wsu-ink)]">Header logo</h4>
+        <h4 className="text-sm font-semibold text-[color:var(--wsu-ink)]">Header branding</h4>
         <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
-          Optional branding on the public page header. Use <strong>PNG</strong> or <strong>JPEG</strong>, max{" "}
-          <strong>256KB</strong>. Describe the logo clearly in the alt text so visitors using screen readers understand
-          what it shows.
+          Upload a mark (e.g. cougar icon) and optional text so the public header matches a classic layout:{" "}
+          <strong>logo</strong>, a thin vertical rule, then <strong>organization line</strong> and <strong>title line</strong>. Logo
+          must be <strong>PNG</strong> or <strong>JPEG</strong>, max <strong>256KB</strong>, with alt text for accessibility.
         </p>
+      </div>
+
+      <div className="space-y-3 rounded-xl border border-[color:var(--wsu-border)] bg-white p-4">
+        <p className="text-xs font-semibold text-[color:var(--wsu-ink)]">Text beside logo</p>
+        <p className="text-[11px] text-[color:var(--wsu-muted)]">
+          Both fields are optional. Use either or both: one line is smaller (muted), the second is larger and bold—similar to
+          “Washington State University” and “The Graduate School.”
+        </p>
+        <label className="block space-y-1">
+          <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Organization / top line</span>
+          <input
+            type="text"
+            value={presentation?.headerBrandSubline ?? ""}
+            maxLength={HEADER_BRAND_TEXT_MAX_LENGTH}
+            onChange={(e) => patch({ headerBrandSubline: e.target.value || undefined })}
+            className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+            placeholder="e.g. Washington State University"
+            autoComplete="off"
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Unit / main title line</span>
+          <input
+            type="text"
+            value={presentation?.headerBrandTitle ?? ""}
+            maxLength={HEADER_BRAND_TEXT_MAX_LENGTH}
+            onChange={(e) => patch({ headerBrandTitle: e.target.value || undefined })}
+            className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm font-medium"
+            placeholder="e.g. The Graduate School"
+            autoComplete="off"
+          />
+        </label>
       </div>
 
       {hasLogo && (

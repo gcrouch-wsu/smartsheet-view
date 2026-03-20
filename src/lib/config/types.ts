@@ -153,6 +153,10 @@ export interface ViewPresentationConfig {
   headerLogoAlt?: string;
   /** Hide uploaded logo on the public header without removing it from config. */
   hideHeaderLogo?: boolean;
+  /** Smaller line next to logo (e.g. institution name). Plain text. */
+  headerBrandSubline?: string;
+  /** Larger bold line next to logo (e.g. school or unit). Plain text. */
+  headerBrandTitle?: string;
 }
 
 export interface ViewStyleConfig {
