@@ -2,10 +2,81 @@ import { describe, expect, it } from "vitest";
 import {
   parseMultiPersonValue,
   parseMultiPersonRow,
+  serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
+  validateContributorPicklistCells,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
-import type { EditableFieldGroup, ResolvedViewRow } from "@/lib/config/types";
+import type { EditableFieldGroup, ResolvedViewRow, SmartsheetColumn } from "@/lib/config/types";
+
+describe("serializeContactDisplayToObjectValue", () => {
+  it("returns null for empty CONTACT_LIST so callers send value clear", () => {
+    expect(serializeContactDisplayToObjectValue("", "CONTACT_LIST", "email")).toBeNull();
+    expect(serializeContactDisplayToObjectValue("  , ;  ", "CONTACT_LIST", "name")).toBeNull();
+  });
+
+  it("returns empty MULTI_CONTACT for empty MULTI_CONTACT_LIST", () => {
+    expect(serializeContactDisplayToObjectValue("", "MULTI_CONTACT_LIST", "email")).toEqual({
+      objectType: "MULTI_CONTACT",
+      values: [],
+    });
+  });
+
+  it("serializes single contact", () => {
+    expect(serializeContactDisplayToObjectValue("a@b.com", "CONTACT_LIST", "email")).toEqual({
+      objectType: "CONTACT",
+      email: "a@b.com",
+    });
+    expect(serializeContactDisplayToObjectValue("Pat", "CONTACT_LIST", "name")).toEqual({
+      objectType: "CONTACT",
+      name: "Pat",
+    });
+  });
+});
+
+describe("validateContributorPicklistCells", () => {
+  function col(partial: { id: number; title: string; type: string; options?: string[] }): SmartsheetColumn {
+    return {
+      id: partial.id,
+      index: 0,
+      title: partial.title,
+      type: partial.type,
+      options: partial.options,
+    };
+  }
+
+  it("allows empty value and skips columns without options", () => {
+    const map = new Map<number, SmartsheetColumn>([
+      [1, col({ id: 1, title: "Status", type: "PICKLIST", options: ["A", "B"] })],
+    ]);
+    expect(validateContributorPicklistCells([{ columnId: 1, value: "" }], map)).toEqual({ ok: true });
+    const noOpts = new Map([[2, col({ id: 2, title: "Free", type: "PICKLIST", options: [] })]]);
+    expect(validateContributorPicklistCells([{ columnId: 2, value: "anything" }], noOpts)).toEqual({ ok: true });
+  });
+
+  it("rejects value not in options", () => {
+    const map = new Map([[1, col({ id: 1, title: "Status", type: "PICKLIST", options: ["A", "B"] })]]);
+    const r = validateContributorPicklistCells([{ columnId: 1, value: "Z" }], map);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error).toContain("Z");
+      expect(r.error).toContain("Status");
+    }
+  });
+
+  it("rejects objectValue on picklist", () => {
+    const map = new Map([[1, col({ id: 1, title: "Status", type: "PICKLIST", options: ["A"] })]]);
+    expect(validateContributorPicklistCells([{ columnId: 1, value: "A", objectValue: {} }], map)).toEqual({
+      ok: false,
+      error: "Picklist fields must send a plain value, not objectValue.",
+    });
+  });
+
+  it("ignores non-picklist columns", () => {
+    const map = new Map([[9, col({ id: 9, title: "Note", type: "TEXT_NUMBER" })]]);
+    expect(validateContributorPicklistCells([{ columnId: 9, value: "x" }], map)).toEqual({ ok: true });
+  });
+});
 
 describe("parseMultiPersonValue", () => {
   it("splits by comma", () => {
@@ -160,5 +231,14 @@ describe("serializeMultiPersonToCells", () => {
       { columnId: 102, objectValue: { objectType: "CONTACT", email: "ada@wsu.edu" } },
       { columnId: 101, value: "Ada" },
     ]);
+  });
+
+  it("clears CONTACT_LIST with value when no contacts remain", () => {
+    const group: EditableFieldGroup = {
+      id: "g1",
+      label: "Lead",
+      attributes: [{ attribute: "email", fieldKey: "lead_email", columnId: 102, columnType: "CONTACT_LIST" }],
+    };
+    expect(serializeMultiPersonToCells([], group)).toEqual([{ columnId: 102, value: "" }]);
   });
 });

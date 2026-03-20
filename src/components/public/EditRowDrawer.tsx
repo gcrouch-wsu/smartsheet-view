@@ -171,6 +171,9 @@ export function EditRowDrawer({
             field.columnType,
             field.contactDisplayMode,
           );
+          if (objectValue === null) {
+            return { columnId: field.columnId, value: "" };
+          }
           return { columnId: field.columnId, objectValue };
         }
         return { columnId: field.columnId, value: raw };

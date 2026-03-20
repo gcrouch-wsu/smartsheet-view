@@ -109,24 +109,33 @@ export function parseMultiPersonRow(
 
 const CONTACT_DISPLAY_DELIMITERS = /[,;]+/;
 
+/** Smartsheet-ready objectValue from a contributor’s edited contact display string (not including empty single-contact clear). */
+export type SerializedContactDisplayObjectValue =
+  | { objectType: "CONTACT"; email: string }
+  | { objectType: "CONTACT"; name: string }
+  | {
+      objectType: "MULTI_CONTACT";
+      values: Array<{ objectType: "CONTACT"; email?: string; name?: string }>;
+    };
+
 /**
  * Convert edited display string back to Smartsheet objectValue for CONTACT_LIST / MULTI_CONTACT_LIST.
- * Used when contributor edits a contact field (emails or names) and we need to write objectValue.
+ *
+ * **Empty CONTACT_LIST:** returns `null` — callers should send `{ columnId, value: "" }` to clear (valid on PUT).
+ * **Empty MULTI_CONTACT_LIST:** returns `{ objectType: "MULTI_CONTACT", values: [] }`.
  */
 export function serializeContactDisplayToObjectValue(
   displayValue: string,
   columnType: "CONTACT_LIST" | "MULTI_CONTACT_LIST",
   contactDisplayMode: ContactDisplayMode,
-): { objectType: "CONTACT" | "MULTI_CONTACT"; email?: string; name?: string; value?: unknown[] } {
+): SerializedContactDisplayObjectValue | null {
   const tokens = displayValue
     .split(CONTACT_DISPLAY_DELIMITERS)
     .map((s) => s.trim())
     .filter(Boolean);
 
   if (tokens.length === 0) {
-    return columnType === "CONTACT_LIST"
-      ? { objectType: "CONTACT" }
-      : { objectType: "MULTI_CONTACT", value: [] };
+    return columnType === "CONTACT_LIST" ? null : { objectType: "MULTI_CONTACT", values: [] };
   }
 
   if (columnType === "CONTACT_LIST") {
@@ -136,12 +145,12 @@ export function serializeContactDisplayToObjectValue(
       : { objectType: "CONTACT", name: first };
   }
 
-  const value = tokens.map((token) =>
+  const values = tokens.map((token) =>
     contactDisplayMode === "email"
       ? { objectType: "CONTACT" as const, email: token }
       : { objectType: "CONTACT" as const, name: token },
   );
-  return { objectType: "MULTI_CONTACT", value };
+  return { objectType: "MULTI_CONTACT", values };
 }
 
 /** Serialize person entries back to cell values. Uses value for TEXT_NUMBER/PHONE, objectValue for CONTACT_LIST/MULTI_CONTACT_LIST. */
@@ -185,11 +194,16 @@ export function serializeMultiPersonToCells(
         );
         return hasAny;
       });
-    const objectValue =
-      (attrs[0]!.columnType as string) === "CONTACT_LIST"
-        ? value[0] ?? { objectType: "CONTACT" as const }
-        : { objectType: "MULTI_CONTACT" as const, value };
-    result.push({ columnId, objectValue });
+    const colType = attrs[0]!.columnType as string;
+    if (colType === "CONTACT_LIST") {
+      if (value.length === 0) {
+        result.push({ columnId, value: "" });
+      } else {
+        result.push({ columnId, objectValue: value[0]! });
+      }
+    } else {
+      result.push({ columnId, objectValue: { objectType: "MULTI_CONTACT" as const, values: value } });
+    }
   }
 
   for (const attr of nonContactAttrs) {
@@ -204,6 +218,42 @@ export function serializeMultiPersonToCells(
   }
 
   return result;
+}
+
+/**
+ * Server-side guard for contributor PATCH: strict picklists must match column options; empty string clears.
+ * Rejects `objectValue` on PICKLIST (wrong shape for Smartsheet).
+ */
+export function validateContributorPicklistCells(
+  cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
+  columnsById: Map<number, SmartsheetColumn>,
+): { ok: true } | { ok: false; error: string } {
+  for (const cell of cells) {
+    const column = columnsById.get(cell.columnId);
+    if (!column || column.type !== "PICKLIST") {
+      continue;
+    }
+    const hasObject = cell.objectValue !== undefined && cell.objectValue !== null;
+    if (hasObject) {
+      return { ok: false, error: "Picklist fields must send a plain value, not objectValue." };
+    }
+    const opts = (column.options ?? []).filter((o): o is string => typeof o === "string" && o.length > 0);
+    if (opts.length === 0) {
+      continue;
+    }
+    const str = cell.value === undefined || cell.value === null ? "" : String(cell.value).trim();
+    if (str === "") {
+      continue;
+    }
+    if (!opts.includes(str)) {
+      const label = column.title?.trim() || "this field";
+      return {
+        ok: false,
+        error: `"${str}" is not a valid choice for ${label}. Pick one of the listed options.`,
+      };
+    }
+  }
+  return { ok: true };
 }
 
 export function normalizeContributorEmail(value: string) {

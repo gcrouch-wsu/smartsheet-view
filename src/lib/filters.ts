@@ -26,7 +26,7 @@ function normalizeComparable(value: unknown): string[] {
       ].filter(Boolean);
     }
     if (obj.objectType === "MULTI_CONTACT") {
-      const entries = Array.isArray(obj.values) ? obj.values : Array.isArray(obj.value) ? obj.value : [];
+      const entries = Array.isArray(obj.values) ? obj.values : [];
       return entries.flatMap((entry) => normalizeComparable(entry));
     }
     return Object.values(obj).flatMap((entry) => normalizeComparable(entry));

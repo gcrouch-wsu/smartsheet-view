@@ -10,6 +10,7 @@ import {
   buildContributorEditingClientConfig,
   isContributorInRow,
   isContributorStillInSheet,
+  validateContributorPicklistCells,
 } from "@/lib/contributor-utils";
 import { loadPublicViewCollection } from "@/lib/public-view";
 import {
@@ -99,6 +100,12 @@ export async function PATCH(
     return NextResponse.json({ error: "No editable cells in request." }, { status: 400 });
   }
 
+  const columnsById = new Map(dataset.columns.map((c) => [c.id, c]));
+  const picklistCheck = validateContributorPicklistCells(filteredCells, columnsById);
+  if (!picklistCheck.ok) {
+    return NextResponse.json({ error: picklistCheck.error }, { status: 400 });
+  }
+
   const sheetId = resolveSheetIdForRowUpdate(collection.sourceConfig, row);
   if (sheetId == null) {
     return NextResponse.json(
@@ -110,7 +117,7 @@ export async function PATCH(
     );
   }
 
-  const columnTypeById = new Map(dataset.columns.map((c) => [c.id, c.type]));
+  const columnTypeById = new Map([...columnsById].map(([id, col]) => [id, col.type]));
 
   try {
     await updateSmartsheetRow(collection.sourceConfig, sheetId, row.id, filteredCells, columnTypeById);

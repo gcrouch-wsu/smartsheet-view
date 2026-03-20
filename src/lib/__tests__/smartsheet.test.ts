@@ -261,7 +261,7 @@ describe("formatCellsForSmartsheetRowPut", () => {
     ]);
     const ov = {
       objectType: "MULTI_CONTACT",
-      value: [
+      values: [
         { objectType: "CONTACT", email: "a@wsu.edu" },
         { objectType: "CONTACT", email: "b@wsu.edu" },
       ],
@@ -277,6 +277,56 @@ describe("formatCellsForSmartsheetRowPut", () => {
     ]);
     expect(formatCellsForSmartsheetRowPut([{ columnId: 10, value: "Hello" }], types)).toEqual([
       { columnId: 10, value: "Hello" },
+    ]);
+  });
+
+  it("clears CONTACT_LIST with value empty string instead of bare CONTACT objectValue (avoids API 1008)", () => {
+    const types = new Map<number, string>([[101, "CONTACT_LIST"]]);
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 101, objectValue: { objectType: "CONTACT" } }], types)).toEqual([
+      { columnId: 101, value: "" },
+    ]);
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 101, value: "" }], types)).toEqual([{ columnId: 101, value: "" }]);
+  });
+
+  it("sanitizes MULTI_CONTACT_LIST objectValue and drops empty CONTACT entries", () => {
+    const types = new Map<number, string>([[102, "MULTI_CONTACT_LIST"]]);
+    const messy = {
+      objectType: "MULTI_CONTACT",
+      values: [
+        { objectType: "CONTACT", email: "a@wsu.edu" },
+        { objectType: "CONTACT" },
+        { objectType: "CONTACT", name: "  " },
+        { objectType: "CONTACT", email: "b@wsu.edu", name: "B" },
+      ],
+    };
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 102, objectValue: messy }], types)).toEqual([
+      {
+        columnId: 102,
+        objectValue: {
+          objectType: "MULTI_CONTACT",
+          values: [
+            { objectType: "CONTACT", email: "a@wsu.edu" },
+            { objectType: "CONTACT", email: "b@wsu.edu", name: "B" },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it("rewrites mistaken MULTI_CONTACT `value` array to API-correct `values` on write", () => {
+    const types = new Map<number, string>([[102, "MULTI_CONTACT_LIST"]]);
+    const legacy = {
+      objectType: "MULTI_CONTACT",
+      value: [{ objectType: "CONTACT", email: "legacy@wsu.edu" }],
+    };
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 102, objectValue: legacy }], types)).toEqual([
+      {
+        columnId: 102,
+        objectValue: {
+          objectType: "MULTI_CONTACT",
+          values: [{ objectType: "CONTACT", email: "legacy@wsu.edu" }],
+        },
+      },
     ]);
   });
 });

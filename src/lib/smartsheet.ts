@@ -421,6 +421,17 @@ export function normalizeCellsForSmartsheetRowUpdate(
   });
 }
 
+/** Raw list from MULTI_CONTACT objectValue: API uses `values`; accept mistaken `value` (legacy) when reading. */
+function multiContactEntriesFromObject(o: Record<string, unknown>): unknown[] {
+  if (Array.isArray(o.values)) {
+    return o.values as unknown[];
+  }
+  if (Array.isArray(o.value)) {
+    return o.value as unknown[];
+  }
+  return [];
+}
+
 function contactObjectValueToSmartsheetScalar(objectValue: unknown): string {
   if (objectValue == null || typeof objectValue !== "object") {
     return "";
@@ -435,8 +446,8 @@ function contactObjectValueToSmartsheetScalar(objectValue: unknown): string {
     }
     return "";
   }
-  if (ov.objectType === "MULTI_CONTACT" && Array.isArray(ov.value)) {
-    return (ov.value as unknown[])
+  if (ov.objectType === "MULTI_CONTACT") {
+    return multiContactEntriesFromObject(ov)
       .map((entry) => {
         if (!entry || typeof entry !== "object") {
           return "";
@@ -467,8 +478,69 @@ function stringifyCellScalar(cell: { value?: unknown }): string {
 const SMARTSHEET_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
 
 /**
- * Build Smartsheet row-update cells: TEXT_NUMBER / PICKLIST / PHONE use `{ value }`.
- * CONTACT_LIST / MULTI_CONTACT_LIST require `{ objectValue }` — plain `value` is rejected by the API.
+ * Smartsheet rejects bare `{ objectType: "CONTACT" }` (no email/name) under strict objectValue parsing → 1008.
+ * For CONTACT_LIST, clearing uses `{ value: "" }` per API cell reference.
+ */
+function isPopulatedContactObjectValue(ov: unknown): boolean {
+  if (ov == null || typeof ov !== "object") {
+    return false;
+  }
+  const o = ov as Record<string, unknown>;
+  if (o.objectType !== "CONTACT") {
+    return false;
+  }
+  const email = typeof o.email === "string" ? o.email.trim() : "";
+  const name = typeof o.name === "string" ? o.name.trim() : "";
+  return Boolean(email || name);
+}
+
+/** Drop empty CONTACT entries and emit API-correct `{ objectType, values }` for MULTI_CONTACT_LIST writes. */
+function sanitizeMultiContactObjectValue(ov: unknown): {
+  objectType: "MULTI_CONTACT";
+  values: Array<{ objectType: "CONTACT"; email?: string; name?: string }>;
+} {
+  if (ov == null || typeof ov !== "object") {
+    return { objectType: "MULTI_CONTACT", values: [] };
+  }
+  const o = ov as Record<string, unknown>;
+  if (o.objectType !== "MULTI_CONTACT") {
+    return { objectType: "MULTI_CONTACT", values: [] };
+  }
+  const rawEntries = multiContactEntriesFromObject(o);
+  const values: Array<{ objectType: "CONTACT"; email?: string; name?: string }> = [];
+  for (const entry of rawEntries) {
+    if (entry == null || typeof entry !== "object") {
+      continue;
+    }
+    const c = entry as Record<string, unknown>;
+    if (c.objectType !== "CONTACT") {
+      continue;
+    }
+    const email = typeof c.email === "string" ? c.email.trim() : "";
+    const name = typeof c.name === "string" ? c.name.trim() : "";
+    if (!email && !name) {
+      continue;
+    }
+    if (email && name) {
+      values.push({ objectType: "CONTACT", email, name });
+    } else if (email) {
+      values.push({ objectType: "CONTACT", email });
+    } else {
+      values.push({ objectType: "CONTACT", name });
+    }
+  }
+  return { objectType: "MULTI_CONTACT", values };
+}
+
+/**
+ * Build Smartsheet row-update cells for `PUT /sheets/{id}/rows`.
+ *
+ * - **TEXT_NUMBER / PICKLIST / PHONE:** `{ columnId, value }`. Smartsheet defaults to **strict** cell parsing
+ *   (`strict: true`); we do not send `strict: false`, so PICKLIST text must match column options.
+ * - **MULTI_CONTACT_LIST:** `{ columnId, objectValue }` with `{ objectType: "MULTI_CONTACT", values: [...] }`
+ *   (REST + official SDKs use the plural **`values`** array, not `value`).
+ * - **CONTACT_LIST:** `{ objectValue }` when setting a contact; **`{ value: "" }`** when clearing (bare
+ *   `{ objectType: "CONTACT" }` without email/name often yields error **1008**).
  */
 export function formatCellsForSmartsheetRowPut(
   cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
@@ -480,24 +552,33 @@ export function formatCellsForSmartsheetRowPut(
     const columnType = columnTypeById.get(columnId) ?? "";
 
     if (SMARTSHEET_CONTACT_COLUMN_TYPES.has(columnType)) {
-      if ("objectValue" in cell) {
-        return { columnId, objectValue: cell.objectValue };
-      }
-      const s = stringifyCellScalar(cell);
       if (columnType === "MULTI_CONTACT_LIST") {
+        if ("objectValue" in cell) {
+          return { columnId, objectValue: sanitizeMultiContactObjectValue(cell.objectValue) };
+        }
+        const s = stringifyCellScalar(cell);
         if (!s) {
-          return { columnId, objectValue: { objectType: "MULTI_CONTACT", value: [] } };
+          return { columnId, objectValue: { objectType: "MULTI_CONTACT", values: [] } };
         }
         const tokens = s.split(/[,;]+/).map((t) => t.trim()).filter(Boolean);
-        const value = tokens.map((token) =>
+        const values = tokens.map((token) =>
           token.includes("@")
             ? { objectType: "CONTACT" as const, email: token }
             : { objectType: "CONTACT" as const, name: token },
         );
-        return { columnId, objectValue: { objectType: "MULTI_CONTACT", value } };
+        return { columnId, objectValue: { objectType: "MULTI_CONTACT", values } };
       }
+
+      // CONTACT_LIST
+      if ("objectValue" in cell) {
+        if (!isPopulatedContactObjectValue(cell.objectValue)) {
+          return { columnId, value: "" };
+        }
+        return { columnId, objectValue: cell.objectValue };
+      }
+      const s = stringifyCellScalar(cell);
       if (!s) {
-        return { columnId, objectValue: { objectType: "CONTACT" } };
+        return { columnId, value: "" };
       }
       return {
         columnId,

@@ -18,7 +18,9 @@ Staff manage data in Smartsheet as they always have—no changes to their workfl
 - **Header branding (admin)**: In **Setup → Page header & branding**, optional PNG/JPEG logo (≤256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical rule—stored in view config. Shown at the top of the public header when visible.
 - **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) — static, accessible guides that deploy with the app on Vercel.
 
-**Optional local docs (not versioned here):** Teams can keep their own copies of specs or deployment notes (e.g. `PROJECT_SPEC.md`, `VERCEL_DEPLOYMENT.md`, `future_build_view.md`) beside this repo for internal use only.
+**Vercel pitfalls & env checklist:** See **`VERCEL_DEPLOYMENT.md`** in this repository.
+
+**Optional local docs (often not committed):** e.g. `PROJECT_SPEC.md`, `future_build_view.md` beside the repo for internal specs.
 
 ## Getting Started
 
@@ -62,6 +64,8 @@ Go to **Admin → Sources** and click **Create source**. You’ll configure:
 After saving, use **Test connection** to verify the Smartsheet API can reach the sheet or report. Then create **Views** that select columns and define how data is displayed.
 
 ## Vercel Deployment
+
+For **build/runtime pitfalls**, **Node/Webpack**, **Postgres**, **admin vs contributor secrets**, and a full **env checklist**, read **`VERCEL_DEPLOYMENT.md`**.
 
 1. Push to GitHub and connect the repository in Vercel.
 2. Configure environment variables in the Vercel project settings.

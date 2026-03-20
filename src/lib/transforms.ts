@@ -88,11 +88,7 @@ function parseContactObject(value: unknown): ContactValue[] {
   }
 
   if (value.objectType === "MULTI_CONTACT") {
-    const entries = Array.isArray(value.value)
-      ? value.value
-      : Array.isArray(value.values)
-        ? value.values
-        : [];
+    const entries = Array.isArray(value.values) ? value.values : [];
     return uniqueContacts(entries.flatMap((entry) => parseContactObject(entry)));
   }
 
