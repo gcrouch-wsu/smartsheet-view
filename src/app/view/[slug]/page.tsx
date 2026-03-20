@@ -211,6 +211,16 @@ export default async function PublicViewPage({
                       </div>
                     ))}
                 </div>
+                {loginHref && !contributorEmail && (
+                  <div className="shrink-0">
+                    <Link
+                      href={loginHref}
+                      className="inline-flex rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)] hover:text-white"
+                    >
+                      Contributor sign in
+                    </Link>
+                  </div>
+                )}
                 {!activeView.presentation?.hideHeaderInfoBox &&
                   (!activeView.presentation?.hideHeaderActiveView ||
                     !activeView.presentation?.hideHeaderRows ||
@@ -263,24 +273,26 @@ export default async function PublicViewPage({
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              {!activeView.presentation?.hideViewTitleSection && (
-                <div>
-                  <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
-                  {activeView.description && (
-                    <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
-                  )}
-                  {loginHref && !contributorEmail && !embed && (
-                    <div className="mt-3">
-                      <Link
-                        href={loginHref}
-                        className="inline-flex rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)] hover:text-white"
-                      >
-                        Contributor sign in
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div>
+                {!activeView.presentation?.hideViewTitleSection && (
+                  <>
+                    <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+                    {activeView.description && (
+                      <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
+                    )}
+                  </>
+                )}
+                {loginHref && !contributorEmail && !embed && activeView.presentation?.hideHeader && (
+                  <div className={!activeView.presentation?.hideViewTitleSection ? "mt-3" : ""}>
+                    <Link
+                      href={loginHref}
+                      className="inline-flex rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)] hover:text-white"
+                    >
+                      Contributor sign in
+                    </Link>
+                  </div>
+                )}
+              </div>
               {!activeView.fixedLayout && (
                 <div className="flex flex-wrap gap-2">
                   {LAYOUT_OPTIONS.map((option) => {
