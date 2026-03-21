@@ -118,13 +118,20 @@ function stringsForMultiPersonAttribute(field: ResolvedFieldValue | undefined): 
   if (!field) {
     return [];
   }
+  // parseMultiPersonValue(textValue) splits the raw comma-separated string correctly.
+  // listValue is built by the rendering pipeline, which can lose entries in two ways:
+  //   1. "text" render type → listValue = [whole string as one element] (never split)
+  //   2. "phone"/"list" render types → uniqueStrings() deduplicates identical values,
+  //      so two people with the same phone number collapse to one entry.
+  // Prefer whichever path produces more entries.
+  const fromText = parseMultiPersonValue(field.textValue ?? "");
   const fromList = field.listValue
     .map((s) => String(s).trim())
     .filter((s) => s.length > 0);
-  if (fromList.length > 0) {
-    return fromList;
+  if (fromText.length >= fromList.length) {
+    return fromText;
   }
-  return parseMultiPersonValue(field.textValue ?? "");
+  return fromList;
 }
 
 /** Parse a row's field values into person entries. Aligns by index across attributes. */

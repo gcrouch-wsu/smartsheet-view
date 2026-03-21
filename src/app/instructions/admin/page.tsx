@@ -87,7 +87,15 @@ export default function AdminInstructionsPage() {
             </h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
               <li>Requires PostgreSQL <strong>13+</strong>, <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">DATABASE_URL</code>, and a non-empty <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">CONTRIBUTOR_SESSION_SECRET</code>.</li>
-              <li>Configure contact column(s), editable columns, optional multi-person groups, and whether to show the login link.</li>
+              <li>
+                <strong>Contact columns</strong> control <em>who</em> can edit a row — only contributors whose email appears in one of these columns see the Edit button for that row.
+              </li>
+              <li>
+                <strong>Editable Fields</strong> give contributors a plain text or contact input for a single value. Use these for simple columns like status, notes, or a single email.
+              </li>
+              <li>
+                <strong>Multi-person field groups</strong> give contributors an Add/Remove person UI where each person has their own name, email, and/or phone card. Use these when a column holds comma-separated values representing multiple people (e.g. &ldquo;Coordinator&rdquo; and &ldquo;Coordinator email&rdquo; columns). Without a group, those columns only get a plain text input — contributors cannot add or remove individual people.
+              </li>
               <li>API routes that touch the database use the Node.js runtime on Vercel (already set for contributor endpoints).</li>
             </ul>
           </section>
