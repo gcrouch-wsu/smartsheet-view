@@ -60,7 +60,7 @@ export default function AdminInstructionsPage() {
                 <strong>Setup:</strong> slug, layout, optional fixed layout, page header, <strong>header logo</strong> (PNG/JPEG, alt text required), theme, card layout.
               </li>
               <li>
-                <strong>Fields:</strong> pick columns, render types, transforms, heading/summary for card-style layouts.
+                <strong>Fields:</strong> pick columns, render types, transforms, heading/summary for card-style layouts. Check <strong>Hide when empty</strong> on any field that is only populated for some rows — the label and value are suppressed entirely when the cell is blank, keeping cards and list panels clean (e.g. a &ldquo;Faculty Coordinator&rdquo; column that only applies to a subset of programs).
               </li>
               <li>
                 <strong>Filters and sort:</strong> narrow rows and order them for the public page.
