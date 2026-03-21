@@ -95,15 +95,15 @@ export default function ContributorInstructionsPage() {
             </h2>
             <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>
-                You can only change rows where <strong className="text-[color:var(--wsu-ink)]">your email</strong> appears in the
+                You can only change rows where <strong className=”text-[color:var(--wsu-ink)]”>your email</strong> appears in the
                 columns your administrator configured (often a “contact” or “coordinator” column).
               </li>
               <li>
-                Many views <strong className="text-[color:var(--wsu-ink)]">only show your rows</strong> after you sign in, so you
-                don’t have to search the whole list.
+                After signing in, an <strong className=”text-[color:var(--wsu-ink)]”>Edit</strong> button appears next to the rows
+                you are eligible to edit. Rows where your email is not listed do not show the button.
               </li>
               <li>
-                You can only edit <strong className="text-[color:var(--wsu-ink)]">fields your administrator turned on</strong> for
+                You can only edit <strong className=”text-[color:var(--wsu-ink)]”>fields your administrator turned on</strong> for
                 contributors.
               </li>
             </ul>
@@ -181,9 +181,8 @@ export default function ContributorInstructionsPage() {
               Need more help?
             </h2>
             <p className="mt-2 leading-relaxed">
-              Contact your program <strong>administrator</strong>. They manage Smartsheet, who appears in each column, and which
-              fields you can change. This app cannot add you to a row or reset your contributor password for you if the
-              administrator has not listed your email in the right place.
+              Contact your program <strong>administrator</strong>. They manage Smartsheet, who appears in each column, which
+              fields you can change, and can reset your contributor password if needed.
             </p>
           </section>
         </main>
