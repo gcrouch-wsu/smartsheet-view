@@ -57,7 +57,7 @@ export default function ContributorInstructionsPage() {
               </li>
               <li>
                 On the contributor page, select <strong className="text-[color:var(--wsu-ink)]">First-time access</strong> (not
-                “Sign in” yet).
+                "Sign in" yet).
               </li>
               <li>
                 Enter your <strong className="text-[color:var(--wsu-ink)]">WSU email</strong> (it must end in{" "}
@@ -95,15 +95,15 @@ export default function ContributorInstructionsPage() {
             </h2>
             <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>
-                You can only change rows where <strong className=”text-[color:var(--wsu-ink)]”>your email</strong> appears in the
+                You can only change rows where <strong className="text-[color:var(--wsu-ink)]">your email</strong> appears in the
                 columns your administrator configured (often a &ldquo;contact&rdquo; or &ldquo;coordinator&rdquo; column).
               </li>
               <li>
-                After signing in, an <strong className=”text-[color:var(--wsu-ink)]”>Edit</strong> button appears next to the rows
+                After signing in, an <strong className="text-[color:var(--wsu-ink)]">Edit</strong> button appears next to the rows
                 you are eligible to edit. Rows where your email is not listed do not show the button.
               </li>
               <li>
-                You can only edit <strong className=”text-[color:var(--wsu-ink)]”>fields your administrator turned on</strong> for
+                You can only edit <strong className="text-[color:var(--wsu-ink)]">fields your administrator turned on</strong> for
                 contributors.
               </li>
             </ul>
