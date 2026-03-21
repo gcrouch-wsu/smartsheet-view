@@ -204,7 +204,7 @@ export function EditRowDrawer({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!row || !contributor) {
+    if (!row || !contributor || isSaving) {
       return;
     }
     const mpErrors = validateMultiPersonGroupsForSave(editableFieldGroups, groupValues);
@@ -281,7 +281,11 @@ export function EditRowDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(35,31,32,0.28)]" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-[rgba(35,31,32,0.28)]"
+      role="presentation"
+      aria-hidden
+    >
       <aside
         ref={drawerSurfaceRef}
         role="dialog"
@@ -300,6 +304,11 @@ export function EditRowDrawer({
               <span className="sr-only">{editDrawerTitle.srOnlySuffix}</span>
             </h3>
             <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Signed in as {contributor.email}</p>
+            <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">
+              Use <strong className="font-medium text-[color:var(--wsu-ink)]">Close</strong> or{" "}
+              <strong className="font-medium text-[color:var(--wsu-ink)]">Cancel</strong> to exit — clicking outside the panel
+              does not close the editor, so you won’t lose edits by accident.
+            </p>
           </div>
           <button
             ref={closeButtonRef}

@@ -288,6 +288,13 @@ describe("formatCellsForSmartsheetRowPut", () => {
     expect(formatCellsForSmartsheetRowPut([{ columnId: 101, value: "" }], types)).toEqual([{ columnId: 101, value: "" }]);
   });
 
+  it("coerces empty value to MULTI_CONTACT objectValue for MULTI_CONTACT_LIST (Smartsheet requires values array)", () => {
+    const types = new Map<number, string>([[102, "MULTI_CONTACT_LIST"]]);
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 102, value: "" }], types)).toEqual([
+      { columnId: 102, objectValue: { objectType: "MULTI_CONTACT", values: [] } },
+    ]);
+  });
+
   it("sanitizes MULTI_CONTACT_LIST objectValue and drops empty CONTACT entries", () => {
     const types = new Map<number, string>([[102, "MULTI_CONTACT_LIST"]]);
     const messy = {

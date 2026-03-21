@@ -88,13 +88,20 @@ export async function PATCH(
   }
 
   const allowedColumnIds = new Set(editingConfig.editableColumnIds);
-  const filteredCells = (Array.isArray(body?.cells) ? body.cells : [])
+  const parsedCells = (Array.isArray(body?.cells) ? body.cells : [])
     .map((cell) => ({
       columnId: typeof cell?.columnId === "number" ? cell.columnId : Number(cell?.columnId),
       value: cell?.value,
       objectValue: cell?.objectValue,
     }))
     .filter((cell) => Number.isFinite(cell.columnId) && allowedColumnIds.has(cell.columnId));
+
+  /** Last payload wins per columnId (avoids duplicate cells if client sends overlaps). */
+  const byColumn = new Map<number, (typeof parsedCells)[0]>();
+  for (const cell of parsedCells) {
+    byColumn.set(cell.columnId, cell);
+  }
+  const filteredCells = [...byColumn.values()];
 
   if (filteredCells.length === 0) {
     return NextResponse.json({ error: "No editable cells in request." }, { status: 400 });
