@@ -364,4 +364,53 @@ describe("serializeMultiPersonToCells", () => {
     };
     expect(serializeMultiPersonToCells([], group)).toEqual([{ columnId: 102, value: "" }]);
   });
+
+  it("clears MULTI_CONTACT_LIST with empty values array when no contacts remain", () => {
+    const group: EditableFieldGroup = {
+      id: "g1",
+      label: "Coordinators",
+      attributes: [
+        {
+          attribute: "email",
+          fieldKey: "coord_email",
+          columnId: 201,
+          columnType: "MULTI_CONTACT_LIST",
+        },
+      ],
+    };
+    expect(serializeMultiPersonToCells([], group)).toEqual([
+      { columnId: 201, objectValue: { objectType: "MULTI_CONTACT", values: [] } },
+    ]);
+  });
+
+  it("serializes MULTI_CONTACT_LIST with contacts as objectValue values array", () => {
+    const group: EditableFieldGroup = {
+      id: "g1",
+      label: "Coordinators",
+      attributes: [
+        {
+          attribute: "email",
+          fieldKey: "coord_email",
+          columnId: 201,
+          columnType: "MULTI_CONTACT_LIST",
+        },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [
+      { name: "", email: "alice@wsu.edu", phone: "" },
+      { name: "", email: "bob@wsu.edu", phone: "" },
+    ];
+    expect(serializeMultiPersonToCells(persons, group)).toEqual([
+      {
+        columnId: 201,
+        objectValue: {
+          objectType: "MULTI_CONTACT",
+          values: [
+            { objectType: "CONTACT", email: "alice@wsu.edu" },
+            { objectType: "CONTACT", email: "bob@wsu.edu" },
+          ],
+        },
+      },
+    ]);
+  });
 });

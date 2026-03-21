@@ -624,6 +624,10 @@ export async function updateSmartsheetRow(
   const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
   const url = `${apiBaseUrl.replace(/\/$/, "")}/sheets/${sheetId}/rows`;
   const outgoingCells = formatCellsForSmartsheetRowPut(cells, columnTypeById);
+  const putBody = JSON.stringify([{ id: rowId, cells: outgoingCells }]);
+  console.log(
+    `[updateSmartsheetRow] PUT sheet=${sheetId} row=${rowId} cells=${putBody.slice(0, 2000)}`,
+  );
   const response = await fetch(url, {
     method: "PUT",
     headers: {
@@ -632,12 +636,7 @@ export async function updateSmartsheetRow(
     },
     cache: "no-store",
     signal: AbortSignal.timeout(15000),
-    body: JSON.stringify([
-      {
-        id: rowId,
-        cells: outgoingCells,
-      },
-    ]),
+    body: putBody,
   });
 
   if (!response.ok) {
