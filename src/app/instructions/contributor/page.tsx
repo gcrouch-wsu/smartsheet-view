@@ -96,7 +96,7 @@ export default function ContributorInstructionsPage() {
             <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>
                 You can only change rows where <strong className=”text-[color:var(--wsu-ink)]”>your email</strong> appears in the
-                columns your administrator configured (often a “contact” or “coordinator” column).
+                columns your administrator configured (often a &ldquo;contact&rdquo; or &ldquo;coordinator&rdquo; column).
               </li>
               <li>
                 After signing in, an <strong className=”text-[color:var(--wsu-ink)]”>Edit</strong> button appears next to the rows
