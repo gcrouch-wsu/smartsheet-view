@@ -9,6 +9,7 @@ const BASE_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/sources", label: "Sources" },
   { href: "/admin/views", label: "Views" },
+  { href: "/admin/contributors", label: "Contributors" },
   { href: "/instructions/admin", label: "Setup guide" },
 ];
 

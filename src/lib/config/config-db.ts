@@ -68,6 +68,9 @@ export async function ensureConfigTables() {
         ON contributor_users(email)
       `);
       await queryConfigDb(`
+        ALTER TABLE contributor_users ADD COLUMN IF NOT EXISTS reset_nonce TEXT
+      `);
+      await queryConfigDb(`
         CREATE TABLE IF NOT EXISTS contributor_login_attempts (
           ip TEXT NOT NULL,
           attempted_at TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -307,3 +307,84 @@ export function getContributorClientIp(requestHeaders: Headers) {
 
   return requestHeaders.get("x-real-ip")?.trim() || "unknown";
 }
+
+export const CONTRIBUTOR_RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface ContributorResetTokenPayload {
+  email: string;
+  nonce: string;
+  issuedAt: number;
+  expiresAt: number;
+}
+
+export async function createContributorResetToken(email: string): Promise<string> {
+  await ensureContributorAuthStorage();
+  const normalizedEmail = normalizeContributorEmail(email);
+  const nonce = randomBytes(16).toString("hex");
+  const expiresAt = Date.now() + CONTRIBUTOR_RESET_TOKEN_TTL_MS;
+  await queryConfigDb(
+    `UPDATE contributor_users SET reset_nonce = $1 WHERE lower(email) = $2`,
+    [nonce, normalizedEmail],
+  );
+  const payload = Buffer.from(JSON.stringify({ email: normalizedEmail, nonce, issuedAt: Date.now(), expiresAt })).toString("base64url");
+  return `${payload}.${signPayload(payload)}`;
+}
+
+export async function verifyContributorResetToken(token: string): Promise<string | null> {
+  const configError = getContributorConfigurationError();
+  if (configError) return null;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  const expectedSig = Buffer.from(signPayload(payload));
+  const receivedSig = Buffer.from(signature);
+  if (expectedSig.length !== receivedSig.length || !timingSafeEqual(expectedSig, receivedSig)) return null;
+  let decoded: Partial<ContributorResetTokenPayload>;
+  try {
+    decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<ContributorResetTokenPayload>;
+  } catch {
+    return null;
+  }
+  if (
+    typeof decoded.email !== "string" ||
+    typeof decoded.nonce !== "string" ||
+    typeof decoded.expiresAt !== "number" ||
+    decoded.expiresAt <= Date.now()
+  ) return null;
+  await ensureContributorAuthStorage();
+  const { rows } = await queryConfigDb<{ reset_nonce: string | null }>(
+    `SELECT reset_nonce FROM contributor_users WHERE lower(email) = $1 LIMIT 1`,
+    [normalizeContributorEmail(decoded.email)],
+  );
+  const stored = rows[0]?.reset_nonce;
+  if (!stored || stored !== decoded.nonce) return null;
+  return normalizeContributorEmail(decoded.email);
+}
+
+export async function resetContributorPassword(email: string, newPassword: string): Promise<void> {
+  await ensureContributorAuthStorage();
+  const passwordError = validateContributorPassword(newPassword);
+  if (passwordError) throw new Error(passwordError);
+  const { passwordHash, passwordSalt } = hashContributorPassword(newPassword);
+  await queryConfigDb(
+    `UPDATE contributor_users SET password_hash = $1, password_salt = $2, reset_nonce = NULL, updated_at = now() WHERE lower(email) = $3`,
+    [passwordHash, passwordSalt, normalizeContributorEmail(email)],
+  );
+}
+
+export async function listContributorUsers() {
+  await ensureContributorAuthStorage();
+  const { rows } = await queryConfigDb<{ id: string; email: string; created_at: string | Date; updated_at: string | Date }>(
+    `SELECT id, email, created_at, updated_at FROM contributor_users ORDER BY email`,
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    email: normalizeContributorEmail(row.email),
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at),
+  }));
+}
+
+export async function deleteContributorUser(id: string): Promise<void> {
+  await ensureContributorAuthStorage();
+  await queryConfigDb(`DELETE FROM contributor_users WHERE id = $1`, [id]);
+}

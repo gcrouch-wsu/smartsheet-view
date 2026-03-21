@@ -161,6 +161,18 @@ export default function ContributorInstructionsPage() {
             </p>
           </section>
 
+          <section aria-labelledby="s-forgot">
+            <h2 id="s-forgot" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Forgot your password?
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              There is no self-service password reset. Contact your program administrator and ask them to generate a reset link for your account. They will send you a link — click it, enter a new password, and then sign in as normal.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Your contributor password is separate from your WSU network login and cannot be recovered through IT.
+            </p>
+          </section>
+
           <section
             aria-labelledby="s-help"
             className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950"

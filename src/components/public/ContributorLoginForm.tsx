@@ -134,6 +134,10 @@ export function ContributorLoginForm({
               ? "Set password and continue"
               : "Sign in"}
         </button>
+
+        <p className="mt-3 text-xs text-[color:var(--wsu-muted)]">
+          Forgot your password? Contact your administrator — they can generate a reset link for you.
+        </p>
       </form>
     </div>
   );
