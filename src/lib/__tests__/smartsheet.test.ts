@@ -288,11 +288,18 @@ describe("formatCellsForSmartsheetRowPut", () => {
     expect(formatCellsForSmartsheetRowPut([{ columnId: 101, value: "" }], types)).toEqual([{ columnId: 101, value: "" }]);
   });
 
-  it("coerces empty value to MULTI_CONTACT objectValue for MULTI_CONTACT_LIST (Smartsheet requires values array)", () => {
+  it("clears MULTI_CONTACT_LIST with value empty string (Smartsheet error 1012 rejects empty values array)", () => {
     const types = new Map<number, string>([[102, "MULTI_CONTACT_LIST"]]);
     expect(formatCellsForSmartsheetRowPut([{ columnId: 102, value: "" }], types)).toEqual([
-      { columnId: 102, objectValue: { objectType: "MULTI_CONTACT", values: [] } },
+      { columnId: 102, value: "" },
     ]);
+    // Empty objectValue also clears via value: ""
+    expect(
+      formatCellsForSmartsheetRowPut(
+        [{ columnId: 102, objectValue: { objectType: "MULTI_CONTACT", values: [] } }],
+        types,
+      ),
+    ).toEqual([{ columnId: 102, value: "" }]);
   });
 
   it("sanitizes MULTI_CONTACT_LIST objectValue and drops empty CONTACT entries", () => {

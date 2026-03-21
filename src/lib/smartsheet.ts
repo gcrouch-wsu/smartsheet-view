@@ -554,11 +554,17 @@ export function formatCellsForSmartsheetRowPut(
     if (SMARTSHEET_CONTACT_COLUMN_TYPES.has(columnType)) {
       if (columnType === "MULTI_CONTACT_LIST") {
         if ("objectValue" in cell) {
-          return { columnId, objectValue: sanitizeMultiContactObjectValue(cell.objectValue) };
+          const sanitized = sanitizeMultiContactObjectValue(cell.objectValue);
+          // Smartsheet error 1012: MULTI_CONTACT objectValue requires non-empty values array.
+          // Clear via value: "" (same mechanism as CONTACT_LIST).
+          if (sanitized.values.length === 0) {
+            return { columnId, value: "" };
+          }
+          return { columnId, objectValue: sanitized };
         }
         const s = stringifyCellScalar(cell);
         if (!s) {
-          return { columnId, objectValue: { objectType: "MULTI_CONTACT", values: [] } };
+          return { columnId, value: "" };
         }
         const tokens = s.split(/[,;]+/).map((t) => t.trim()).filter(Boolean);
         const values = tokens.map((token) =>
@@ -594,24 +600,7 @@ export function formatCellsForSmartsheetRowPut(
     return { columnId, value: cell.value ?? "" };
   });
 
-  // MULTI_CONTACT_LIST rejects plain { value: "" } — API expects objectValue.values (possibly empty).
-  // Wrong/missing column typing can route clears here; coerce so "clear all coordinators" always works.
-  return mapped.map((out) => {
-    const columnType = columnTypeById.get(out.columnId) ?? "";
-    if (columnType !== "MULTI_CONTACT_LIST" || !("value" in out)) {
-      return out;
-    }
-    const v = out.value;
-    const isEmpty =
-      v === "" || v === null || v === undefined || (typeof v === "string" && !String(v).trim());
-    if (!isEmpty) {
-      return out;
-    }
-    return {
-      columnId: out.columnId,
-      objectValue: { objectType: "MULTI_CONTACT" as const, values: [] },
-    };
-  });
+  return mapped;
 }
 
 export async function updateSmartsheetRow(

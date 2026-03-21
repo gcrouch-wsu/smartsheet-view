@@ -17,11 +17,9 @@ describe("serializeContactDisplayToObjectValue", () => {
     expect(serializeContactDisplayToObjectValue("  , ;  ", "CONTACT_LIST", "name")).toBeNull();
   });
 
-  it("returns empty MULTI_CONTACT for empty MULTI_CONTACT_LIST", () => {
-    expect(serializeContactDisplayToObjectValue("", "MULTI_CONTACT_LIST", "email")).toEqual({
-      objectType: "MULTI_CONTACT",
-      values: [],
-    });
+  it("returns null for empty MULTI_CONTACT_LIST so callers send value clear (error 1012 rejects empty values array)", () => {
+    expect(serializeContactDisplayToObjectValue("", "MULTI_CONTACT_LIST", "email")).toBeNull();
+    expect(serializeContactDisplayToObjectValue("  , ;  ", "MULTI_CONTACT_LIST", "name")).toBeNull();
   });
 
   it("serializes single contact", () => {
@@ -365,7 +363,7 @@ describe("serializeMultiPersonToCells", () => {
     expect(serializeMultiPersonToCells([], group)).toEqual([{ columnId: 102, value: "" }]);
   });
 
-  it("clears MULTI_CONTACT_LIST with empty values array when no contacts remain", () => {
+  it("clears MULTI_CONTACT_LIST with value empty string when no contacts remain (error 1012 rejects empty values array)", () => {
     const group: EditableFieldGroup = {
       id: "g1",
       label: "Coordinators",
@@ -379,7 +377,7 @@ describe("serializeMultiPersonToCells", () => {
       ],
     };
     expect(serializeMultiPersonToCells([], group)).toEqual([
-      { columnId: 201, objectValue: { objectType: "MULTI_CONTACT", values: [] } },
+      { columnId: 201, value: "" },
     ]);
   });
 

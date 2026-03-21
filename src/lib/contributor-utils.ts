@@ -191,7 +191,9 @@ export function serializeContactDisplayToObjectValue(
     .filter(Boolean);
 
   if (tokens.length === 0) {
-    return columnType === "CONTACT_LIST" ? null : { objectType: "MULTI_CONTACT", values: [] };
+    // Both CONTACT_LIST and MULTI_CONTACT_LIST clear via { value: "" }.
+    // Smartsheet error 1012 rejects { objectType: "MULTI_CONTACT", values: [] }.
+    return null;
   }
 
   if (columnType === "CONTACT_LIST") {
@@ -258,7 +260,11 @@ export function serializeMultiPersonToCells(
         result.push({ columnId, objectValue: value[0]! });
       }
     } else {
-      result.push({ columnId, objectValue: { objectType: "MULTI_CONTACT" as const, values: value } });
+      if (value.length === 0) {
+        result.push({ columnId, value: "" });
+      } else {
+        result.push({ columnId, objectValue: { objectType: "MULTI_CONTACT" as const, values: value } });
+      }
     }
   }
 
