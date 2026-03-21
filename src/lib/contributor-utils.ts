@@ -2,6 +2,7 @@ import type {
   EditableFieldGroup,
   EditableFieldGroupAttribute,
   RenderType,
+  ResolvedFieldValue,
   ResolvedViewRow,
   SmartsheetCell,
   SmartsheetColumn,
@@ -102,9 +103,9 @@ export function hasMultiPersonValidationErrors(errors: Record<string, Record<num
   return Object.values(errors).some((perPerson) => Object.keys(perPerson).length > 0);
 }
 
-const MULTI_PERSON_DELIMITERS = /[,;]+/;
+const MULTI_PERSON_DELIMITERS = /[,;\r\n]+/;
 
-/** Parse a cell value into an array of strings (one per person/position). Handles comma and semicolon. */
+/** Parse a cell value into an array of strings (one per person/position). Splits on comma, semicolon, and newlines. */
 export function parseMultiPersonValue(value: string | null | undefined): string[] {
   if (value == null || typeof value !== "string") return [];
   return value
@@ -113,14 +114,27 @@ export function parseMultiPersonValue(value: string | null | undefined): string[
     .filter(Boolean);
 }
 
+function stringsForMultiPersonAttribute(field: ResolvedFieldValue | undefined): string[] {
+  if (!field) {
+    return [];
+  }
+  const fromList = field.listValue
+    .map((s) => String(s).trim())
+    .filter((s) => s.length > 0);
+  if (fromList.length > 0) {
+    return fromList;
+  }
+  return parseMultiPersonValue(field.textValue ?? "");
+}
+
 /** Parse a row's field values into person entries. Aligns by index across attributes. */
 export function parseMultiPersonRow(
   row: ResolvedViewRow,
   group: EditableFieldGroup,
 ): MultiPersonEntry[] {
   const attrArrays = group.attributes.map((attr) => {
-    const val = row.fieldMap[attr.fieldKey]?.textValue ?? "";
-    return parseMultiPersonValue(val);
+    const field = row.fieldMap[attr.fieldKey];
+    return stringsForMultiPersonAttribute(field);
   });
 
   const lengths = attrArrays.map((a) => a.length);

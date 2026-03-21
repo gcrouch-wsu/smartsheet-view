@@ -4,9 +4,10 @@ import { startTransition, useEffect, useMemo, useRef, useState, type MutableRefO
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { FieldValue } from "@/components/public/FieldValue";
-import { getContributorEditRowHeading } from "@/components/public/layout-utils";
+import { getContributorEditRowHeading, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
 import { useContributorContext } from "@/components/public/ContributorContext";
-import type { ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import type { EditableFieldGroup, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import {
   hasMultiPersonValidationErrors,
   parseMultiPersonRow,
@@ -53,8 +54,41 @@ export function EditRowDrawer({
     return contributor.editingConfig.editableFields.filter((field) => Boolean(row.fieldMap[field.fieldKey]));
   }, [contributor?.editingConfig, row]);
 
-  const editableFieldKeys = useMemo(() => new Set(editableFields.map((field) => field.fieldKey)), [editableFields]);
-  const readOnlyFields = row ? row.fields.filter((field) => !editableFieldKeys.has(field.key)) : [];
+  const contributorFieldKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const f of editableFields) {
+      keys.add(f.fieldKey);
+    }
+    for (const g of editableFieldGroups) {
+      for (const a of g.attributes) {
+        keys.add(a.fieldKey);
+      }
+    }
+    return keys;
+  }, [editableFields, editableFieldGroups]);
+
+  const orderedFields = useMemo(
+    () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys) : []),
+    [view, row, contributorFieldKeys],
+  );
+
+  const editableByFieldKey = useMemo(() => {
+    const m = new Map<string, ContributorEditableFieldDefinition>();
+    for (const f of editableFields) {
+      m.set(f.fieldKey, f);
+    }
+    return m;
+  }, [editableFields]);
+
+  const groupByFieldKey = useMemo(() => {
+    const m = new Map<string, EditableFieldGroup>();
+    for (const g of editableFieldGroups) {
+      for (const a of g.attributes) {
+        m.set(a.fieldKey, g);
+      }
+    }
+    return m;
+  }, [editableFieldGroups]);
 
   const multiPersonValidation = useMemo(
     () => validateMultiPersonGroupsForSave(editableFieldGroups, groupValues),
@@ -154,6 +188,15 @@ export function EditRowDrawer({
 
   const isContactEditableField = (columnType: string) =>
     columnType === "CONTACT_LIST" || columnType === "MULTI_CONTACT_LIST";
+
+  const dividerStyle = view.presentation?.rowDividerStyle ?? "default";
+  const cardBorderClass =
+    dividerStyle === "none"
+      ? "border-0"
+      : dividerStyle === "subtle"
+        ? "border border-[color:var(--wsu-border)]/40"
+        : "border border-[color:var(--wsu-border)]";
+  const labelClass = "font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]";
 
   if (!contributor || !open || !row) {
     return null;
@@ -275,292 +318,274 @@ export function EditRowDrawer({
                 No editable fields are available for this row.
               </div>
             ) : (
-              <>
-                {editableFields.length > 0 && (
-                  <section className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                        Editable fields
-                      </h4>
-                      <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                        Labels match your sheet columns. Changes save to the live row. For a single contact column, use{" "}
-                        <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong> to empty it.
-                      </p>
-                    </div>
-                    {editableFields.map((field) => {
-                      const value = formValues[field.columnId] ?? "";
-                      const showContactClear = isContactEditableField(field.columnType);
-                      const fieldLabel = field.columnTitle || field.label;
-                      return (
-                        <div
-                          key={field.columnId}
-                          className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-2"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{fieldLabel}</span>
-                            {showContactClear && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormValues((current) => ({ ...current, [field.columnId]: "" }))
-                                }
-                                className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
-                              >
-                                Clear this role
-                              </button>
-                            )}
-                          </div>
-                          {field.columnType === "PICKLIST" && field.options && field.options.length > 0 ? (
-                            <select
-                              value={value}
-                              onChange={(event) =>
-                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                              }
-                              aria-label={fieldLabel}
-                              className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                            >
-                              <option value="">Select…</option>
-                              {field.options.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          ) : field.renderType === "multiline_text" ? (
-                            <textarea
-                              value={value}
-                              onChange={(event) =>
-                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                              }
-                              rows={4}
-                              aria-label={fieldLabel}
-                              className="w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                            />
-                          ) : (
-                            <input
-                              value={value}
-                              onChange={(event) =>
-                                setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
-                              }
-                              aria-label={fieldLabel}
-                              className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </section>
-                )}
-
-                {editableFieldGroups.map((group) => {
-                  const persons = groupValues[group.id] ?? [];
-                  const hasName = group.attributes.some((a) => a.attribute === "name");
-                  const hasEmail = group.attributes.some((a) => a.attribute === "email");
-                  const hasPhone = group.attributes.some((a) => a.attribute === "phone");
-                  const groupErrors = multiPersonValidation[group.id] ?? {};
-
-                  return (
-                    <section key={group.id} className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                          {group.label}
-                        </h4>
-                        <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                          Each person is a card with fields labeled like your sheet columns.{" "}
-                          <strong className="font-medium text-[color:var(--wsu-ink)]">Update name or email</strong> when someone
-                          new takes the role—no need to remove and re-add.{" "}
-                          <strong className="font-medium text-[color:var(--wsu-ink)]">Phone</strong> and other fields can stay
-                          blank until you have them; save again later. When both name and email columns exist, both are required
-                          for each person before save.
-                        </p>
-                      </div>
-                      <div className="space-y-4">
-                        {persons.length === 0 && (
-                          <p className="rounded-xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 px-4 py-5 text-center text-sm text-[color:var(--wsu-muted)]">
-                            No one in this group yet. Use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or
-                            save to keep it empty.
-                          </p>
-                        )}
-                        {persons.map((person, idx) => {
-                          const rowErr = groupErrors[idx];
-                          const preview =
-                            person.name.trim() || person.email.trim()
-                              ? [person.name.trim(), person.email.trim()].filter(Boolean).join(" · ")
-                              : `Person ${idx + 1}`;
-
-                          return (
-                            <fieldset
-                              key={`${group.id}-person-${idx}`}
-                              className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
-                            >
-                              <legend className="sr-only">
-                                {group.label}, {preview}
-                              </legend>
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-sm font-semibold text-[color:var(--wsu-ink)]">{preview}</span>
+              <article
+                className={`rounded-[1.75rem] ${cardBorderClass} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+              >
+                <p className="mb-4 text-xs leading-relaxed text-[color:var(--wsu-muted)]">
+                  Fields appear in the <strong className="font-medium text-[color:var(--wsu-ink)]">same order as your public card</strong>.
+                  Edit inputs below; other values are shown for reference. Changes save to Smartsheet. For a single contact column, use{" "}
+                  <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong>.
+                </p>
+                <div className="space-y-4">
+                  {(() => {
+                    const groupsRendered = new Set<string>();
+                    return orderedFields.map((field) => {
+                      const group = groupByFieldKey.get(field.key);
+                      if (group) {
+                        if (groupsRendered.has(group.id)) {
+                          return null;
+                        }
+                        groupsRendered.add(group.id);
+                        const persons = groupValues[group.id] ?? [];
+                        const hasName = group.attributes.some((a) => a.attribute === "name");
+                        const hasEmail = group.attributes.some((a) => a.attribute === "email");
+                        const hasPhone = group.attributes.some((a) => a.attribute === "phone");
+                        const groupErrors = multiPersonValidation[group.id] ?? {};
+                        return (
+                          <div key={`group-${group.id}`} className="space-y-3 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
+                            <div>
+                              <p className={labelClass}>{group.label}</p>
+                              <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                                One block per coordinator. Change name or email when someone new fills the role. Phone optional until
+                                you have it. Name and email are both required when your sheet has both columns.
+                              </p>
+                            </div>
+                            <div className="space-y-3">
+                              {persons.length === 0 && (
+                                <p className="rounded-xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 px-3 py-4 text-center text-sm text-[color:var(--wsu-muted)]">
+                                  No one listed. Use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or save to
+                                  leave empty.
+                                </p>
+                              )}
+                              {persons.map((person, idx) => {
+                                const rowErr = groupErrors[idx];
+                                const preview =
+                                  person.name.trim() || person.email.trim()
+                                    ? person.name.trim() || person.email.trim()
+                                    : `Person ${idx + 1}`;
+                                return (
+                                  <fieldset
+                                    key={`${group.id}-person-${idx}`}
+                                    className="rounded-xl border border-[color:var(--wsu-border)]/80 bg-white/80 p-3 shadow-sm space-y-2"
+                                  >
+                                    <legend className="sr-only">
+                                      {group.label}, {preview}
+                                    </legend>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--wsu-muted)]">
+                                        {preview}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setGroupValues((prev) => ({
+                                            ...prev,
+                                            [group.id]: persons.filter((_, i) => i !== idx),
+                                          }));
+                                        }}
+                                        className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                    <div className="grid gap-2">
+                                      {hasName &&
+                                        (() => {
+                                          const attr = group.attributes.find((a) => a.attribute === "name");
+                                          const colLabel = attr?.columnTitle ?? "Name";
+                                          return (
+                                            <div key="name" className="space-y-0.5">
+                                              <label className={labelClass} htmlFor={`${group.id}-n-${idx}`}>
+                                                {colLabel}
+                                              </label>
+                                              <input
+                                                id={`${group.id}-n-${idx}`}
+                                                value={person.name}
+                                                onChange={(e) => {
+                                                  const next = [...persons];
+                                                  next[idx] = { ...next[idx]!, name: e.target.value };
+                                                  setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                                }}
+                                                aria-invalid={Boolean(rowErr?.name)}
+                                                aria-describedby={rowErr?.name ? `${group.id}-n-err-${idx}` : undefined}
+                                                autoComplete="name"
+                                                className={`min-h-[40px] w-full rounded-lg border px-3 py-2 text-sm ${
+                                                  rowErr?.name
+                                                    ? "border-rose-400 bg-rose-50/40"
+                                                    : "border-[color:var(--wsu-border)]"
+                                                }`}
+                                              />
+                                              {rowErr?.name ? (
+                                                <p id={`${group.id}-n-err-${idx}`} className="text-xs text-rose-700">
+                                                  {rowErr.name}
+                                                </p>
+                                              ) : null}
+                                            </div>
+                                          );
+                                        })()}
+                                      {hasEmail &&
+                                        (() => {
+                                          const attr = group.attributes.find((a) => a.attribute === "email");
+                                          const colLabel = attr?.columnTitle ?? "Email";
+                                          return (
+                                            <div key="email" className="space-y-0.5">
+                                              <label className={labelClass} htmlFor={`${group.id}-e-${idx}`}>
+                                                {colLabel}
+                                              </label>
+                                              <input
+                                                id={`${group.id}-e-${idx}`}
+                                                type="email"
+                                                value={person.email}
+                                                onChange={(e) => {
+                                                  const next = [...persons];
+                                                  next[idx] = { ...next[idx]!, email: e.target.value };
+                                                  setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                                }}
+                                                aria-invalid={Boolean(rowErr?.email)}
+                                                aria-describedby={rowErr?.email ? `${group.id}-e-err-${idx}` : undefined}
+                                                autoComplete="email"
+                                                className={`min-h-[40px] w-full rounded-lg border px-3 py-2 text-sm ${
+                                                  rowErr?.email
+                                                    ? "border-rose-400 bg-rose-50/40"
+                                                    : "border-[color:var(--wsu-border)]"
+                                                }`}
+                                              />
+                                              {rowErr?.email ? (
+                                                <p id={`${group.id}-e-err-${idx}`} className="text-xs text-rose-700">
+                                                  {rowErr.email}
+                                                </p>
+                                              ) : null}
+                                            </div>
+                                          );
+                                        })()}
+                                      {hasPhone &&
+                                        (() => {
+                                          const attr = group.attributes.find((a) => a.attribute === "phone");
+                                          const colLabel = attr?.columnTitle ?? "Phone";
+                                          return (
+                                            <div key="phone" className="space-y-0.5">
+                                              <label className={labelClass} htmlFor={`${group.id}-p-${idx}`}>
+                                                {colLabel}
+                                              </label>
+                                              <input
+                                                id={`${group.id}-p-${idx}`}
+                                                type="tel"
+                                                value={person.phone}
+                                                onChange={(e) => {
+                                                  const next = [...persons];
+                                                  next[idx] = { ...next[idx]!, phone: e.target.value };
+                                                  setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                                }}
+                                                autoComplete="tel"
+                                                className="min-h-[40px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                              />
+                                              <span className="text-xs text-[color:var(--wsu-muted)]">Optional</span>
+                                            </div>
+                                          );
+                                        })()}
+                                    </div>
+                                  </fieldset>
+                                );
+                              })}
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                {persons.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setGroupValues((prev) => ({ ...prev, [group.id]: [] }))}
+                                    className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                                  >
+                                    Clear everyone
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={() =>
                                     setGroupValues((prev) => ({
                                       ...prev,
-                                      [group.id]: persons.filter((_, i) => i !== idx),
-                                    }));
-                                  }}
-                                  className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                                      [group.id]: [...persons, { name: "", email: "", phone: "" }],
+                                    }))
+                                  }
+                                  className="rounded-lg border border-dashed border-[color:var(--wsu-crimson)]/50 bg-[color:var(--wsu-crimson)]/5 px-3 py-2 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10"
                                 >
-                                  Remove person
+                                  + Add person
                                 </button>
                               </div>
-                              <div className="grid gap-3">
-                                {hasName &&
-                                  (() => {
-                                    const attr = group.attributes.find((a) => a.attribute === "name");
-                                    const colLabel = attr?.columnTitle ?? "Name";
-                                    return (
-                                      <div key="name" className="space-y-1">
-                                        <label className="block text-xs font-medium text-[color:var(--wsu-muted)]" htmlFor={`${group.id}-n-${idx}`}>
-                                          {colLabel}
-                                        </label>
-                                        <input
-                                          id={`${group.id}-n-${idx}`}
-                                          value={person.name}
-                                          onChange={(e) => {
-                                            const next = [...persons];
-                                            next[idx] = { ...next[idx]!, name: e.target.value };
-                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                          }}
-                                          aria-invalid={Boolean(rowErr?.name)}
-                                          aria-describedby={rowErr?.name ? `${group.id}-n-err-${idx}` : undefined}
-                                          autoComplete="name"
-                                          className={`min-h-[44px] w-full rounded-xl border px-3 py-2 text-sm ${
-                                            rowErr?.name
-                                              ? "border-rose-400 bg-rose-50/40"
-                                              : "border-[color:var(--wsu-border)]"
-                                          }`}
-                                        />
-                                        {rowErr?.name ? (
-                                          <p id={`${group.id}-n-err-${idx}`} className="text-xs text-rose-700">
-                                            {rowErr.name}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })()}
-                                {hasEmail &&
-                                  (() => {
-                                    const attr = group.attributes.find((a) => a.attribute === "email");
-                                    const colLabel = attr?.columnTitle ?? "Email";
-                                    return (
-                                      <div key="email" className="space-y-1">
-                                        <label className="block text-xs font-medium text-[color:var(--wsu-muted)]" htmlFor={`${group.id}-e-${idx}`}>
-                                          {colLabel}
-                                        </label>
-                                        <input
-                                          id={`${group.id}-e-${idx}`}
-                                          type="email"
-                                          value={person.email}
-                                          onChange={(e) => {
-                                            const next = [...persons];
-                                            next[idx] = { ...next[idx]!, email: e.target.value };
-                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                          }}
-                                          aria-invalid={Boolean(rowErr?.email)}
-                                          aria-describedby={rowErr?.email ? `${group.id}-e-err-${idx}` : undefined}
-                                          autoComplete="email"
-                                          className={`min-h-[44px] w-full rounded-xl border px-3 py-2 text-sm ${
-                                            rowErr?.email
-                                              ? "border-rose-400 bg-rose-50/40"
-                                              : "border-[color:var(--wsu-border)]"
-                                          }`}
-                                        />
-                                        {rowErr?.email ? (
-                                          <p id={`${group.id}-e-err-${idx}`} className="text-xs text-rose-700">
-                                            {rowErr.email}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })()}
-                                {hasPhone &&
-                                  (() => {
-                                    const attr = group.attributes.find((a) => a.attribute === "phone");
-                                    const colLabel = attr?.columnTitle ?? "Phone";
-                                    return (
-                                      <label key="phone" className="block space-y-1">
-                                        <span className="text-xs font-medium text-[color:var(--wsu-muted)]">{colLabel}</span>
-                                        <input
-                                          type="tel"
-                                          value={person.phone}
-                                          onChange={(e) => {
-                                            const next = [...persons];
-                                            next[idx] = { ...next[idx]!, phone: e.target.value };
-                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                          }}
-                                          autoComplete="tel"
-                                          className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                                        />
-                                        <span className="text-xs text-[color:var(--wsu-muted)]">Optional — you can save and add this later.</span>
-                                      </label>
-                                    );
-                                  })()}
-                              </div>
-                            </fieldset>
-                          );
-                        })}
-                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                          {persons.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setGroupValues((prev) => ({ ...prev, [group.id]: [] }));
-                              }}
-                              className="w-full rounded-xl border border-rose-200 bg-rose-50 py-3 text-sm font-medium text-rose-900 hover:bg-rose-100 sm:w-auto sm:px-4"
-                            >
-                              Clear everyone in this role
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGroupValues((prev) => ({
-                                ...prev,
-                                [group.id]: [...persons, { name: "", email: "", phone: "" }],
-                              }));
-                            }}
-                            className="w-full rounded-xl border border-dashed border-[color:var(--wsu-crimson)]/40 bg-[color:var(--wsu-crimson)]/5 py-3 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10 sm:flex-1"
-                          >
-                            + Add person
-                          </button>
-                        </div>
-                      </div>
-                    </section>
-                  );
-                })}
-              </>
-            )}
+                            </div>
+                          </div>
+                        );
+                      }
 
-            {readOnlyFields.length > 0 && (
-              <section className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                    Read-Only Context
-                  </h4>
+                      const ed = editableByFieldKey.get(field.key);
+                      if (ed) {
+                        const value = formValues[ed.columnId] ?? "";
+                        const showContactClear = isContactEditableField(ed.columnType);
+                        const fieldLabel = ed.columnTitle || ed.label;
+                        return (
+                          <div key={field.key} className="space-y-2 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              {!field.hideLabel && <p className={labelClass}>{fieldLabel}</p>}
+                              {showContactClear && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFormValues((current) => ({ ...current, [ed.columnId]: "" }))}
+                                  className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                                >
+                                  Clear this role
+                                </button>
+                              )}
+                            </div>
+                            {ed.columnType === "PICKLIST" && ed.options && ed.options.length > 0 ? (
+                              <select
+                                value={value}
+                                onChange={(event) =>
+                                  setFormValues((current) => ({ ...current, [ed.columnId]: event.target.value }))
+                                }
+                                aria-label={fieldLabel}
+                                className="min-h-[44px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                              >
+                                <option value="">Select…</option>
+                                {ed.options.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : ed.renderType === "multiline_text" ? (
+                              <textarea
+                                value={value}
+                                onChange={(event) =>
+                                  setFormValues((current) => ({ ...current, [ed.columnId]: event.target.value }))
+                                }
+                                rows={4}
+                                aria-label={fieldLabel}
+                                className="w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                              />
+                            ) : (
+                              <input
+                                value={value}
+                                onChange={(event) =>
+                                  setFormValues((current) => ({ ...current, [ed.columnId]: event.target.value }))
+                                }
+                                aria-label={fieldLabel}
+                                className="min-h-[44px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={field.key} className="space-y-1 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
+                          {!field.hideLabel && <p className={labelClass}>{field.label}</p>}
+                          <div className="text-sm text-[color:var(--wsu-ink)]">
+                            <FieldValue field={field} stacked />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
-                <div className="space-y-3">
-                  {readOnlyFields.map((field) => (
-                    <div key={field.key} className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-4">
-                      {!field.hideLabel && (
-                        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">
-                          {field.label}
-                        </p>
-                      )}
-                      <div className="mt-2 text-sm text-[color:var(--wsu-ink)]">
-                        <FieldValue field={field} stacked />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              </article>
             )}
 
             {multiPersonHasErrors && (

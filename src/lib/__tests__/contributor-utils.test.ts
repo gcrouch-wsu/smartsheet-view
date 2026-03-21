@@ -115,6 +115,11 @@ describe("validateMultiPersonGroupsForSave", () => {
 });
 
 describe("parseMultiPersonValue", () => {
+  it("splits on newlines (stacked list display)", () => {
+    expect(parseMultiPersonValue("test\ntest2")).toEqual(["test", "test2"]);
+    expect(parseMultiPersonValue("a\r\nb")).toEqual(["a", "b"]);
+  });
+
   it("splits by comma", () => {
     expect(parseMultiPersonValue("lisa lujan, deb marsh")).toEqual(["lisa lujan", "deb marsh"]);
   });
@@ -196,6 +201,88 @@ describe("parseMultiPersonRow", () => {
     };
     const result = parseMultiPersonRow(row, group);
     expect(result).toEqual([]);
+  });
+
+  it("aligns names and emails when values are newline-separated (stacked list)", () => {
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {
+        c: {
+          key: "c",
+          label: "c",
+          renderType: "text",
+          textValue: "test\ntest2",
+          listValue: [],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+        e: {
+          key: "e",
+          label: "e",
+          renderType: "text",
+          textValue: "a@x.com\nb@y.com",
+          listValue: [],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+      },
+    };
+    const group: EditableFieldGroup = {
+      id: "g",
+      label: "G",
+      attributes: [
+        { attribute: "name", fieldKey: "c", columnId: 1 },
+        { attribute: "email", fieldKey: "e", columnId: 2 },
+      ],
+    };
+    expect(parseMultiPersonRow(row, group)).toEqual([
+      { name: "test", email: "a@x.com", phone: "" },
+      { name: "test2", email: "b@y.com", phone: "" },
+    ]);
+  });
+
+  it("prefers listValue for each column when present", () => {
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {
+        c: {
+          key: "c",
+          label: "c",
+          renderType: "text",
+          textValue: "joined-wrong",
+          listValue: ["test", "test2"],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+        e: {
+          key: "e",
+          label: "e",
+          renderType: "text",
+          textValue: "joined-wrong",
+          listValue: ["a@x.com", "b@y.com"],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+      },
+    };
+    const group: EditableFieldGroup = {
+      id: "g",
+      label: "G",
+      attributes: [
+        { attribute: "name", fieldKey: "c", columnId: 1 },
+        { attribute: "email", fieldKey: "e", columnId: 2 },
+      ],
+    };
+    expect(parseMultiPersonRow(row, group)).toEqual([
+      { name: "test", email: "a@x.com", phone: "" },
+      { name: "test2", email: "b@y.com", phone: "" },
+    ]);
   });
 });
 

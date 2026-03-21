@@ -126,3 +126,61 @@ export function hasCustomCardLayout(view: ResolvedView): boolean {
   const layout = view.presentation?.cardLayout;
   return Boolean(layout && layout.length > 0);
 }
+
+/**
+ * Field order for the contributor edit drawer: mirrors public card order (custom layout or heading/summary/body)
+ * and keeps contributor-target fields even when the card would hide them as empty.
+ */
+export function getEditDrawerOrderedFields(
+  view: ResolvedView,
+  row: ResolvedViewRow,
+  contributorFieldKeys: Set<string>,
+): ResolvedFieldValue[] {
+  const shouldShow = (field: ResolvedFieldValue) =>
+    contributorFieldKeys.has(field.key) || fieldCanRender(field);
+
+  const appendMissingContributorFields = (ordered: ResolvedFieldValue[]) => {
+    const seen = new Set(ordered.map((f) => f.key));
+    for (const key of contributorFieldKeys) {
+      if (seen.has(key)) continue;
+      const field = row.fieldMap[key];
+      if (field && shouldShow(field)) {
+        ordered.push(field);
+        seen.add(key);
+      }
+    }
+    return ordered;
+  };
+
+  if (hasCustomCardLayout(view)) {
+    const rows = getCardLayoutRows(view, row);
+    const out: ResolvedFieldValue[] = [];
+    for (const cells of rows) {
+      for (const cell of cells) {
+        if (cell.type === "field" && shouldShow(cell.field)) {
+          out.push(cell.field);
+        }
+      }
+    }
+    return appendMissingContributorFields(out);
+  }
+
+  const heading = getRowHeadingField(view, row);
+  const summary = getRowSummaryField(view, row, heading?.key);
+  const out: ResolvedFieldValue[] = [];
+  if (heading && shouldShow(heading)) {
+    out.push(heading);
+  }
+  if (summary && summary.key !== heading?.key && shouldShow(summary)) {
+    out.push(summary);
+  }
+  for (const field of row.fields) {
+    if (field.key === heading?.key || field.key === summary?.key) {
+      continue;
+    }
+    if (shouldShow(field)) {
+      out.push(field);
+    }
+  }
+  return appendMissingContributorFields(out);
+}
