@@ -39,6 +39,8 @@ export interface ContributorEditableFieldDefinition {
   columnType: "TEXT_NUMBER" | "PICKLIST" | "PHONE" | "CONTACT_LIST" | "MULTI_CONTACT_LIST";
   fieldKey: string;
   label: string;
+  /** Smartsheet column title (preferred label in the edit UI). */
+  columnTitle: string;
   renderType: "text" | "multiline_text" | "badge" | "phone" | "mailto" | "mailto_list";
   options?: string[];
   /** For CONTACT_LIST/MULTI_CONTACT_LIST: whether display shows emails or names. Used to reverse transform on write. */
@@ -58,6 +60,46 @@ export interface MultiPersonEntry {
   name: string;
   email: string;
   phone: string;
+}
+
+/** Per-person validation messages for multi-person groups (name/email required when those columns exist). */
+export type MultiPersonFieldErrors = { name?: string; email?: string };
+
+/**
+ * Returns groupId → (personIndex → field errors). Empty object means OK to save (including zero people in a group).
+ * Phone is never required. When both name and email attributes exist, both must be non-empty per person.
+ */
+export function validateMultiPersonGroupsForSave(
+  groups: EditableFieldGroup[],
+  groupValues: Record<string, MultiPersonEntry[]>,
+): Record<string, Record<number, MultiPersonFieldErrors>> {
+  const result: Record<string, Record<number, MultiPersonFieldErrors>> = {};
+  for (const group of groups) {
+    const persons = groupValues[group.id] ?? [];
+    const hasName = group.attributes.some((a) => a.attribute === "name");
+    const hasEmail = group.attributes.some((a) => a.attribute === "email");
+    const byIndex: Record<number, MultiPersonFieldErrors> = {};
+    persons.forEach((p, idx) => {
+      const err: MultiPersonFieldErrors = {};
+      if (hasName && !p.name.trim()) {
+        err.name = "Enter a name to save, or remove this person.";
+      }
+      if (hasEmail && !p.email.trim()) {
+        err.email = "Enter an email to save, or remove this person.";
+      }
+      if (Object.keys(err).length > 0) {
+        byIndex[idx] = err;
+      }
+    });
+    if (Object.keys(byIndex).length > 0) {
+      result[group.id] = byIndex;
+    }
+  }
+  return result;
+}
+
+export function hasMultiPersonValidationErrors(errors: Record<string, Record<number, MultiPersonFieldErrors>>): boolean {
+  return Object.values(errors).some((perPerson) => Object.keys(perPerson).length > 0);
 }
 
 const MULTI_PERSON_DELIMITERS = /[,;]+/;
@@ -436,6 +478,7 @@ export function getEligibleEditableFieldDefinitions(
         columnType: column.type as ContributorEditableFieldDefinition["columnType"],
         fieldKey: field.key,
         label: field.label || field.key,
+        columnTitle: column.title?.trim() || field.label || field.key,
         renderType: field.render.type as ContributorEditableFieldDefinition["renderType"],
         options: column.options,
       };
@@ -456,6 +499,7 @@ export function getEligibleEditableFieldDefinitions(
       columnType: column.type as ContributorEditableFieldDefinition["columnType"],
       fieldKey: field.key,
       label: field.label || field.key,
+      columnTitle: column.title?.trim() || field.label || field.key,
       renderType: field.render.type as ContributorEditableFieldDefinition["renderType"],
       options: column.options,
     };
@@ -534,10 +578,14 @@ export function buildContributorEditingClientConfig(view: ViewConfig, columns: S
   const columnsById = new Map(columns.map((c) => [c.id, c]));
   const groups = (editing.editableFieldGroups ?? []).map((group) => ({
     ...group,
-    attributes: group.attributes.map((attr) => ({
-      ...attr,
-      columnType: attr.columnType ?? columnsById.get(attr.columnId)?.type,
-    })),
+    attributes: group.attributes.map((attr) => {
+      const column = columnsById.get(attr.columnId);
+      return {
+        ...attr,
+        columnType: attr.columnType ?? column?.type,
+        columnTitle: column?.title?.trim() || attr.fieldKey,
+      };
+    }),
   }));
   const groupColumnIds = new Set(
     groups.flatMap((g) => g.attributes.map((a) => a.columnId)),

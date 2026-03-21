@@ -8,9 +8,11 @@ import { getContributorEditRowHeading } from "@/components/public/layout-utils";
 import { useContributorContext } from "@/components/public/ContributorContext";
 import type { ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import {
+  hasMultiPersonValidationErrors,
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
+  validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
 
@@ -53,6 +55,12 @@ export function EditRowDrawer({
 
   const editableFieldKeys = useMemo(() => new Set(editableFields.map((field) => field.fieldKey)), [editableFields]);
   const readOnlyFields = row ? row.fields.filter((field) => !editableFieldKeys.has(field.key)) : [];
+
+  const multiPersonValidation = useMemo(
+    () => validateMultiPersonGroupsForSave(editableFieldGroups, groupValues),
+    [editableFieldGroups, groupValues],
+  );
+  const multiPersonHasErrors = hasMultiPersonValidationErrors(multiPersonValidation);
 
   const editDrawerTitle = useMemo(() => {
     if (!row) {
@@ -156,6 +164,18 @@ export function EditRowDrawer({
     if (!row || !contributor) {
       return;
     }
+    const mpErrors = validateMultiPersonGroupsForSave(editableFieldGroups, groupValues);
+    if (hasMultiPersonValidationErrors(mpErrors)) {
+      const firstMsg = Object.values(mpErrors)
+        .flatMap((m) => Object.values(m))
+        .map((e) => e.name ?? e.email)
+        .find(Boolean);
+      setError(firstMsg ?? "Complete name and email for each person, or remove anyone you are not saving.");
+      toast.addToast(firstMsg ?? "Fix the highlighted fields before saving.", "error");
+      document.getElementById("edit-row-drawer-validation-summary")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -260,24 +280,24 @@ export function EditRowDrawer({
                   <section className="space-y-4">
                     <div>
                       <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                        Editable Fields
+                        Editable fields
                       </h4>
                       <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                        Changes save directly to the live Smartsheet row. For contact fields, use{" "}
-                        <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong> to remove everyone
-                        from that column.
+                        Labels match your sheet columns. Changes save to the live row. For a single contact column, use{" "}
+                        <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong> to empty it.
                       </p>
                     </div>
                     {editableFields.map((field) => {
                       const value = formValues[field.columnId] ?? "";
                       const showContactClear = isContactEditableField(field.columnType);
+                      const fieldLabel = field.columnTitle || field.label;
                       return (
                         <div
                           key={field.columnId}
                           className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-2"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2">
-                            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{field.label}</span>
+                            <span className="text-sm font-medium text-[color:var(--wsu-ink)]">{fieldLabel}</span>
                             {showContactClear && (
                               <button
                                 type="button"
@@ -296,9 +316,10 @@ export function EditRowDrawer({
                               onChange={(event) =>
                                 setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
                               }
+                              aria-label={fieldLabel}
                               className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
                             >
-                              <option value="">Select value</option>
+                              <option value="">Select…</option>
                               {field.options.map((option) => (
                                 <option key={option} value={option}>
                                   {option}
@@ -312,6 +333,7 @@ export function EditRowDrawer({
                                 setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
                               }
                               rows={4}
+                              aria-label={fieldLabel}
                               className="w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
                             />
                           ) : (
@@ -320,6 +342,7 @@ export function EditRowDrawer({
                               onChange={(event) =>
                                 setFormValues((current) => ({ ...current, [field.columnId]: event.target.value }))
                               }
+                              aria-label={fieldLabel}
                               className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
                             />
                           )}
@@ -334,6 +357,7 @@ export function EditRowDrawer({
                   const hasName = group.attributes.some((a) => a.attribute === "name");
                   const hasEmail = group.attributes.some((a) => a.attribute === "email");
                   const hasPhone = group.attributes.some((a) => a.attribute === "phone");
+                  const groupErrors = multiPersonValidation[group.id] ?? {};
 
                   return (
                     <section key={group.id} className="space-y-4">
@@ -342,92 +366,147 @@ export function EditRowDrawer({
                           {group.label}
                         </h4>
                         <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                          One card per person. Use <strong className="font-medium text-[color:var(--wsu-ink)]">Remove</strong> on a
-                          card to drop that person, or <strong className="font-medium text-[color:var(--wsu-ink)]">
-                            Clear everyone in this role
-                          </strong>{" "}
-                          below to empty the whole group. Save to update Smartsheet.
+                          Each person is a card with fields labeled like your sheet columns.{" "}
+                          <strong className="font-medium text-[color:var(--wsu-ink)]">Update name or email</strong> when someone
+                          new takes the role—no need to remove and re-add.{" "}
+                          <strong className="font-medium text-[color:var(--wsu-ink)]">Phone</strong> and other fields can stay
+                          blank until you have them; save again later. When both name and email columns exist, both are required
+                          for each person before save.
                         </p>
                       </div>
                       <div className="space-y-4">
                         {persons.length === 0 && (
                           <p className="rounded-xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 px-4 py-5 text-center text-sm text-[color:var(--wsu-muted)]">
-                            No one is listed in this role. Add a person, or save to keep it empty.
+                            No one in this group yet. Use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or
+                            save to keep it empty.
                           </p>
                         )}
-                        {persons.map((person, idx) => (
-                          <fieldset
-                            key={idx}
-                            className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
-                          >
-                            <legend className="sr-only">
-                              {group.label}, person {idx + 1} of {persons.length}
-                            </legend>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-[color:var(--wsu-muted)]" aria-hidden>
-                                Person {idx + 1}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setGroupValues((prev) => ({
-                                    ...prev,
-                                    [group.id]: persons.filter((_, i) => i !== idx),
-                                  }));
-                                }}
-                                className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
-                              >
-                                Remove person
-                              </button>
-                            </div>
-                            <div className="grid gap-3">
-                              {hasName && (
-                                <label className="block space-y-1">
-                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Name</span>
-                                  <input
-                                    value={person.name}
-                                    onChange={(e) => {
-                                      const next = [...persons];
-                                      next[idx] = { ...next[idx]!, name: e.target.value };
-                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                    }}
-                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                                  />
-                                </label>
-                              )}
-                              {hasEmail && (
-                                <label className="block space-y-1">
-                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Email</span>
-                                  <input
-                                    type="email"
-                                    value={person.email}
-                                    onChange={(e) => {
-                                      const next = [...persons];
-                                      next[idx] = { ...next[idx]!, email: e.target.value };
-                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                    }}
-                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                                  />
-                                </label>
-                              )}
-                              {hasPhone && (
-                                <label className="block space-y-1">
-                                  <span className="text-xs font-medium text-[color:var(--wsu-muted)]">Phone</span>
-                                  <input
-                                    type="tel"
-                                    value={person.phone}
-                                    onChange={(e) => {
-                                      const next = [...persons];
-                                      next[idx] = { ...next[idx]!, phone: e.target.value };
-                                      setGroupValues((prev) => ({ ...prev, [group.id]: next }));
-                                    }}
-                                    className="min-h-[40px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
-                                  />
-                                </label>
-                              )}
-                            </div>
-                          </fieldset>
-                        ))}
+                        {persons.map((person, idx) => {
+                          const rowErr = groupErrors[idx];
+                          const preview =
+                            person.name.trim() || person.email.trim()
+                              ? [person.name.trim(), person.email.trim()].filter(Boolean).join(" · ")
+                              : `Person ${idx + 1}`;
+
+                          return (
+                            <fieldset
+                              key={`${group.id}-person-${idx}`}
+                              className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 space-y-3"
+                            >
+                              <legend className="sr-only">
+                                {group.label}, {preview}
+                              </legend>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-sm font-semibold text-[color:var(--wsu-ink)]">{preview}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setGroupValues((prev) => ({
+                                      ...prev,
+                                      [group.id]: persons.filter((_, i) => i !== idx),
+                                    }));
+                                  }}
+                                  className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                                >
+                                  Remove person
+                                </button>
+                              </div>
+                              <div className="grid gap-3">
+                                {hasName &&
+                                  (() => {
+                                    const attr = group.attributes.find((a) => a.attribute === "name");
+                                    const colLabel = attr?.columnTitle ?? "Name";
+                                    return (
+                                      <div key="name" className="space-y-1">
+                                        <label className="block text-xs font-medium text-[color:var(--wsu-muted)]" htmlFor={`${group.id}-n-${idx}`}>
+                                          {colLabel}
+                                        </label>
+                                        <input
+                                          id={`${group.id}-n-${idx}`}
+                                          value={person.name}
+                                          onChange={(e) => {
+                                            const next = [...persons];
+                                            next[idx] = { ...next[idx]!, name: e.target.value };
+                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                          }}
+                                          aria-invalid={Boolean(rowErr?.name)}
+                                          aria-describedby={rowErr?.name ? `${group.id}-n-err-${idx}` : undefined}
+                                          autoComplete="name"
+                                          className={`min-h-[44px] w-full rounded-xl border px-3 py-2 text-sm ${
+                                            rowErr?.name
+                                              ? "border-rose-400 bg-rose-50/40"
+                                              : "border-[color:var(--wsu-border)]"
+                                          }`}
+                                        />
+                                        {rowErr?.name ? (
+                                          <p id={`${group.id}-n-err-${idx}`} className="text-xs text-rose-700">
+                                            {rowErr.name}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()}
+                                {hasEmail &&
+                                  (() => {
+                                    const attr = group.attributes.find((a) => a.attribute === "email");
+                                    const colLabel = attr?.columnTitle ?? "Email";
+                                    return (
+                                      <div key="email" className="space-y-1">
+                                        <label className="block text-xs font-medium text-[color:var(--wsu-muted)]" htmlFor={`${group.id}-e-${idx}`}>
+                                          {colLabel}
+                                        </label>
+                                        <input
+                                          id={`${group.id}-e-${idx}`}
+                                          type="email"
+                                          value={person.email}
+                                          onChange={(e) => {
+                                            const next = [...persons];
+                                            next[idx] = { ...next[idx]!, email: e.target.value };
+                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                          }}
+                                          aria-invalid={Boolean(rowErr?.email)}
+                                          aria-describedby={rowErr?.email ? `${group.id}-e-err-${idx}` : undefined}
+                                          autoComplete="email"
+                                          className={`min-h-[44px] w-full rounded-xl border px-3 py-2 text-sm ${
+                                            rowErr?.email
+                                              ? "border-rose-400 bg-rose-50/40"
+                                              : "border-[color:var(--wsu-border)]"
+                                          }`}
+                                        />
+                                        {rowErr?.email ? (
+                                          <p id={`${group.id}-e-err-${idx}`} className="text-xs text-rose-700">
+                                            {rowErr.email}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()}
+                                {hasPhone &&
+                                  (() => {
+                                    const attr = group.attributes.find((a) => a.attribute === "phone");
+                                    const colLabel = attr?.columnTitle ?? "Phone";
+                                    return (
+                                      <label key="phone" className="block space-y-1">
+                                        <span className="text-xs font-medium text-[color:var(--wsu-muted)]">{colLabel}</span>
+                                        <input
+                                          type="tel"
+                                          value={person.phone}
+                                          onChange={(e) => {
+                                            const next = [...persons];
+                                            next[idx] = { ...next[idx]!, phone: e.target.value };
+                                            setGroupValues((prev) => ({ ...prev, [group.id]: next }));
+                                          }}
+                                          autoComplete="tel"
+                                          className="min-h-[44px] w-full rounded-xl border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                        />
+                                        <span className="text-xs text-[color:var(--wsu-muted)]">Optional — you can save and add this later.</span>
+                                      </label>
+                                    );
+                                  })()}
+                              </div>
+                            </fieldset>
+                          );
+                        })}
                         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                           {persons.length > 0 && (
                             <button
@@ -448,9 +527,9 @@ export function EditRowDrawer({
                                 [group.id]: [...persons, { name: "", email: "", phone: "" }],
                               }));
                             }}
-                            className="w-full rounded-xl border border-dashed border-[color:var(--wsu-border)] py-3 text-sm font-medium text-[color:var(--wsu-muted)] hover:bg-[color:var(--wsu-stone)]/10 sm:flex-1"
+                            className="w-full rounded-xl border border-dashed border-[color:var(--wsu-crimson)]/40 bg-[color:var(--wsu-crimson)]/5 py-3 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10 sm:flex-1"
                           >
-                            Add person
+                            + Add person
                           </button>
                         </div>
                       </div>
@@ -484,6 +563,20 @@ export function EditRowDrawer({
               </section>
             )}
 
+            {multiPersonHasErrors && (
+              <div
+                id="edit-row-drawer-validation-summary"
+                role="status"
+                className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+              >
+                <p className="font-medium">Before you can save</p>
+                <p className="mt-1 text-amber-900/90">
+                  Each person must have the required fields filled in (name and email when both columns exist), or use{" "}
+                  <strong>Remove person</strong>. Phone and similar fields can wait for a later edit.
+                </p>
+              </div>
+            )}
+
             {error && (
               <div
                 role="alert"
@@ -504,10 +597,7 @@ export function EditRowDrawer({
             </button>
             <button
               type="submit"
-              disabled={
-                isSaving ||
-                (editableFields.length === 0 && editableFieldGroups.length === 0)
-              }
+              disabled={isSaving || (editableFields.length === 0 && editableFieldGroups.length === 0)}
               className="rounded-full bg-[color:var(--wsu-crimson)] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save changes"}

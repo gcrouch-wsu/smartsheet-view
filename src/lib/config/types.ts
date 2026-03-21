@@ -202,6 +202,8 @@ export interface EditableFieldGroupAttribute {
   columnId: number;
   /** Column type (e.g. TEXT_NUMBER, CONTACT_LIST). Used for objectValue write-back on contact columns. */
   columnType?: string;
+  /** Smartsheet column title; set when building contributor client config (not stored in view JSON). */
+  columnTitle?: string;
 }
 
 export interface EditableFieldGroup {

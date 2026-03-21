@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasMultiPersonValidationErrors,
   parseMultiPersonValue,
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
   validateContributorPicklistCells,
+  validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
 import type { EditableFieldGroup, ResolvedViewRow, SmartsheetColumn } from "@/lib/config/types";
@@ -75,6 +77,40 @@ describe("validateContributorPicklistCells", () => {
   it("ignores non-picklist columns", () => {
     const map = new Map([[9, col({ id: 9, title: "Note", type: "TEXT_NUMBER" })]]);
     expect(validateContributorPicklistCells([{ columnId: 9, value: "x" }], map)).toEqual({ ok: true });
+  });
+});
+
+describe("validateMultiPersonGroupsForSave", () => {
+  const group: EditableFieldGroup = {
+    id: "g1",
+    label: "Coordinators",
+    attributes: [
+      { attribute: "name", fieldKey: "n", columnId: 1 },
+      { attribute: "email", fieldKey: "e", columnId: 2 },
+    ],
+  };
+
+  it("allows empty group", () => {
+    const v = validateMultiPersonGroupsForSave([group], { g1: [] });
+    expect(hasMultiPersonValidationErrors(v)).toBe(false);
+  });
+
+  it("requires name and email when both attributes exist", () => {
+    const v = validateMultiPersonGroupsForSave([group], {
+      g1: [{ name: "", email: "a@b.com", phone: "" }],
+    });
+    expect(v.g1?.[0]?.name).toBeDefined();
+    const v2 = validateMultiPersonGroupsForSave([group], {
+      g1: [{ name: "Ada", email: "", phone: "" }],
+    });
+    expect(v2.g1?.[0]?.email).toBeDefined();
+  });
+
+  it("passes when name and email filled", () => {
+    const v = validateMultiPersonGroupsForSave([group], {
+      g1: [{ name: "Ada", email: "a@b.com", phone: "" }],
+    });
+    expect(hasMultiPersonValidationErrors(v)).toBe(false);
   });
 });
 
