@@ -42,6 +42,10 @@ async function runMockQuery(text: string, params: unknown[] = []) {
     return { rows: [], rowCount: 0 };
   }
 
+  if (sql === "ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY") {
+    return { rows: [], rowCount: 0 };
+  }
+
   if (sql.startsWith("SELECT COUNT(*)::int AS count FROM admin_users")) {
     return { rows: [{ count: mockDbUsers.length }], rowCount: 1 };
   }

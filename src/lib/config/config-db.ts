@@ -80,6 +80,10 @@ export async function ensureConfigTables() {
         CREATE INDEX IF NOT EXISTS idx_contributor_login_attempts_ip_at
         ON contributor_login_attempts(ip, attempted_at)
       `);
+      await queryConfigDb(`ALTER TABLE config_sources ENABLE ROW LEVEL SECURITY`);
+      await queryConfigDb(`ALTER TABLE config_views ENABLE ROW LEVEL SECURITY`);
+      await queryConfigDb(`ALTER TABLE contributor_users ENABLE ROW LEVEL SECURITY`);
+      await queryConfigDb(`ALTER TABLE contributor_login_attempts ENABLE ROW LEVEL SECURITY`);
     })().catch((err) => {
       ensureTablesPromise = null;
       throw err;

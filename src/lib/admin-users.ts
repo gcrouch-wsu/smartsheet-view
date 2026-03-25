@@ -302,6 +302,7 @@ async function ensureManagedAdminsTable() {
           is_active BOOLEAN NOT NULL DEFAULT true
         )
       `);
+      await query(`ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY`);
       await migrateFileManagedAdminsToDatabaseIfNeeded();
     })().catch((error) => {
       ensureManagedAdminsTablePromise = null;
