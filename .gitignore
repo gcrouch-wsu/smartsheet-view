@@ -45,9 +45,11 @@ coverage/
 # Generated admin auth fallback data
 config/admin-users/
 
-# Markdown: only README.md is tracked in git
+# Markdown: only selected docs are tracked in git
 *.md
 !README.md
+!Contributor_Instructions.MD
+!Admin_Instruction.md
 
 # Local / scratch (keep out of repo)
 .claude/

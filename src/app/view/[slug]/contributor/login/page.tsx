@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContributorLoginForm } from "@/components/public/ContributorLoginForm";
@@ -88,10 +88,28 @@ export default async function ContributorLoginPage({
               <div className="mt-8 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white p-5">
                 <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">Before you continue</p>
                 <ul className="mt-3 space-y-2 text-sm text-[color:var(--wsu-muted)]">
-                  <li>Use your `@wsu.edu` email address.</li>
-                  <li>Choose First-time access only the first time you set your contributor password.</li>
-                  <li>Your row access is checked against the live Smartsheet data each time you save.</li>
+                  <li>
+                    Use your <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">@wsu.edu</code> email address.
+                  </li>
+                  <li>You can create an account only if that WSU email appears on the Smartsheet row in the configured contact field.</li>
+                  <li>
+                    If your email is not listed, contact{" "}
+                    <a
+                      href="mailto:gradschool@wsu.edu"
+                      className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2"
+                    >
+                      gradschool@wsu.edu
+                    </a>
+                    .
+                  </li>
+                  <li>Choose <strong className="text-[color:var(--wsu-ink)]">First-time access</strong> only the first time you set your contributor password.</li>
                 </ul>
+                <Link
+                  href="/instructions/contributor"
+                  className="mt-4 inline-flex text-sm font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2 hover:text-[color:var(--wsu-crimson-dark)]"
+                >
+                  Read contributor instructions
+                </Link>
               </div>
             </section>
 

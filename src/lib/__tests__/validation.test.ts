@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { validateViewConfig } from "@/lib/config/validation";
 
 describe("validateViewConfig", () => {
-  it("accepts phase 2 layouts and presentation keys that match fields", () => {
+  it("accepts supported layouts and presentation keys that match fields", () => {
     const result = validateViewConfig(
       {
         id: "directory-accordion",
@@ -201,3 +201,4 @@ describe("validateViewConfig", () => {
     expect(result.errors.some((e) => e.includes("headerLogoAlt"))).toBe(true);
   });
 });
+

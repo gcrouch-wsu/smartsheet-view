@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Contributor help — create an account & edit your row",
+  title: "Contributor help - create an account and edit your row",
   description:
-    "Step-by-step help for WSU contributors: create a password, sign in, and update your row on a public Smartsheet view. No login needed to read this page.",
+    "Help for WSU contributors: create a password, sign in, and update your own row on a published Smartsheet view.",
 };
 
 export default function ContributorInstructionsPage() {
@@ -20,15 +20,13 @@ export default function ContributorInstructionsPage() {
         <header className="mb-8 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-sm sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-crimson)]">Smartsheet View</p>
           <h1 id="page-title" className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Help for contributors
+            Contributor help
           </h1>
           <p className="mt-4 text-base leading-relaxed text-[color:var(--wsu-muted)]">
-            This page is for <strong className="text-[color:var(--wsu-ink)]">faculty and staff</strong> who appear in a published
-            directory (for example as a coordinator or contact). You can update <strong>your own row</strong> after you create a
-            small <strong>contributor password</strong>—different from your main WSU login.
+            Use this page if you were sent a Smartsheet View link and need to update your own information.
           </p>
           <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-900">
-            <strong>You do not need a password to read this help page.</strong> Bookmark it or share the link with colleagues.
+            <strong>You do not need a password to read this help page.</strong>
           </p>
           <nav aria-label="Related pages" className="mt-6 flex flex-wrap gap-2">
             <Link
@@ -45,151 +43,96 @@ export default function ContributorInstructionsPage() {
           className="space-y-10 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 shadow-sm sm:p-8"
           aria-labelledby="page-title"
         >
+          <section aria-labelledby="s-who">
+            <h2 id="s-who" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Who can create an account?
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              You can create a contributor account only if your <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">@wsu.edu</code>{" "}
+              email address appears on the Smartsheet row in the configured contact field for that page.
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>If your WSU email is listed, you can create an account.</li>
+              <li>If it is not listed, you cannot create an account for that page.</li>
+              <li>
+                If you think you should have access, contact{" "}
+                <a href="mailto:gradschool@wsu.edu" className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2">
+                  gradschool@wsu.edu
+                </a>
+                .
+              </li>
+            </ul>
+          </section>
+
           <section aria-labelledby="s-account">
             <h2 id="s-account" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Create your contributor account (first time only)
+              First-time access
             </h2>
-            <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>
-                Open the <strong className="text-[color:var(--wsu-ink)]">public page link</strong> your program sent you (or go to
-                your organization’s published view and use <strong className="text-[color:var(--wsu-ink)]">Contributor sign in</strong>
-                ).
-              </li>
-              <li>
-                On the contributor page, select <strong className="text-[color:var(--wsu-ink)]">First-time access</strong> (not
-                "Sign in" yet).
-              </li>
-              <li>
-                Enter your <strong className="text-[color:var(--wsu-ink)]">WSU email</strong> (it must end in{" "}
-                <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">@wsu.edu</code>
-                ).
-              </li>
-              <li>
-                Choose a <strong className="text-[color:var(--wsu-ink)]">new password</strong> just for this directory. Follow the
-                rules on the screen (length and complexity). This password is{" "}
-                <strong className="text-[color:var(--wsu-ink)]">not</strong> synced with your WSU network password.
-              </li>
-              <li>
-                Submit the form. You can now use <strong className="text-[color:var(--wsu-ink)]">Sign in</strong> any time with
-                that email and password.
-              </li>
+            <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Open the page link you were sent.</li>
+              <li>Select <strong className="text-[color:var(--wsu-ink)]">Contributor sign in</strong>.</li>
+              <li>Select <strong className="text-[color:var(--wsu-ink)]">First-time access</strong>.</li>
+              <li>Enter your WSU email address.</li>
+              <li>Create your contributor password.</li>
+              <li>Submit the form.</li>
             </ol>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Your contributor password is separate from your WSU password.
+            </p>
+            <div className="mt-4 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-4 text-sm text-[color:var(--wsu-muted)]">
+              <p className="font-medium text-[color:var(--wsu-ink)]">Password rule</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>at least 8 characters</li>
+                <li>at least 1 uppercase letter</li>
+                <li>at least 1 number</li>
+                <li>
+                  at least 1 special character such as <code className="rounded bg-white px-1.5 py-0.5 text-xs">!</code>,{" "}
+                  <code className="rounded bg-white px-1.5 py-0.5 text-xs">*</code>, or{" "}
+                  <code className="rounded bg-white px-1.5 py-0.5 text-xs">_</code>
+                </li>
+              </ul>
+            </div>
           </section>
 
           <section aria-labelledby="s-signin">
             <h2 id="s-signin" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Sign in next time
+              Sign in later
             </h2>
             <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>Open the same public page.</li>
-              <li>
-                Choose <strong className="text-[color:var(--wsu-ink)]">Sign in</strong> (not first-time access).
-              </li>
-              <li>Enter your WSU email and your contributor password.</li>
+              <li>Open the same page.</li>
+              <li>Select <strong className="text-[color:var(--wsu-ink)]">Sign in</strong>.</li>
+              <li>Enter your WSU email address and contributor password.</li>
             </ol>
-          </section>
-
-          <section aria-labelledby="s-who">
-            <h2 id="s-who" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Who can edit what?
-            </h2>
-            <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>
-                You can only change rows where <strong className="text-[color:var(--wsu-ink)]">your email</strong> appears in the
-                columns your administrator configured (often a &ldquo;contact&rdquo; or &ldquo;coordinator&rdquo; column).
-              </li>
-              <li>
-                After signing in, an <strong className="text-[color:var(--wsu-ink)]">Edit</strong> button appears next to the rows
-                you are eligible to edit. Rows where your email is not listed do not show the button.
-              </li>
-              <li>
-                You can only edit <strong className="text-[color:var(--wsu-ink)]">fields your administrator turned on</strong> for
-                contributors.
-              </li>
-            </ul>
           </section>
 
           <section aria-labelledby="s-edit">
             <h2 id="s-edit" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Edit and save your row
+              Edit your information
             </h2>
             <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>
-                Click <strong className="text-[color:var(--wsu-ink)]">Edit</strong> on your row. A panel opens on the right.
-              </li>
-              <li>
-                Update the fields shown. Some views use <strong className="text-[color:var(--wsu-ink)]">cards per person</strong> for
-                grouped contacts—use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or{" "}
-                <strong className="text-[color:var(--wsu-ink)]">Remove</strong> if you see them.
-              </li>
-              <li>
-                Click <strong className="text-[color:var(--wsu-ink)]">Save changes</strong> to write to Smartsheet, or{" "}
-                <strong className="text-[color:var(--wsu-ink)]">Close</strong> / <strong className="text-[color:var(--wsu-ink)]">Cancel</strong>{" "}
-                to leave without saving. Press{" "}
-                <kbd className="rounded border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-1.5 py-0.5 text-xs">
-                  Escape
-                </kbd>{" "}
-                to close the panel.
-              </li>
-              <li>If you see an error message, read it and try again, or contact your administrator.</li>
+              <li>Find your row.</li>
+              <li>Click <strong className="text-[color:var(--wsu-ink)]">Edit</strong>.</li>
+              <li>Update the fields shown.</li>
+              <li>Click <strong className="text-[color:var(--wsu-ink)]">Save changes</strong>.</li>
             </ol>
-          </section>
-
-          <section aria-labelledby="s-search">
-            <h2 id="s-search" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Search and A–Z index
-            </h2>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>
-                <strong className="text-[color:var(--wsu-ink)]">Search</strong> narrows the list. The count updates for screen
-                readers as you type.
-              </li>
-              <li>
-                The <strong className="text-[color:var(--wsu-ink)]">A–Z</strong> strip jumps to the first row for that letter when it
-                exists.
-              </li>
-            </ul>
-          </section>
-
-          <section aria-labelledby="s-signout">
-            <h2 id="s-signout" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Sign out
-            </h2>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              When you’re done—especially on a <strong className="text-[color:var(--wsu-ink)]">shared computer</strong>—use{" "}
-              <strong className="text-[color:var(--wsu-ink)]">Sign out</strong> in the bar at the top of the view.
+              You can edit only the rows tied to your email address, and only the fields your administrator made editable.
             </p>
           </section>
 
-          <section aria-labelledby="s-forgot">
-            <h2 id="s-forgot" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
-              Forgot your password?
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              There is no self-service password reset. Contact your program administrator and ask them to generate a reset link for your account. They will send you a link — click it, enter a new password, and then sign in as normal.
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              Your contributor password is separate from your WSU network login and cannot be recovered through IT.
-            </p>
-          </section>
-
-          <section
-            aria-labelledby="s-help"
-            className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950"
-          >
+          <section aria-labelledby="s-help" className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
             <h2 id="s-help" className="text-lg font-semibold">
-              Need more help?
+              Need help?
             </h2>
             <p className="mt-2 leading-relaxed">
-              Contact your program <strong>administrator</strong>. They manage Smartsheet, who appears in each column, which
-              fields you can change, and can reset your contributor password if needed.
+              Email{" "}
+              <a href="mailto:gradschool@wsu.edu" className="font-medium underline underline-offset-2">
+                gradschool@wsu.edu
+              </a>{" "}
+              for help with contributor access, password reset, or editing problems.
             </p>
           </section>
         </main>
-
-        <p className="mt-6 text-center text-xs text-[color:var(--wsu-muted)]">
-          This guide is part of your organization’s Smartsheet View site—no extra login to read it.
-        </p>
       </div>
     </div>
   );

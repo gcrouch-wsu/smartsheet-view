@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,8 +44,6 @@ export function ContributorLoginForm({
       }
 
       startTransition(() => {
-        // Replace so the login page is not in history; browser Back returns to the prior page
-        // (e.g. the view) instead of trapping the user on the contributor form again.
         router.replace(returnHref);
         router.refresh();
       });
@@ -63,7 +61,7 @@ export function ContributorLoginForm({
           type="button"
           onClick={() => setMode("sign_in")}
           aria-pressed={mode === "sign_in"}
-          className={`rounded-full border px-4 py-2 text-sm font-medium ${
+          className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
             mode === "sign_in"
               ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
               : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)]"
@@ -75,10 +73,10 @@ export function ContributorLoginForm({
           type="button"
           onClick={() => setMode("claim")}
           aria-pressed={mode === "claim"}
-          className={`rounded-full border px-4 py-2 text-sm font-medium ${
+          className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
             mode === "claim"
               ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-              : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)]"
+              : "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-paper)] text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/8"
           }`}
         >
           First-time access
@@ -136,7 +134,7 @@ export function ContributorLoginForm({
         </button>
 
         <p className="mt-3 text-xs text-[color:var(--wsu-muted)]">
-          Forgot your password? Contact your administrator — they can generate a reset link for you.
+          Forgot your password? Contact gradschool@wsu.edu for a reset link.
         </p>
       </form>
     </div>

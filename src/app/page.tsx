@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getPublicPageSummaries } from "@/lib/public-view";
 import { testSmartsheetConnection } from "@/lib/smartsheet";
 
@@ -15,7 +15,7 @@ export default async function HomePage() {
           <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:px-10 lg:py-10">
             <div className="space-y-5">
               <div className="inline-flex w-fit items-center rounded-full border border-[color:var(--wsu-border)] bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--wsu-crimson)]">
-                Phase 2 Admin Builder
+                Admin Builder
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-[color:var(--wsu-muted)]">
@@ -25,7 +25,7 @@ export default async function HomePage() {
                   Self-service public views for live Smartsheet data.
                 </h1>
                 <p className="max-w-2xl text-base leading-7 text-[color:var(--wsu-muted)] sm:text-lg">
-                  Public pages still read Smartsheet live and render server-side, but the app now includes an admin builder for registering sources, mapping fields, previewing layouts, and publishing views.
+                  Public pages read Smartsheet live and render server-side, while the admin builder handles sources, fields, layouts, contributor access, and publishing.
                 </p>
               </div>
             </div>
@@ -44,9 +44,14 @@ export default async function HomePage() {
                   ? "Smartsheet connection verified."
                   : "Smartsheet connection unavailable. Check your API token and environment."}
               </div>
-              <Link href="/admin" className="btn-crimson inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium transition hover:bg-[color:var(--wsu-crimson-dark)]">
-                Open admin builder
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/admin" className="btn-crimson inline-flex items-center rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium transition hover:bg-[color:var(--wsu-crimson-dark)]">
+                  Open admin builder
+                </Link>
+                <Link href="/instructions/admin" className="inline-flex items-center rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] transition hover:bg-[color:var(--wsu-crimson)]/8">
+                  Admin guide
+                </Link>
+              </div>
             </div>
           </div>
         </section>

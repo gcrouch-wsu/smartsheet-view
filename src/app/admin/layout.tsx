@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { AdminToastWrapper } from "@/components/admin/AdminToastWrapper";
 import { getCurrentAdminAuthResult } from "@/lib/admin-users";
 import { AdminLogoutButton } from "./AdminLogoutButton";
@@ -10,7 +10,7 @@ const BASE_NAV_ITEMS = [
   { href: "/admin/sources", label: "Sources" },
   { href: "/admin/views", label: "Views" },
   { href: "/admin/contributors", label: "Contributors" },
-  { href: "/instructions/admin", label: "Setup guide" },
+  { href: "/instructions/admin", label: "Admin guide" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -32,10 +32,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">Phase 2</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">Smartsheet View</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">Admin Builder</h1>
               <p className="mt-2 max-w-3xl text-sm text-[color:var(--wsu-muted)]">
-                Register Smartsheet sources, build views, preview live output, publish safely, and manage admin access.
+                Register Smartsheet sources, build views, preview output, publish safely, and manage admin access.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
@@ -43,6 +43,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 <p className="font-medium text-[color:var(--wsu-ink)]">{principalLabel}</p>
                 <p>{principal.role === "owner" ? "Bootstrap owner" : "Managed admin"}</p>
               </div>
+              <Link href="/instructions/admin" className="rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/8">
+                Admin guide
+              </Link>
               <Link href="/admin/sources/new" className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">
                 New source
               </Link>

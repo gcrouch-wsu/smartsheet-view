@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Administrator setup guide — Smartsheet View",
-  description: "Configure sources, views, publishing, contributor editing, branding, and deployment.",
+  title: "Admin guide - Smartsheet View",
+  description: "Create sources, build views, publish updates, manage contributors, and operate Smartsheet View safely.",
 };
 
 export default function AdminInstructionsPage() {
@@ -15,113 +15,127 @@ export default function AdminInstructionsPage() {
       >
         Skip to guide content
       </a>
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-8 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-crimson)]">Smartsheet View — Admin</p>
-          <h1 id="page-title" className="mt-2 text-3xl font-semibold tracking-tight">
-            Setup and maintenance guide
+      <div className="mx-auto max-w-4xl">
+        <header className="mb-8 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-sm sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-crimson)]">Smartsheet View Admin</p>
+          <h1 id="page-title" className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Admin guide
           </h1>
-          <p className="mt-3 text-sm text-[color:var(--wsu-muted)]">
-            Use this checklist to stand up and operate public views from Smartsheet. For day-to-day <strong>contributor</strong> tasks,
-            share the{" "}
-            <Link href="/instructions/contributor" className="font-medium text-[color:var(--wsu-crimson)] underline">
-              contributor guide
-            </Link>
-            .
+          <p className="mt-4 max-w-3xl text-base leading-relaxed text-[color:var(--wsu-muted)]">
+            Use this guide to connect Smartsheet sources, build public views, publish changes, and manage contributor access.
           </p>
-          <nav aria-label="Related pages" className="mt-4 flex flex-wrap gap-2">
+          <nav aria-label="Related pages" className="mt-6 flex flex-wrap gap-2">
             <Link
               href="/admin"
               className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:underline"
             >
-              Open admin home
+              Open admin
+            </Link>
+            <Link
+              href="/instructions/contributor"
+              className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:underline"
+            >
+              Contributor guide
             </Link>
           </nav>
         </header>
 
-        <main id="main" className="space-y-10 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 shadow-sm sm:p-8" aria-labelledby="page-title">
-          <section aria-labelledby="s-sources">
-            <h2 id="s-sources" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Sources
+        <main
+          id="main"
+          className="space-y-10 rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 shadow-sm sm:p-8"
+          aria-labelledby="page-title"
+        >
+          <section aria-labelledby="s-overview">
+            <h2 id="s-overview" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              What admins do here
             </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              <li>Create a <strong>source</strong> for each Smartsheet sheet or report; the numeric ID comes from the Smartsheet URL.</li>
-              <li>Use <strong>Test connection</strong> after saving to verify the API token and asset type.</li>
-              <li>On Vercel, set <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">DATABASE_URL</code> so configs persist; the server filesystem is not writable for long-term storage.</li>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Create and test Smartsheet sources.</li>
+              <li>Build public views by choosing columns, labels, layout, filters, and branding.</li>
+              <li>Publish updates after previewing them.</li>
+              <li>Manage contributor editing and password reset links.</li>
+              <li>Manage additional admin accounts.</li>
             </ul>
           </section>
 
-          <section aria-labelledby="s-views">
-            <h2 id="s-views" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Views
+          <section aria-labelledby="s-start">
+            <h2 id="s-start" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Before you start
             </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              <li>
-                <strong>Setup:</strong> slug, layout, optional fixed layout, page header, <strong>header logo</strong> (PNG/JPEG, alt text required), theme, card layout.
-              </li>
-              <li>
-                <strong>Fields:</strong> pick columns, render types, transforms, heading/summary for card-style layouts. Check <strong>Hide when empty</strong> on any field that is only populated for some rows — the label and value are suppressed entirely when the cell is blank, keeping cards and list panels clean (e.g. a &ldquo;Faculty Coordinator&rdquo; column that only applies to a subset of programs).
-              </li>
-              <li>
-                <strong>Filters and sort:</strong> narrow rows and order them for the public page.
-              </li>
-              <li>
-                <strong>Preview</strong> tabs mirror production rendering; use the public URL to test drafts before publish.
-              </li>
-            </ul>
-          </section>
-
-          <section aria-labelledby="s-publish">
-            <h2 id="s-publish" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Publishing and schema drift
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              Publishing is blocked if required Smartsheet columns disappeared or were renamed out from under the view.
-              Fix the sheet or update field mappings, then publish again.
+            <div className="mt-4 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-4 text-sm text-[color:var(--wsu-muted)] sm:text-base">
+              <p className="font-medium text-[color:var(--wsu-ink)]">Required environment values</p>
+              <ul className="mt-3 list-disc space-y-1 pl-5">
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">SMARTSHEET_API_TOKEN</code></li>
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">SMARTSHEETS_VIEW_ADMIN_USERNAME</code></li>
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">SMARTSHEETS_VIEW_ADMIN_PASSWORD</code></li>
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET</code></li>
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">DATABASE_URL</code></li>
+                <li><code className="rounded bg-white px-1.5 py-0.5 text-xs">CONTRIBUTOR_SESSION_SECRET</code> if contributor editing is enabled</li>
+              </ul>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              If you use Supabase for Postgres, backend-owned tables in <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">public</code> must keep RLS enabled. New public tables should ship with RLS in the same change.
             </p>
           </section>
 
-          <section aria-labelledby="s-contributor">
-            <h2 id="s-contributor" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Contributor editing
+          <section aria-labelledby="s-build">
+            <h2 id="s-build" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Build and publish a view
             </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              <li>Requires PostgreSQL <strong>13+</strong>, <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">DATABASE_URL</code>, and a non-empty <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">CONTRIBUTOR_SESSION_SECRET</code>.</li>
-              <li>
-                <strong>Contact columns</strong> control <em>who</em> can edit a row — only contributors whose email appears in one of these columns see the Edit button for that row.
-              </li>
-              <li>
-                <strong>Editable Fields</strong> give contributors a plain text or contact input for a single value. Use these for simple columns like status, notes, or a single email.
-              </li>
-              <li>
-                <strong>Multi-person field groups</strong> give contributors an Add/Remove person UI where each person has their own name, email, and/or phone card. Use these when a column holds comma-separated values representing multiple people (e.g. &ldquo;Coordinator&rdquo; and &ldquo;Coordinator email&rdquo; columns). Without a group, those columns only get a plain text input — contributors cannot add or remove individual people.
-              </li>
-              <li>API routes that touch the database use the Node.js runtime on Vercel (already set for contributor endpoints).</li>
-            </ul>
-          </section>
-
-          <section aria-labelledby="s-brand">
-            <h2 id="s-brand" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Branding and accessibility
-            </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              <li>
-                <strong>Header branding:</strong> in <strong>Setup → Page header &amp; branding</strong>, upload a PNG/JPEG logo (≤256KB, <strong>alt text</strong> required) and optionally two text lines beside it (organization + unit), similar to a lockup layout.
-              </li>
-              <li>The public page includes skip links, landmarks, table semantics where applicable, and an accessible edit drawer.</li>
-            </ul>
-          </section>
-
-          <section aria-labelledby="s-vercel">
-            <h2 id="s-vercel" className="text-xl font-semibold text-[color:var(--wsu-ink)]">
-              Vercel and this guide
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[color:var(--wsu-muted)]">
-              These instruction pages are part of the Next.js app—no separate static host is needed. They deploy with your project and
-              work the same in production and preview deployments. Production builds use{" "}
-              <strong>Webpack</strong> (<code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 text-xs">next build --webpack</code>) for
-              compatibility with the database driver and rich-text editor.
+            <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Create a source using the numeric Smartsheet sheet or report ID.</li>
+              <li>Use <strong className="text-[color:var(--wsu-ink)]">Test connection</strong> to confirm the source is valid.</li>
+              <li>Create a view and configure setup, fields, filters, editing, and branding.</li>
+              <li>Preview the result before publishing.</li>
+              <li>Publish only after checking field labels, layout, filters, and contributor settings.</li>
+            </ol>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              If publishing is blocked, schema drift is the usual cause. That means a required Smartsheet column was changed, removed, or renamed.
             </p>
+          </section>
+
+          <section aria-labelledby="s-contributors">
+            <h2 id="s-contributors" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Contributor access
+            </h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Contributors can create an account only when their <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">@wsu.edu</code> email appears in the configured contact field on the Smartsheet row.</li>
+              <li>Editable fields control what they can change after sign-in.</li>
+              <li>Use multi-person groups when contributors need Add/Remove person controls instead of plain text entry.</li>
+              <li>Contributor passwords are stored as one-way hashes and cannot be viewed by admins.</li>
+              <li>If a contributor forgets a password, generate a reset link from <strong className="text-[color:var(--wsu-ink)]">Contributors</strong>.</li>
+            </ul>
+          </section>
+
+          <section aria-labelledby="s-admins">
+            <h2 id="s-admins" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Admin accounts
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              The bootstrap owner account comes from environment variables. Additional managed admins can be created in the admin UI.
+            </p>
+            <div className="mt-4 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/20 p-4 text-sm text-[color:var(--wsu-muted)] sm:text-base">
+              <p className="font-medium text-[color:var(--wsu-ink)]">Admin password rule</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>at least 8 characters</li>
+                <li>at least 1 uppercase letter</li>
+                <li>at least 1 number</li>
+                <li>at least 1 special character such as <code className="rounded bg-white px-1.5 py-0.5 text-xs">!</code>, <code className="rounded bg-white px-1.5 py-0.5 text-xs">*</code>, or <code className="rounded bg-white px-1.5 py-0.5 text-xs">_</code></li>
+              </ul>
+            </div>
+          </section>
+
+          <section aria-labelledby="s-checklist">
+            <h2 id="s-checklist" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Release checklist
+            </h2>
+            <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Confirm environment values and database connectivity.</li>
+              <li>Confirm RLS is enabled on backend-owned public tables.</li>
+              <li>Preview the public page and verify layout, filters, search, and branding.</li>
+              <li>If contributor editing is enabled, test first-time access, sign-in, row eligibility, save to Smartsheet, and password reset.</li>
+              <li>Commit and push changes before expecting Vercel to deploy them.</li>
+            </ol>
           </section>
         </main>
       </div>
