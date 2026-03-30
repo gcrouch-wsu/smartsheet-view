@@ -19,7 +19,7 @@ interface UserFormState {
 }
 
 const USERNAME_PATTERN = "^[a-z0-9._@-]+$";
-const PASSWORD_HINT = "At least 8 characters, with one uppercase letter, one number, and one special character.";
+const PASSWORD_HINT = "At least 8 characters, with one uppercase letter, one number, and one special character such as !, *, or _.";
 
 function emptyForm(): UserFormState {
   return {
@@ -291,9 +291,6 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
               <input
                 type={showPassword ? "text" : "password"}
                 required={!editingUserId}
-                minLength={8}
-                pattern="^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$"
-                title={PASSWORD_HINT}
                 value={form.password}
                 onChange={(event) => handleInputChange("password", event.target.value)}
                 className="w-full px-4 py-3 text-base text-[color:var(--wsu-ink)] outline-none"

@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const PASSWORD_PATTERN = "^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$";
-const PASSWORD_HINT = "Use at least 8 characters with one uppercase letter, one number, and one special character.";
 
 interface AdminSignInFormProps {
   nextPath: string;
@@ -72,9 +70,6 @@ export function AdminSignInForm({ nextPath, disabled = false }: AdminSignInFormP
             name="password"
             autoComplete="current-password"
             required
-            minLength={8}
-            pattern={PASSWORD_PATTERN}
-            title={PASSWORD_HINT}
             disabled={disabled || isPending}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -90,7 +85,7 @@ export function AdminSignInForm({ nextPath, disabled = false }: AdminSignInFormP
             {showPassword ? "Hide" : "Show"}
           </button>
         </div>
-        <p className="text-xs text-[color:var(--wsu-muted)]">{PASSWORD_HINT}</p>
+
       </label>
 
       {error && (

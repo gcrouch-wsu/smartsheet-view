@@ -33,6 +33,8 @@ describe("admin auth helpers", () => {
     expect(validateAdminPassword("nocaps123!")).toBe(ADMIN_PASSWORD_POLICY_MESSAGE);
     expect(validateAdminPassword("NoSpecial123")).toBe(ADMIN_PASSWORD_POLICY_MESSAGE);
     expect(validateAdminPassword("Strong!123")).toBeNull();
+    expect(validateAdminPassword("Abcdef1_")).toBeNull();
+    expect(validateAdminPassword("Abcdef1*")).toBeNull();
   });
 
   it("creates and validates signed admin sessions", async () => {

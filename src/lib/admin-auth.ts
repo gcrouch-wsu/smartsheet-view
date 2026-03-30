@@ -4,7 +4,7 @@ export const ADMIN_SESSION_SECRET_ENV_VAR = "SMARTSHEETS_VIEW_ADMIN_SESSION_SECR
 export const ADMIN_SESSION_COOKIE_NAME = "smartsheets_view_admin_session";
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12;
 export const ADMIN_PASSWORD_POLICY_MESSAGE =
-  "Admin password must be at least 8 characters long and include one uppercase letter, one number, and one special character.";
+  "Admin password must be at least 8 characters long and include one uppercase letter, one number, and one special character such as !, *, or _.";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
