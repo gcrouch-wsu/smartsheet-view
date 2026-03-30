@@ -120,6 +120,26 @@ export default function ContributorInstructionsPage() {
             </p>
           </section>
 
+          <section aria-labelledby="s-groups">
+            <h2 id="s-groups" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Grouped contacts
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Some pages use grouped contact editing for repeated people such as coordinators, assistants, or program contacts.
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>You will see one block per person instead of one long text field.</li>
+              <li>Use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> to add another person.</li>
+              <li>Use <strong className="text-[color:var(--wsu-ink)]">Remove</strong> to remove one person.</li>
+              <li>Some groups also show <strong className="text-[color:var(--wsu-ink)]">Clear everyone</strong>.</li>
+              <li>If a group shows both name and email, both are required to save that person.</li>
+              <li>You do not need to type comma-separated or semicolon-separated lists when the grouped editor is shown.</li>
+            </ul>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              When you save, the app writes the people back to Smartsheet in the same order they appear in the editor.
+            </p>
+          </section>
+
           <section aria-labelledby="s-help" className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
             <h2 id="s-help" className="text-lg font-semibold">
               Need help?

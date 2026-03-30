@@ -51,7 +51,7 @@ export default async function AdminDashboardPage() {
               : "This managed admin account is stored in the app's local config files. For Vercel, switch managed admins to Postgres by setting DATABASE_URL."}
         </p>
         {principal.role === "owner" && (
-          <Link href="/admin/users" className="mt-4 inline-flex rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">
+          <Link href="/admin/users" className="link-pill-muted mt-4">
             Manage admin access
           </Link>
         )}
@@ -64,11 +64,11 @@ export default async function AdminDashboardPage() {
               <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Recent sources</h2>
               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Edit connection details, test access, and inspect schema.</p>
             </div>
-            <Link href="/admin/sources" className="text-sm font-medium text-[color:var(--wsu-crimson)]">Open registry</Link>
+            <Link href="/admin/sources" className="link-pill">Open registry</Link>
           </div>
           <div className="mt-4 space-y-3">
             {sources.slice(0, 5).map((source) => (
-              <Link key={source.id} href={`/admin/sources/${source.id}`} className="block rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 hover:border-[color:var(--wsu-crimson)]">
+              <Link key={source.id} href={`/admin/sources/${source.id}`} className="group block cursor-pointer rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 transition hover:border-[color:var(--wsu-crimson)] hover:shadow-[0_14px_30px_rgba(35,31,32,0.06)]">
                 <p className="font-semibold text-[color:var(--wsu-ink)]">{source.label}</p>
                 <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{source.sourceType} · {source.smartsheetId}</p>
               </Link>
@@ -83,11 +83,11 @@ export default async function AdminDashboardPage() {
               <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Recent views</h2>
               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Open a view to change layout, fields, preview, or publication state.</p>
             </div>
-            <Link href="/admin/views" className="text-sm font-medium text-[color:var(--wsu-crimson)]">Open views</Link>
+            <Link href="/admin/views" className="link-pill">Open views</Link>
           </div>
           <div className="mt-4 space-y-3">
             {views.slice(0, 5).map((view) => (
-              <Link key={view.id} href={`/admin/views/${view.id}`} className="block rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 hover:border-[color:var(--wsu-crimson)]">
+              <Link key={view.id} href={`/admin/views/${view.id}`} className="group block cursor-pointer rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 transition hover:border-[color:var(--wsu-crimson)] hover:shadow-[0_14px_30px_rgba(35,31,32,0.06)]">
                 <p className="font-semibold text-[color:var(--wsu-ink)]">{view.label}</p>
                 <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">/{view.slug} · {view.layout} · {view.public ? "published" : "draft"}</p>
               </Link>

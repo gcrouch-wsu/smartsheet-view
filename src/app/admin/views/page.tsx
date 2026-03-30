@@ -35,7 +35,7 @@ export default async function ViewsIndexPage() {
               </div>
               <div className="flex flex-col items-end gap-2">
                 <Link href={`/admin/views/${view.id}`} className="inline-flex items-center rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">Edit</Link>
-                <Link href={`/admin/views/${view.id}/preview`} className="text-sm font-medium text-[color:var(--wsu-crimson)]">Preview</Link>
+                <Link href={`/admin/views/${view.id}/preview`} className="link-pill">Preview</Link>
               </div>
             </div>
           </article>

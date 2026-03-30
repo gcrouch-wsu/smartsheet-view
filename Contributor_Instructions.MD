@@ -56,7 +56,25 @@ You can edit only the row or rows tied to your email address, and only the field
 4. Update the fields shown.
 5. Click `Save changes`.
 
-Some pages may also include grouped contact controls such as `Add person` or `Remove`.
+## Grouped Contacts
+
+Some pages use grouped contact editing for repeated people such as coordinators, assistants, or program contacts.
+
+When a page uses grouped contacts:
+
+- you will see one block per person instead of one long text box
+- use `Add person` to add another person
+- use `Remove` to remove one person
+- some groups also show `Clear everyone`
+
+Important rules:
+
+- if a group shows both name and email, both are required to save that person
+- phone is usually optional unless your administrator says otherwise
+- the form keeps each person's name, email, and phone together as one person block
+- you do not need to type comma-separated or semicolon-separated lists when the grouped editor is shown
+
+When you save, the app writes the people back to Smartsheet in the same order they appear in the editor.
 
 ## Password Reset
 

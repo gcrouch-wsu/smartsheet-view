@@ -58,20 +58,65 @@ Important controls:
 - `View ID`: fixed after creation
 - `Description`: optional supporting copy
 - `Tab order`: order when multiple views share a slug
-- `Heading field key`: primary card/accordion title
-- `Summary field key`: secondary card/accordion text
+- `Heading field key`: primary card or accordion title
+- `Summary field key`: secondary card or accordion text
 
-Layout controls:
+### Layout presets and view structure
 
 - start with a layout preset
 - override the layout if needed: table, cards, accordion, tabbed, list/detail, and similar patterns
 - for card-style layouts, use `Custom card layout` when you want multiple fields in one row, placeholders for alignment, or static text inside cards
 
-Display controls in Setup:
+### Page Header & Branding
 
-- `Page Header & Branding` controls logo, custom text, theme, and header visibility
-- `Content Area` controls title section, tabs, counts, and the layout switcher below the header
-- when contributor editing is enabled, Setup also controls whether the public page shows the contributor login link and contributor instructions link
+Use this section to control the top band of the public page.
+
+Key decisions:
+
+- whether the page should show the full page header at all
+- whether to add custom header text above the main title
+- whether to show logo or lockup branding
+- whether to show the back link, source label, page title, and live-data text
+
+This is where you decide how branded or minimal the page feels before the user reaches the data.
+
+### Status box and Content Area
+
+Below the main header, you can control the supporting context shown above the data.
+
+`Status / Info Box` can show:
+
+- active view name
+- row count
+- last refresh time
+- contributor sign-in link
+- contributor instructions link
+
+`Content Area` controls:
+
+- the title section below the header
+- tabs when multiple views share the same slug
+- row counts on tabs
+- custom tab label text
+- the layout switcher
+
+### Theme preset and Customize look & feel
+
+Use `Theme preset` first. A preset gives you a complete baseline palette so the page feels coherent before you start fine-tuning tokens.
+
+Use `Customize look & feel` after that to layer overrides on top of the preset.
+
+Customization controls include:
+
+- colors: page background, card background, accent color, primary text, muted text, borders, and badges
+- typography: body font, heading font, sizes, weights, and styles
+- shape and shadow: border radius and card shadow
+
+Important behavior:
+
+- switching to a different preset resets your custom overrides
+- individual overrides can be cleared back to the preset default
+- watch the contrast indicator if you change accent or text colors
 
 ## Fields And Display
 
@@ -122,9 +167,40 @@ Contributor access works like this:
 - they can then claim access to that row
 - they can edit only the selected editable fields or configured group fields
 
-Use `Multi-person field groups` when a row stores comma-separated people data such as coordinator names, coordinator emails, or coordinator phone numbers.
+### Multi-person field groups
 
-Groups let contributors use `Add person` and `Remove` controls instead of editing one long text string.
+Use `Multi-person field groups` when a row stores repeated people data across separate columns, such as coordinator names, coordinator emails, and coordinator phone numbers.
+
+Groups let contributors use `Add person`, `Remove`, and sometimes `Clear everyone` instead of editing one long text string.
+
+Important matching rule:
+
+- the app matches people by position across the mapped columns
+- first name pairs with first email and first phone
+- second name pairs with second email and second phone
+- if counts or order do not match, people will be paired incorrectly
+
+Example:
+
+- `Jane Doe, Bob Smith`
+- must line up with `doe@wsu.edu, smith@wsu.edu`
+
+If the email order is reversed, or one column has an extra or missing person, the grouped cards will not represent the same people correctly.
+
+### Delimiters
+
+The parser treats all of these as separators:
+
+- comma `,`
+- semicolon `;`
+- line breaks
+
+Important detail:
+
+- delimiter style does not carry meaning by itself
+- the app only cares about the order of people across the mapped columns
+- plain-text and phone values are saved back as comma-separated text
+- contact columns still preserve the same person order when written back
 
 The Editing tab also controls:
 
@@ -162,6 +238,7 @@ After schema changes:
    - row eligibility
    - save to Smartsheet
    - password reset flow
+   - grouped contact editing when groups are enabled
 5. Commit and push changes before expecting Vercel to deploy them.
 
 ## Reference Docs

@@ -52,6 +52,73 @@ a {
   text-decoration: none;
 }
 
+.link-inline {
+  color: var(--wsu-crimson) !important;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+
+.link-inline:hover {
+  color: var(--wsu-crimson-dark) !important;
+}
+
+.link-inline-muted {
+  color: var(--wsu-muted) !important;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: rgba(166, 15, 45, 0.35);
+}
+
+.link-inline-muted:hover {
+  color: var(--wsu-crimson) !important;
+  text-decoration-color: currentColor;
+}
+
+.link-pill,
+.link-pill-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.625rem 1rem;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.link-pill {
+  border: 1px solid var(--wsu-crimson);
+  background: white;
+  color: var(--wsu-crimson) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
+}
+
+.link-pill:hover {
+  background: rgba(166, 15, 45, 0.08);
+  color: var(--wsu-crimson-dark) !important;
+}
+
+.link-pill-muted {
+  border: 1px solid var(--wsu-border);
+  background: white;
+  color: var(--wsu-muted) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
+}
+
+.link-pill-muted:hover {
+  border-color: var(--wsu-crimson);
+  color: var(--wsu-crimson) !important;
+  background: rgba(166, 15, 45, 0.05);
+}
+
 /* Crimson primary buttons: white text for contrast (overrides a { color: inherit }) */
 .btn-crimson,
 .bg-\[color\:var\(--wsu-crimson\)\] {

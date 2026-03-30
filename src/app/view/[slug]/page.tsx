@@ -173,7 +173,7 @@ export default async function PublicViewPage({
                   {!activeView.presentation?.hideHeaderBackLink &&
                     (contributorEmail ? (
                       <p className="text-sm text-[color:var(--wsu-muted)]">
-                        <Link href="/" className="font-medium text-[color:var(--wsu-crimson)] hover:underline">
+                        <Link href="/" className="link-inline">
                           Published views home
                         </Link>
                         <span className="mt-1 block text-xs text-[color:var(--wsu-muted)]">
@@ -183,7 +183,7 @@ export default async function PublicViewPage({
                         </span>
                       </p>
                     ) : (
-                      <Link href="/" className="text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]">
+                      <Link href="/" className="link-inline-muted">
                         Back to configured pages
                       </Link>
                     ))}
@@ -248,7 +248,7 @@ export default async function PublicViewPage({
                     <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4">
                       <Link
                         href={loginHref}
-                        className="text-sm font-semibold text-[color:var(--wsu-crimson)] hover:underline"
+                        className="link-pill"
                       >
                         Contributor sign in
                       </Link>
@@ -304,7 +304,7 @@ export default async function PublicViewPage({
                           >
                             <Link
                               href={loginHref}
-                              className="font-view-heading font-semibold text-[color:var(--wsu-crimson)] hover:underline"
+                              className="link-inline"
                             >
                               Contributor sign in
                             </Link>

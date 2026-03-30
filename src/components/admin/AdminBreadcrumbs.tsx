@@ -18,7 +18,7 @@ export function AdminBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
             {item.href && !isLast ? (
               <Link
                 href={item.href}
-                className="hover:text-[color:var(--wsu-crimson)] hover:underline"
+                className="link-inline-muted"
               >
                 {item.label}
               </Link>

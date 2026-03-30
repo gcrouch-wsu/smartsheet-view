@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContributorLoginForm } from "@/components/public/ContributorLoginForm";
@@ -55,7 +55,7 @@ export default async function ContributorLoginPage({
           </p>
           <Link
             href={returnHref}
-            className="mt-6 inline-flex rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)]"
+            className="link-pill-muted mt-6"
           >
             Return to view
           </Link>
@@ -106,7 +106,7 @@ export default async function ContributorLoginPage({
                 </ul>
                 <Link
                   href="/instructions/contributor"
-                  className="mt-4 inline-flex text-sm font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2 hover:text-[color:var(--wsu-crimson-dark)]"
+                  className="link-pill mt-4"
                 >
                   Read contributor instructions
                 </Link>
@@ -117,7 +117,7 @@ export default async function ContributorLoginPage({
               <ContributorLoginForm slug={slug} viewId={activeView.id} returnHref={returnHref} />
               <Link
                 href={returnHref}
-                className="mt-6 inline-flex text-sm font-medium text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-crimson)]"
+                className="link-pill-muted mt-6"
               >
                 Back to view
               </Link>

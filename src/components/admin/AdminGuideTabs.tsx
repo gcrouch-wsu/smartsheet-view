@@ -147,7 +147,7 @@ export function AdminGuideTabs() {
         <section id="admin-guide-panel-setup" role="tabpanel" aria-labelledby="admin-guide-tab-setup" className="space-y-6">
           <SectionTitle
             title="Setup tab and layout controls"
-            description="Use Setup to define the structure of the page before you fine-tune field behavior."
+            description="Use Setup to define the structure, branding, and page furniture before you fine-tune field behavior."
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -169,30 +169,64 @@ export function AdminGuideTabs() {
                 <li>Start with a preset to get a sensible page pattern quickly.</li>
                 <li>Use the layout override if you want the same fields in a different presentation such as table, cards, accordion, tabbed, or list/detail.</li>
                 <li>For card-style layouts, pick heading and summary fields so the public cards read correctly.</li>
+                <li>Use <strong className="text-[color:var(--wsu-ink)]">Custom card layout</strong> when you want multiple fields on one row, placeholder blanks for alignment, or static explanatory text inside the card.</li>
               </ul>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Custom card layout</h3>
-            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              When the layout is cards, list, stacked, accordion, tabbed, or list/detail, you can enable <strong className="text-[color:var(--wsu-ink)]">Custom card layout</strong>.
-              That lets you define rows inside the card and place multiple fields side by side.
-            </p>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>Use it when default one-field-per-row cards feel too long.</li>
-              <li>Add placeholder blanks to keep rows aligned.</li>
-              <li>Add static text when the card needs a built-in label or note.</li>
-            </ul>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Page Header & Branding</h3>
+              <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                This section controls the top band of the public page. Use it to decide whether the page opens with a branded header, a lighter utility header, or almost no header furniture at all.
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                <li><strong className="text-[color:var(--wsu-ink)]">Show page header</strong> turns the full header region on or off.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Custom header text</strong> lets you add a short eyebrow or supporting line above the page title.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Show logo / branding</strong> controls the WSU lockup or branded mark.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Show back link</strong>, <strong className="text-[color:var(--wsu-ink)]">Show source label</strong>, <strong className="text-[color:var(--wsu-ink)]">Show page title</strong>, and <strong className="text-[color:var(--wsu-ink)]">Show live data text</strong> let you trim the header down to only the context you want.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Status box and content area</h3>
+              <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                Below the main header, you can decide how much context the page shows before the data starts.
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                <li><strong className="text-[color:var(--wsu-ink)]">Status / Info Box</strong> can show the active view name, row count, last refresh time, contributor sign-in link, and contributor instructions link.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Content Area</strong> controls the title section, view tabs, row counts on tabs, custom tab labels, and the layout switcher below the header.</li>
+                <li>If contributor editing is enabled, this is also where you decide whether the public page advertises contributor sign-in and the contributor help page.</li>
+              </ul>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Display controls above the data</h3>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li><strong className="text-[color:var(--wsu-ink)]">Page Header & Branding:</strong> page header, custom text, logo, lockup text, theme, status box, and header-level visibility toggles.</li>
-              <li><strong className="text-[color:var(--wsu-ink)]">Content Area:</strong> controls the title section, tabs, row counts, and layout switcher below the header.</li>
-              <li>If contributor editing is enabled, the Setup tab also controls whether the header/status area shows the contributor sign-in link and contributor instructions link.</li>
-            </ul>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Theme preset</h3>
+              <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                Start with a theme preset. A preset gives you a complete baseline palette so the page feels coherent before you start fine-tuning individual tokens.
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                <li>Pick the preset that is closest to the final tone you want.</li>
+                <li>Use presets to keep the page aligned with institutional branding or a specific campaign look.</li>
+                <li>Changing the preset after heavy customization will reset custom overrides.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Customize look & feel</h3>
+              <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                Use <strong className="text-[color:var(--wsu-ink)]">Customize look & feel</strong> only after the preset is close. These controls add overrides on top of the preset rather than replacing the whole theme.
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+                <li><strong className="text-[color:var(--wsu-ink)]">Colors:</strong> page background, card background, accent color, text, muted text, borders, and badges.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Typography:</strong> body font, heading font, sizes, weights, and styles.</li>
+                <li><strong className="text-[color:var(--wsu-ink)]">Shape & shadow:</strong> corner radius and card shadow.</li>
+                <li>Overrides can be cleared one token at a time to return to the preset default.</li>
+                <li>Pay attention to contrast warnings when changing accent or text colors.</li>
+              </ul>
+            </div>
           </div>
         </section>
       )}
@@ -259,7 +293,7 @@ export function AdminGuideTabs() {
               <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
                 <li>Turn on <strong className="text-[color:var(--wsu-ink)]">Enable contributor editing</strong>.</li>
                 <li>Select one or more <strong className="text-[color:var(--wsu-ink)]">Contact Columns</strong>.</li>
-                <li>If a contributor&apos;s <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">@wsu.edu</code> email appears in one of those columns on a row, they can claim access to that row.</li>
+                <li>If a contributor's <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">@wsu.edu</code> email appears in one of those columns on a row, they can claim access to that row.</li>
               </ul>
             </div>
 
@@ -276,13 +310,31 @@ export function AdminGuideTabs() {
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Multi-person field groups</h3>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              Use groups when the sheet stores comma-separated people data, such as coordinator names, coordinator emails, or coordinator phone numbers. A group turns that raw text into one card per person with structured fields such as name, email, and phone.
+              Use groups when the sheet stores repeated people data across separate columns, such as coordinator names, coordinator emails, and coordinator phone numbers. A group turns that raw Smartsheet data into one card per person with structured fields such as name, email, and phone.
             </p>
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>Create a group label that describes the role, such as "Program coordinators".</li>
-              <li>Map the group&apos;s name, email, and phone attributes to the appropriate fields.</li>
-              <li>Contributors will then get Add person and Remove controls instead of a single plain-text box.</li>
+              <li>Map the group's name, email, and phone attributes to the appropriate fields.</li>
+              <li>Contributors will then get <strong className="text-[color:var(--wsu-ink)]">Add person</strong>, <strong className="text-[color:var(--wsu-ink)]">Remove</strong>, and sometimes <strong className="text-[color:var(--wsu-ink)]">Clear everyone</strong> instead of a single plain-text box.</li>
             </ul>
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
+              <p className="font-semibold">Order matters</p>
+              <p className="mt-2 leading-relaxed">
+                Grouped people are matched by position across the mapped columns. The first name is paired with the first email and first phone, the second name with the second email and second phone, and so on.
+              </p>
+              <p className="mt-2 leading-relaxed">
+                Example: <code className="rounded bg-white px-1.5 py-0.5 text-xs">Jane Doe, Bob Smith</code> must line up with <code className="rounded bg-white px-1.5 py-0.5 text-xs">doe@wsu.edu, smith@wsu.edu</code>. If the order or count does not match, the wrong people will be paired together in some views.
+              </p>
+            </div>
+            <div className="mt-4 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 p-4 text-sm text-[color:var(--wsu-muted)]">
+              <p className="font-medium text-[color:var(--wsu-ink)]">Delimiter rules</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>Commas, semicolons, and line breaks are all treated as separators.</li>
+                <li>The app does not preserve delimiter style as a separate meaning. It only cares about the person order.</li>
+                <li>Plain-text and phone values save back to Smartsheet as comma-separated text.</li>
+                <li>Contact columns still keep the same person order when they are written back.</li>
+              </ul>
+            </div>
           </div>
 
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
@@ -290,7 +342,7 @@ export function AdminGuideTabs() {
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li><strong className="text-[color:var(--wsu-ink)]">Show contributor login link</strong> controls whether the public page shows sign-in entry.</li>
               <li><strong className="text-[color:var(--wsu-ink)]">Show contributor instructions link</strong> adds a public help link that opens in a new window.</li>
-              <li>Hiding these links does not remove editing for people who already have the direct URL or an active session.</li>
+              <li>Hiding those links does not remove editing for people who already have the direct URL or an active session.</li>
             </ul>
           </div>
         </section>
