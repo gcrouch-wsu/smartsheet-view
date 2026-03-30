@@ -47,6 +47,8 @@ config/admin-users/
 
 # Markdown: only selected docs are tracked in git
 *.md
+Admin_instructions.md
+contributor_instructions.md
 !README.md
 !Contributor_Instructions.MD
 !Admin_Instruction.md

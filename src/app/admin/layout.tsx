@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { AdminToastWrapper } from "@/components/admin/AdminToastWrapper";
 import { getCurrentAdminAuthResult } from "@/lib/admin-users";
 import { AdminLogoutButton } from "./AdminLogoutButton";
@@ -10,7 +10,6 @@ const BASE_NAV_ITEMS = [
   { href: "/admin/sources", label: "Sources" },
   { href: "/admin/views", label: "Views" },
   { href: "/admin/contributors", label: "Contributors" },
-  { href: "/instructions/admin", label: "Admin guide" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
