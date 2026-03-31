@@ -14,6 +14,7 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
 
 /** Body and heading font sizes (rem, pt). Good for readability. */
 export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
+  { value: "0.75rem", label: "XS (12px)" },
   { value: "12pt", label: "12 point" },
   { value: "0.875rem", label: "Small (14px)" },
   { value: "1rem", label: "Medium (16px)" },
@@ -21,6 +22,20 @@ export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
   { value: "1.125rem", label: "Extra large (18px)" },
   { value: "1.25rem", label: "2XL (20px)" },
   { value: "1.5rem", label: "3XL (24px)" },
+];
+
+export const LETTER_SPACING_OPTIONS: { value: string; label: string }[] = [
+  { value: "0", label: "Normal" },
+  { value: "0.04em", label: "Tight" },
+  { value: "0.1em", label: "Wide" },
+  { value: "0.16em", label: "Wider" },
+  { value: "0.22em", label: "Extra wide" },
+];
+
+export const TEXT_TRANSFORM_OPTIONS: { value: string; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "uppercase", label: "Uppercase" },
+  { value: "capitalize", label: "Capitalize" },
 ];
 
 /** Font weight options for body and heading. */

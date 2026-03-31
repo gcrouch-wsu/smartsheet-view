@@ -10,6 +10,13 @@
   --wsu-muted: #6b625b;
   --background: #f6f1eb;
   --foreground: #181413;
+  --view-surface-muted-bg: var(--wsu-stone);
+  --view-control-bg: #ffffff;
+  --view-control-text: var(--wsu-muted);
+  --view-control-border: var(--wsu-border);
+  --view-control-hover-bg: rgba(166, 15, 45, 0.08);
+  --view-control-active-bg: var(--wsu-crimson);
+  --view-control-active-text: #ffffff;
 }
 
 @theme inline {
@@ -79,12 +86,20 @@ a {
 }
 
 .link-pill,
-.link-pill-muted {
+.link-pill-muted,
+.view-control,
+.view-control-primary,
+.view-control-active {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   border-radius: 999px;
   padding: 0.625rem 1rem;
+  border: 1px solid var(--view-control-border, var(--wsu-border));
+  background: var(--view-control-bg, #ffffff);
+  color: var(--view-control-text, var(--wsu-muted));
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
   transition:
     color 150ms ease,
     background-color 150ms ease,
@@ -92,31 +107,41 @@ a {
     box-shadow 150ms ease;
 }
 
-.link-pill {
-  border: 1px solid var(--wsu-crimson);
-  background: white;
-  color: var(--wsu-crimson) !important;
-  font-weight: 600;
-  box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
+.link-pill,
+.view-control-primary {
+  border-color: var(--view-accent, var(--wsu-crimson));
+  color: var(--view-accent, var(--wsu-crimson)) !important;
 }
 
-.link-pill:hover {
-  background: rgba(166, 15, 45, 0.08);
-  color: var(--wsu-crimson-dark) !important;
+.link-pill:hover,
+.view-control-primary:hover {
+  border-color: var(--view-accent, var(--wsu-crimson));
+  background: var(--view-control-hover-bg, rgba(166, 15, 45, 0.08));
+  color: var(--view-accent, var(--wsu-crimson)) !important;
 }
 
-.link-pill-muted {
-  border: 1px solid var(--wsu-border);
-  background: white;
-  color: var(--wsu-muted) !important;
-  font-weight: 600;
-  box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
+.link-pill-muted,
+.view-control {
+  color: var(--view-control-text, var(--wsu-muted)) !important;
 }
 
-.link-pill-muted:hover {
-  border-color: var(--wsu-crimson);
-  color: var(--wsu-crimson) !important;
-  background: rgba(166, 15, 45, 0.05);
+.link-pill-muted:hover,
+.view-control:hover {
+  border-color: var(--view-accent, var(--wsu-crimson));
+  color: var(--view-accent, var(--wsu-crimson)) !important;
+  background: var(--view-control-hover-bg, rgba(166, 15, 45, 0.05));
+}
+
+.view-control-active {
+  border-color: var(--view-control-active-bg, var(--view-accent, var(--wsu-crimson)));
+  background: var(--view-control-active-bg, var(--view-accent, var(--wsu-crimson)));
+  color: var(--view-control-active-text, #ffffff) !important;
+}
+
+.view-control-active:hover {
+  border-color: var(--view-control-active-bg, var(--view-accent, var(--wsu-crimson)));
+  background: var(--view-control-active-bg, var(--view-accent, var(--wsu-crimson)));
+  color: var(--view-control-active-text, #ffffff) !important;
 }
 
 /* Crimson primary buttons: white text for contrast (overrides a { color: inherit }) */
@@ -135,6 +160,45 @@ a {
   font-size: var(--view-heading-font-size, inherit);
   font-weight: var(--view-heading-font-weight, inherit);
   font-style: var(--view-heading-font-style, inherit);
+}
+
+.view-field-label {
+  font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-field-label-font-size, 0.75rem);
+  font-weight: var(--view-field-label-font-weight, 600);
+  letter-spacing: var(--view-field-label-letter-spacing, 0.2em);
+  text-transform: var(--view-field-label-text-transform, uppercase);
+}
+
+.view-row-heading {
+  font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-row-heading-font-size, 1.125rem);
+  font-weight: var(--view-row-heading-font-weight, 600);
+  font-style: var(--view-heading-font-style, inherit);
+}
+
+.view-people-name {
+  font-weight: var(--view-people-name-font-weight, 500);
+}
+
+.view-input {
+  border: 1px solid var(--view-control-border, var(--wsu-border));
+  background: var(--view-control-bg, #ffffff);
+  color: var(--view-text, var(--wsu-ink));
+}
+
+.view-input::placeholder {
+  color: var(--view-muted, var(--wsu-muted));
+}
+
+.view-input:focus {
+  border-color: var(--view-accent, var(--wsu-crimson));
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--view-accent, var(--wsu-crimson)) 18%, transparent);
+}
+
+.view-surface-muted {
+  background: color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 72%, white);
 }
 
 /* Custom header text: use body font, not heading font */

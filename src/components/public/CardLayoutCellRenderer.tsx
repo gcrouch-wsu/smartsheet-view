@@ -2,7 +2,7 @@ import { FieldValue } from "@/components/public/FieldValue";
 import type { CardLayoutCell } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue } from "@/lib/config/types";
 
-const labelClass = "font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]";
+const labelClass = "view-field-label text-[color:var(--wsu-muted)]";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (

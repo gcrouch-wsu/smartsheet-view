@@ -9,7 +9,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>

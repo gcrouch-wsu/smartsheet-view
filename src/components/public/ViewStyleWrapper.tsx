@@ -4,18 +4,32 @@ import type { ViewStyleConfig } from "@/lib/config/types";
 const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   backgroundColor: "--view-bg",
   cardBackground: "--view-card-bg",
+  surfaceMutedBackground: "--view-surface-muted-bg",
   accentColor: "--view-accent",
   textColor: "--view-text",
   mutedColor: "--view-muted",
   borderColor: "--view-border",
+  controlBackground: "--view-control-bg",
+  controlText: "--view-control-text",
+  controlBorder: "--view-control-border",
+  controlHoverBackground: "--view-control-hover-bg",
+  controlActiveBackground: "--view-control-active-bg",
+  controlActiveText: "--view-control-active-text",
   fontFamily: "--view-font",
   headingFontFamily: "--view-heading-font",
   fontSize: "--view-font-size",
   headingFontSize: "--view-heading-font-size",
+  fieldLabelFontSize: "--view-field-label-font-size",
+  rowHeadingFontSize: "--view-row-heading-font-size",
   fontWeight: "--view-font-weight",
   headingFontWeight: "--view-heading-font-weight",
+  fieldLabelFontWeight: "--view-field-label-font-weight",
+  rowHeadingFontWeight: "--view-row-heading-font-weight",
+  peopleNameFontWeight: "--view-people-name-font-weight",
   fontStyle: "--view-font-style",
   headingFontStyle: "--view-heading-font-style",
+  fieldLabelLetterSpacing: "--view-field-label-letter-spacing",
+  fieldLabelTextTransform: "--view-field-label-text-transform",
   borderRadius: "--view-radius",
   cardShadow: "--view-card-shadow",
   badgeBg: "--view-badge-bg",
@@ -52,6 +66,9 @@ export function ViewStyleWrapper({
   }
   if (tokens.cardBackground) {
     cssVars["--wsu-paper"] = tokens.cardBackground;
+  }
+  if (tokens.surfaceMutedBackground) {
+    cssVars["--wsu-stone"] = tokens.surfaceMutedBackground;
   }
   if (tokens.textColor) {
     cssVars["--wsu-ink"] = tokens.textColor;

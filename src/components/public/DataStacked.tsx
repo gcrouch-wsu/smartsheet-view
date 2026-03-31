@@ -9,7 +9,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -108,9 +108,9 @@ export function DataStacked({
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div>
                     {!heading.hideLabel && (
-                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
                     )}
-                    <div className="font-view-heading mt-2 text-lg font-semibold text-[color:var(--wsu-ink)]">
+                    <div className="view-row-heading mt-2 text-[color:var(--wsu-ink)]">
                       <FieldValue field={heading} />
                     </div>
                   </div>

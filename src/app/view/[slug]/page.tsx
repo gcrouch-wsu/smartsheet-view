@@ -52,6 +52,30 @@ function formatTimestamp(value: string) {
   }).format(new Date(value));
 }
 
+function PublicActionLink({
+  href,
+  label,
+  primary = false,
+  newWindow = false,
+}: {
+  href: string;
+  label: string;
+  primary?: boolean;
+  newWindow?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      target={newWindow ? "_blank" : undefined}
+      rel={newWindow ? "noopener noreferrer" : undefined}
+      title={newWindow ? `${label} (opens in a new window)` : undefined}
+      className={`${primary ? "link-pill" : "link-pill-muted"} justify-center`}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export default async function PublicViewPage({
   params,
   searchParams,
@@ -125,6 +149,8 @@ export default async function PublicViewPage({
   const loginHref = showContributorLoginLink ? `/view/${slug}/contributor/login?view=${activeView.id}` : null;
   const showContributorInstructions =
     editingEnabled && activeViewConfig.editing?.showContributorInstructions !== false;
+  const printHref = !embed ? `/view/${slug}/print?view=${activeView.id}` : null;
+  const contributorInstructionsHref = showContributorInstructions ? "/instructions/contributor" : null;
 
   let contributorEmail: string | null = null;
   let editingConfig = null;
@@ -243,76 +269,66 @@ export default async function PublicViewPage({
                       </div>
                     ))}
                 </div>
-                {(loginHref && !contributorEmail && activeView.presentation?.hideHeaderInfoBox && (
-                  <div className="shrink-0">
-                    <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4">
-                      <Link
-                        href={loginHref}
-                        className="link-pill"
-                      >
-                        Contributor sign in
-                      </Link>
-                    </div>
-                  </div>
-                )) ||
-                (!activeView.presentation?.hideHeaderInfoBox &&
+                {((!activeView.presentation?.hideHeaderInfoBox &&
                   (!activeView.presentation?.hideHeaderActiveView ||
                     !activeView.presentation?.hideHeaderRows ||
-                    !activeView.presentation?.hideHeaderRefreshed ||
-                    (loginHref && !contributorEmail)) && (
-                    <div className="shrink-0">
-                      <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                        {!activeView.presentation?.hideHeaderActiveView && (
-                          <p>
-                            <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                          </p>
-                        )}
-                        {!activeView.presentation?.hideHeaderRows && (
-                          <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                            <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span>{" "}
-                            {contributorEmail && editableRowIds.length > 0 ? (
-                              <>
-                                {viewForDisplay.rowCount} assigned to you
-                                <span className="text-[color:var(--wsu-muted)]"> ({activeView.rowCount} in this view)</span>
-                              </>
-                            ) : (
-                              activeView.rowCount
-                            )}
-                          </p>
-                        )}
-                        {!activeView.presentation?.hideHeaderRefreshed && (
-                          <p
-                            className={
-                              !activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows
-                                ? "mt-2"
-                                : ""
-                            }
-                          >
-                            <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
-                            {formatTimestamp(page.fetchedAt)}
-                          </p>
-                        )}
-                        {loginHref && !contributorEmail && (
-                          <p
-                            className={
-                              !activeView.presentation?.hideHeaderActiveView ||
-                              !activeView.presentation?.hideHeaderRows ||
-                              !activeView.presentation?.hideHeaderRefreshed
-                                ? "mt-2"
-                                : ""
-                            }
-                          >
-                            <Link
-                              href={loginHref}
-                              className="link-inline"
+                    !activeView.presentation?.hideHeaderRefreshed)) ||
+                  ((loginHref && !contributorEmail) || printHref || contributorInstructionsHref)) && (
+                  <div className="shrink-0 space-y-3">
+                    {!activeView.presentation?.hideHeaderInfoBox &&
+                      (!activeView.presentation?.hideHeaderActiveView ||
+                        !activeView.presentation?.hideHeaderRows ||
+                        !activeView.presentation?.hideHeaderRefreshed) && (
+                        <div className="view-surface-muted rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                          {!activeView.presentation?.hideHeaderActiveView && (
+                            <p>
+                              <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                            </p>
+                          )}
+                          {!activeView.presentation?.hideHeaderRows && (
+                            <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                              <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span>{" "}
+                              {contributorEmail && editableRowIds.length > 0 ? (
+                                <>
+                                  {viewForDisplay.rowCount} assigned to you
+                                  <span className="text-[color:var(--wsu-muted)]"> ({activeView.rowCount} in this view)</span>
+                                </>
+                              ) : (
+                                activeView.rowCount
+                              )}
+                            </p>
+                          )}
+                          {!activeView.presentation?.hideHeaderRefreshed && (
+                            <p
+                              className={
+                                !activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows
+                                  ? "mt-2"
+                                  : ""
+                              }
                             >
-                              Contributor sign in
-                            </Link>
-                          </p>
-                        )}
+                              <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
+                              {formatTimestamp(page.fetchedAt)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                    {(!contributorEmail && (loginHref || printHref || contributorInstructionsHref)) && (
+                      <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-4 py-4">
+                        <div className="flex min-w-[14rem] flex-col gap-2">
+                          {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
+                          {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
+                          {contributorInstructionsHref ? (
+                            <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow />
+                          ) : null}
+                        </div>
+                        {contributorInstructionsHref ? (
+                          <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">Contributor instructions open in a new window.</p>
+                        ) : null}
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                )}
               </div>
             </header>
           )}
@@ -343,14 +359,13 @@ export default async function PublicViewPage({
                     )}
                   </>
                 )}
-                {loginHref && !contributorEmail && !embed && activeView.presentation?.hideHeader && (
-                  <div className={!activeView.presentation?.hideViewTitleSection ? "mt-3" : ""}>
-                    <Link
-                      href={loginHref}
-                      className="inline-flex rounded-full border border-[color:var(--wsu-crimson)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)] hover:text-white"
-                    >
-                      Contributor sign in
-                    </Link>
+                {!embed && !contributorEmail && activeView.presentation?.hideHeader && (loginHref || printHref || contributorInstructionsHref) && (
+                  <div className={`${!activeView.presentation?.hideViewTitleSection ? "mt-3 " : ""}flex flex-wrap gap-2`}>
+                    {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
+                    {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
+                    {contributorInstructionsHref ? (
+                      <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow />
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -364,11 +379,7 @@ export default async function PublicViewPage({
                           key={option}
                           href={buildHref(slug, activeView.id, option, embed)}
                           aria-current={active ? "page" : undefined}
-                          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                            active
-                              ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-                              : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-                          }`}
+                          className={active ? "view-control-active px-3 py-1.5 text-sm font-medium" : "view-control px-3 py-1.5 text-sm font-medium"}
                         >
                           {formatLayoutLabel(option)}
                         </Link>
@@ -376,31 +387,8 @@ export default async function PublicViewPage({
                     })}
                   </nav>
                 )}
-                {!embed && (
-                  <Link
-                    href={`/view/${slug}/print?view=${activeView.id}`}
-                    className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-                  >
-                    Print / PDF
-                  </Link>
-                )}
               </div>
             </div>
-
-            {showContributorInstructions && (
-              <p className={embed ? "text-xs text-[color:var(--wsu-muted)]" : "text-sm text-[color:var(--wsu-muted)]"}>
-                <a
-                  href="/instructions/contributor"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Opens in a new window"
-                  className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2 hover:no-underline"
-                >
-                  Contributor instructions
-                </a>
-                {!embed && <span className="text-[color:var(--wsu-muted)]"> (opens in a new window)</span>}
-              </p>
-            )}
 
             <ToastProvider>
               <ViewWithSearchAndIndex
@@ -413,6 +401,8 @@ export default async function PublicViewPage({
                 editingConfig={editingConfig}
                 editableRowIds={editableRowIds}
                 contributorRowsFiltered={Boolean(contributorEmail && editableRowIds.length > 0)}
+                printHref={printHref ?? undefined}
+                contributorInstructionsHref={contributorInstructionsHref ?? undefined}
               />
             </ToastProvider>
           </section>

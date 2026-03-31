@@ -107,8 +107,7 @@ Below the main header, you can control the supporting context shown above the da
 - active view name
 - row count
 - last refresh time
-- contributor sign-in link
-- contributor instructions link
+- the contributor action stack, which groups `Contributor sign in`, `Print / PDF`, and `Contributor instructions`
 
 `Content Area` controls:
 
@@ -127,7 +126,8 @@ Use `Customize look & feel` after that to layer overrides on top of the preset.
 Customization controls include:
 
 - colors: page background, card background, accent color, primary text, muted text, borders, and badges
-- typography: body font, heading font, sizes, weights, and styles
+- colors for muted surfaces and controls: control background, control text, control border, hover background, active background, and active text
+- typography: body font, heading font, field label size/weight/spacing/transform, row heading size/weight, grouped people name weight, and body/heading styles
 - shape and shadow: border radius and card shadow
 
 Important behavior:
@@ -164,6 +164,7 @@ The Fields tab can also add grouped role fields from the source:
 - use `Add grouped role field` to append one `people_group` field backed by a source role group
 - grouped role fields render under one shared header instead of exposing every numbered Smartsheet column separately
 - if the linked source role group uses legacy delimited data, the field badge will tell you it is a delimited role group
+- grouped role fields now support `List display` so you can choose compact inline people cards or a taller stacked layout
 
 Use `Hide when empty` for optional fields that only apply to some rows so the page does not show empty labels.
 
@@ -255,6 +256,7 @@ Public views now include a print-friendly route. Use it when someone wants a pri
 - open the public view
 - choose the print action
 - review the print route output before saving to PDF
+- the print route now defaults to a horizontal table layout and keeps grouped people compact within each cell
 
 This is semantic HTML designed for browser print. It is not the same as a guaranteed tagged PDF / PDF-UA workflow.
 

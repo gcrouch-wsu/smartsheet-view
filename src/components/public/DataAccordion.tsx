@@ -9,7 +9,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -56,7 +56,7 @@ export function DataAccordion({
             >
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
-                  <p className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">
+                  <p className="view-row-heading text-[color:var(--wsu-ink)]">
                     {firstField ? describeResolvedField(firstField) : getRowHeadingText(view, row)}
                   </p>
                   {summaryField && (
@@ -68,7 +68,7 @@ export function DataAccordion({
                   {isEditable && (
                     <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
                   )}
-                  <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
+                  <span className="view-control px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] group-open:border-[color:var(--view-accent,var(--wsu-crimson))] group-open:text-[color:var(--view-accent,var(--wsu-crimson))]">
                     <span className="group-open:hidden">Expand</span>
                     <span className="hidden group-open:inline">Collapse</span>
                   </span>
@@ -122,7 +122,7 @@ export function DataAccordion({
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>
-                <p className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
+                <p className="view-row-heading text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
                 {summary && <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summary) || summary.label}</p>}
               </div>
               <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function DataAccordion({
                 {isEditable && (
                   <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
                 )}
-                <span className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)] group-open:border-[color:var(--wsu-crimson)] group-open:text-[color:var(--wsu-crimson)]">
+                <span className="view-control px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] group-open:border-[color:var(--view-accent,var(--wsu-crimson))] group-open:text-[color:var(--view-accent,var(--wsu-crimson))]">
                   <span className="group-open:hidden">Expand</span>
                   <span className="hidden group-open:inline">Collapse</span>
                 </span>
@@ -141,7 +141,7 @@ export function DataAccordion({
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div className="space-y-1">
                     {!heading.hideLabel && (
-                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
                     )}
                     <FieldValue field={heading} stacked />
                   </div>
@@ -149,7 +149,7 @@ export function DataAccordion({
                 {summary && (
                   <div className="space-y-1">
                     {!summary.hideLabel && (
-                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{summary.label}</p>
+                      <p className="view-field-label text-[color:var(--wsu-muted)]">{summary.label}</p>
                     )}
                     <FieldValue field={summary} stacked />
                   </div>

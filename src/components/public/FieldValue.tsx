@@ -4,6 +4,53 @@ function EmptyValue() {
   return <span className="text-[color:var(--wsu-border)]">-</span>;
 }
 
+function PersonSummary({
+  name,
+  email,
+  phone,
+  compact = false,
+}: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  compact?: boolean;
+}) {
+  const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
+
+  return (
+    <>
+      {name ? <span className={`view-people-name ${compact ? "" : "block"}`}>{name}</span> : null}
+      {email ? (
+        <a
+          href={`mailto:${email}`}
+          className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+        >
+          {email}
+        </a>
+      ) : null}
+      {phone ? (
+        compact ? (
+          <a
+            href={telHref}
+            className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+          >
+            {phone}
+          </a>
+        ) : (
+          <span className="mt-0.5 block">
+            <a
+              href={telHref}
+              className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+            >
+              {phone}
+            </a>
+          </span>
+        )
+      ) : null}
+    </>
+  );
+}
+
 function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
   if (field.links.length === 0) {
     return <EmptyValue />;
@@ -115,29 +162,33 @@ export function FieldValue({
   if (field.renderType === "people_group") {
     const populated = field.people?.filter((p) => !p.isEmpty) ?? [];
     if (populated.length > 0) {
+      const displayMode = field.listDisplay === "stacked" ? "stacked" : "inline";
+      if (displayMode === "inline") {
+        return (
+          <ul className="flex flex-wrap gap-3">
+            {populated.map((person) => (
+              <li
+                key={person.slot}
+                className="min-w-[14rem] max-w-full rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]"
+                style={{
+                  borderColor: "var(--view-control-border, var(--wsu-border))",
+                  backgroundColor: "color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 32%, white)",
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <PersonSummary name={person.name} email={person.email} phone={person.phone} compact />
+                </div>
+              </li>
+            ))}
+          </ul>
+        );
+      }
+
       return (
         <ul className="space-y-3">
           {populated.map((person) => (
             <li key={person.slot} className="leading-6 text-[color:var(--wsu-ink)]">
-              {person.name ? <span className="block font-medium">{person.name}</span> : null}
-              {person.email ? (
-                <a
-                  href={`mailto:${person.email}`}
-                  className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-                >
-                  {person.email}
-                </a>
-              ) : null}
-              {person.phone ? (
-                <span className="mt-0.5 block">
-                  <a
-                    href={`tel:${person.phone.replace(/[^\d+]/g, "")}`}
-                    className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-                  >
-                    {person.phone}
-                  </a>
-                </span>
-              ) : null}
+              <PersonSummary name={person.name} email={person.email} phone={person.phone} />
             </li>
           ))}
         </ul>

@@ -44,6 +44,8 @@ If your WSU email address is listed on the Smartsheet for that page, your accoun
 2. Select `Sign in`.
 3. Enter your WSU email address and contributor password.
 
+The page may also show `Print / PDF` and `Contributor instructions` as matching action buttons near the sign-in area.
+
 ## What You Can Edit
 
 You can edit only the row or rows tied to your email address, and only the fields your administrator made editable.
@@ -63,6 +65,7 @@ Some pages use grouped contact editing for repeated people such as coordinators,
 When a page uses grouped contacts:
 
 - you will see one block per person instead of one long text box
+- on many pages those person blocks appear in a compact horizontal layout to save space
 - use `Add person` to add another person
 - use `Remove` to remove one person
 - some groups also show `Clear everyone`

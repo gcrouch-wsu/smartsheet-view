@@ -54,6 +54,8 @@ export function ViewWithSearchAndIndex({
   editingConfig = null,
   editableRowIds = [],
   contributorRowsFiltered = false,
+  printHref,
+  contributorInstructionsHref,
 }: {
   view: ResolvedView;
   layout: LayoutType;
@@ -65,6 +67,8 @@ export function ViewWithSearchAndIndex({
   editableRowIds?: number[];
   /** When true, `view` is already limited to this contributor's editable rows. */
   contributorRowsFiltered?: boolean;
+  printHref?: string;
+  contributorInstructionsHref?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -156,7 +160,7 @@ export function ViewWithSearchAndIndex({
     <ContributorProvider value={contributorContextValue}>
       <div className="relative">
         {!embed && contributorEmail && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
+          <div className="view-surface-muted mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-medium text-[color:var(--wsu-ink)]">Editing as {contributorEmail}</span>
               <span>
@@ -166,19 +170,26 @@ export function ViewWithSearchAndIndex({
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <a
-                href="/instructions/contributor"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Opens contributor instructions in a new window"
-                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:border-[color:var(--wsu-crimson)] hover:underline"
-              >
-                Contributor instructions
-              </a>
+              {printHref ? (
+                <Link href={printHref} className="link-pill-muted px-3 py-1.5 text-sm">
+                  Print / PDF
+                </Link>
+              ) : null}
+              {contributorInstructionsHref ? (
+                <Link
+                  href={contributorInstructionsHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Opens contributor instructions in a new window"
+                  className="link-pill-muted px-3 py-1.5 text-sm"
+                >
+                  Contributor instructions
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => void handleSignOut()}
-                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                className="link-pill-muted px-3 py-1.5 text-sm"
               >
                 Sign out
               </button>
@@ -199,7 +210,7 @@ export function ViewWithSearchAndIndex({
                       ? "Search within your assigned rows..."
                       : "Search programs, names, emails..."
                   }
-                  className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-4 py-2.5 pl-10 text-sm text-[color:var(--wsu-ink)] placeholder:text-[color:var(--wsu-muted)] focus:border-[color:var(--wsu-crimson)] focus:outline-none focus:ring-2 focus:ring-[color:var(--wsu-crimson)]/20"
+                  className="view-input w-full rounded-xl px-4 py-2.5 pl-10 text-sm"
                   aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
                 />
                 <svg

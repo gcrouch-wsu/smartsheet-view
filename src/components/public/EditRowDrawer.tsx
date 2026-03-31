@@ -206,7 +206,7 @@ export function EditRowDrawer({
       : dividerStyle === "subtle"
         ? "border border-[color:var(--wsu-border)]/40"
         : "border border-[color:var(--wsu-border)]";
-  const labelClass = "font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]";
+  const labelClass = "view-field-label text-[color:var(--wsu-muted)]";
 
   if (!contributor || !open || !row) {
     return null;

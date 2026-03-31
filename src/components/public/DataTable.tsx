@@ -29,7 +29,7 @@ export function DataTable({
                 <th
                   key={field.key}
                   scope="col"
-                  className="font-view-heading px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
+                  className="view-field-label px-4 py-3 text-[color:var(--wsu-muted)]"
                 >
                   {field.label}
                 </th>
@@ -37,7 +37,7 @@ export function DataTable({
               {onEditRow && (
                 <th
                   scope="col"
-                  className="font-view-heading px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]"
+                  className="view-field-label px-4 py-3 text-right text-[color:var(--wsu-muted)]"
                 >
                   Actions
                 </th>

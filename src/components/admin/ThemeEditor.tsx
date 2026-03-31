@@ -5,7 +5,9 @@ import {
   FONT_SIZE_OPTIONS,
   FONT_STYLE_OPTIONS,
   FONT_WEIGHT_OPTIONS,
+  LETTER_SPACING_OPTIONS,
   SHADOW_OPTIONS,
+  TEXT_TRANSFORM_OPTIONS,
 } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import type { ViewConfig, ViewStyleConfig } from "@/lib/config/types";
@@ -19,10 +21,17 @@ interface ThemeEditorProps {
 const COLOR_LABELS: Record<string, string> = {
   backgroundColor: "Page background",
   cardBackground: "Card/panel background",
+  surfaceMutedBackground: "Muted surface background",
   accentColor: "Accent (links, buttons)",
   textColor: "Primary text",
   mutedColor: "Secondary/label text",
   borderColor: "Borders",
+  controlBackground: "Control background",
+  controlText: "Control text",
+  controlBorder: "Control border",
+  controlHoverBackground: "Control hover background",
+  controlActiveBackground: "Active control background",
+  controlActiveText: "Active control text",
   badgeBg: "Badge background",
   badgeText: "Badge text",
 };
@@ -68,6 +77,15 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
     view.style?.[token] ?? (currentPreset.tokens[token] as string) ?? "";
 
   const getFontWeightValue = (token: "fontWeight" | "headingFontWeight") => {
+    const v = getValue(token);
+    if (v === "normal") return "400";
+    if (v === "bold") return "700";
+    return v || "400";
+  };
+
+  const getNumericFontWeightValue = (
+    token: "fontWeight" | "headingFontWeight" | "fieldLabelFontWeight" | "rowHeadingFontWeight" | "peopleNameFontWeight",
+  ) => {
     const v = getValue(token);
     if (v === "normal") return "400";
     if (v === "bold") return "700";
@@ -227,6 +245,30 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   </select>
                 </div>
                 <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label size</label>
+                  <select
+                    value={getValue("fieldLabelFontSize")}
+                    onChange={(e) => updateStyle("fieldLabelFontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading size</label>
+                  <select
+                    value={getValue("rowHeadingFontSize")}
+                    onChange={(e) => updateStyle("rowHeadingFontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body weight</label>
                   <select
                     value={getFontWeightValue("fontWeight")}
@@ -243,6 +285,42 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   <select
                     value={getFontWeightValue("headingFontWeight")}
                     onChange={(e) => updateStyle("headingFontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label weight</label>
+                  <select
+                    value={getNumericFontWeightValue("fieldLabelFontWeight")}
+                    onChange={(e) => updateStyle("fieldLabelFontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading weight</label>
+                  <select
+                    value={getNumericFontWeightValue("rowHeadingFontWeight")}
+                    onChange={(e) => updateStyle("rowHeadingFontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Grouped people name weight</label>
+                  <select
+                    value={getNumericFontWeightValue("peopleNameFontWeight")}
+                    onChange={(e) => updateStyle("peopleNameFontWeight", e.target.value)}
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
                     {FONT_WEIGHT_OPTIONS.map((opt) => (
@@ -270,6 +348,30 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
                     {FONT_STYLE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label spacing</label>
+                  <select
+                    value={getValue("fieldLabelLetterSpacing")}
+                    onChange={(e) => updateStyle("fieldLabelLetterSpacing", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {LETTER_SPACING_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label transform</label>
+                  <select
+                    value={getValue("fieldLabelTextTransform")}
+                    onChange={(e) => updateStyle("fieldLabelTextTransform", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {TEXT_TRANSFORM_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>

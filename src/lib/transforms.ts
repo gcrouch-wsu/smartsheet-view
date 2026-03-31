@@ -620,6 +620,6 @@ export function buildResolvedPeopleGroupField(
     hideWhenEmpty: field.emptyBehavior === "hide",
     hideLabel: field.hideLabel,
     listDelimiter: field.render.listDelimiter,
-    listDisplay: field.render.listDisplay,
+    listDisplay: field.render.listDisplay ?? "inline",
   };
 }

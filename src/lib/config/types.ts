@@ -197,24 +197,45 @@ export interface ViewPresentationConfig {
 export interface ViewStyleConfig {
   backgroundColor?: string;
   cardBackground?: string;
+  surfaceMutedBackground?: string;
   accentColor?: string;
   textColor?: string;
   mutedColor?: string;
   borderColor?: string;
+  controlBackground?: string;
+  controlText?: string;
+  controlBorder?: string;
+  controlHoverBackground?: string;
+  controlActiveBackground?: string;
+  controlActiveText?: string;
   fontFamily?: string;
   headingFontFamily?: string;
   /** Body text size (e.g. 1rem, 12pt). */
   fontSize?: string;
   /** Heading text size (e.g. 1.25rem). */
   headingFontSize?: string;
+  /** Field label size (e.g. 0.75rem). */
+  fieldLabelFontSize?: string;
+  /** Card/list row heading size (e.g. 1.125rem). */
+  rowHeadingFontSize?: string;
   /** Body font weight (e.g. normal, bold). */
   fontWeight?: string;
   /** Heading font weight (e.g. normal, bold). */
   headingFontWeight?: string;
+  /** Field label font weight (e.g. 500, 600). */
+  fieldLabelFontWeight?: string;
+  /** Card/list row heading font weight (e.g. 600). */
+  rowHeadingFontWeight?: string;
+  /** Name weight inside grouped people fields. */
+  peopleNameFontWeight?: string;
   /** Body font style (e.g. normal, italic). */
   fontStyle?: string;
   /** Heading font style (e.g. normal, italic). */
   headingFontStyle?: string;
+  /** Field label tracking/letter spacing (e.g. 0.12em). */
+  fieldLabelLetterSpacing?: string;
+  /** Field label text transform (e.g. uppercase, none). */
+  fieldLabelTextTransform?: string;
   borderRadius?: string;
   cardShadow?: string;
   badgeBg?: string;

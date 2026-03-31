@@ -12,7 +12,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -81,13 +81,7 @@ export function DataTabbed({
               aria-controls={detailPanelId}
               tabIndex={active ? 0 : -1}
               onClick={() => setActiveRowId(row.id)}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                active
-                  ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-                  : isEditable
-                    ? "border-[color:var(--wsu-crimson)]/40 bg-white text-[color:var(--wsu-crimson)] hover:border-[color:var(--wsu-crimson)]"
-                    : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-              }`}
+              className={active ? "view-control-active px-4 py-2 text-sm font-medium" : isEditable ? "view-control-primary px-4 py-2 text-sm font-medium" : "view-control px-4 py-2 text-sm font-medium"}
             >
               {label}
             </button>
@@ -107,8 +101,8 @@ export function DataTabbed({
         <div className="border-b border-[color:var(--wsu-border)] pb-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">Selected record</p>
-              <h3 className="font-view-heading mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">
+              <p className="view-field-label text-[color:var(--wsu-muted)]">Selected record</p>
+              <h3 className="view-row-heading mt-2 text-[color:var(--wsu-ink)]">
                 {getRowHeadingText(view, activeRow)}
               </h3>
               {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}
@@ -158,7 +152,7 @@ export function DataTabbed({
             {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
               <div className="space-y-1">
                 {!heading.hideLabel && (
-                  <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--wsu-muted)]">{heading.label}</p>
+                  <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
                 )}
                 <FieldValue field={heading} stacked />
               </div>

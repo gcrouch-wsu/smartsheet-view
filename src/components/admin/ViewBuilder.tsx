@@ -497,7 +497,7 @@ export function ViewBuilder({
           label: rg.defaultDisplayLabel ?? rg.label,
           source: { kind: "role_group", roleGroupId },
           transforms: [],
-          render: { type: "people_group" },
+          render: { type: "people_group", listDisplay: "inline" },
         },
       ],
     }));
@@ -1908,7 +1908,7 @@ export function ViewBuilder({
                             label: rg?.defaultDisplayLabel ?? rg?.label ?? field.label,
                             source: { kind: "role_group", roleGroupId: id },
                             transforms: [],
-                            render: { ...field.render, type: "people_group" },
+                            render: { ...field.render, type: "people_group", listDisplay: field.render.listDisplay ?? "inline" },
                           });
                         }}
                         className="max-w-md rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium"
@@ -1941,21 +1941,21 @@ export function ViewBuilder({
                         </select>
                       )}
                     </label>
-                    {(["list", "mailto_list", "phone_list"].includes(field.render.type) ||
+                    {(["list", "mailto_list", "phone_list", "people_group"].includes(field.render.type) ||
                       (field.render.type === "text" && field.transforms?.some((t) => t.op === "split"))) && (
                       <>
                         <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                           <span>List display</span>
                           <select
-                            value={field.render.listDisplay ?? "stacked"}
+                            value={field.render.listDisplay ?? (field.render.type === "people_group" ? "inline" : "stacked")}
                             onChange={(e) => updateField(index, { ...field, render: { ...field.render, listDisplay: (e.target.value || undefined) as "inline" | "stacked" | undefined } })}
                             className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
                           >
-                            <option value="stacked">Stacked (each on own row)</option>
-                            <option value="inline">Inline (delimiter between)</option>
+                            <option value="stacked">{field.render.type === "people_group" ? "Stacked (one person per block)" : "Stacked (each on own row)"}</option>
+                            <option value="inline">{field.render.type === "people_group" ? "Inline cards (wrap across row)" : "Inline (delimiter between)"}</option>
                           </select>
                         </label>
-                        {field.render.listDisplay === "inline" && (
+                        {field.render.listDisplay === "inline" && field.render.type !== "people_group" && (
                           <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                             <span>Delimiter</span>
                             <input
