@@ -38,6 +38,8 @@ export const BUILT_IN_THEMES: ThemeConfig[] = [
       cardShadow: "0 16px 40px rgba(35,31,32,0.06)",
       badgeBg: "#f3f4f6",
       badgeText: "#374151",
+      pageTitleFontSize: "2.25rem",
+      actionFontSize: "0.875rem",
     },
   },
   {
@@ -77,6 +79,8 @@ export const BUILT_IN_THEMES: ThemeConfig[] = [
       cardShadow: "0 1px 3px rgba(0,0,0,0.08)",
       badgeBg: "#eff6ff",
       badgeText: "#1e40af",
+      pageTitleFontSize: "2.25rem",
+      actionFontSize: "0.875rem",
     },
   },
   {
@@ -116,6 +120,8 @@ export const BUILT_IN_THEMES: ThemeConfig[] = [
       cardShadow: "0 4px 6px rgba(0,0,0,0.3)",
       badgeBg: "#4b5563",
       badgeText: "#e5e7eb",
+      pageTitleFontSize: "2.25rem",
+      actionFontSize: "0.875rem",
     },
   },
 ];

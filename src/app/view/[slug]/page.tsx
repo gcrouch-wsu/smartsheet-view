@@ -72,7 +72,7 @@ function PublicActionLink({
       rel={newWindow ? "noopener noreferrer" : undefined}
       title={newWindow ? `${label} (opens in a new window)` : undefined}
       className={`${primary ? "link-pill" : "link-pill-muted"} justify-center`}
-      style={compact ? { padding: "0.5rem 0.875rem", fontSize: "0.95rem" } : undefined}
+      style={compact ? { padding: "0.5rem 0.875rem" } : undefined}
     >
       {label}
     </Link>
@@ -245,7 +245,7 @@ export default async function PublicViewPage({
                       </p>
                     )}
                     {!activeView.presentation?.hideHeaderPageTitle && (
-                      <h1 className="font-view-heading mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
+                      <h1 className="view-page-title mt-2 tracking-tight text-[color:var(--wsu-ink)]">
                         {page.title}
                       </h1>
                     )}
@@ -309,7 +309,7 @@ export default async function PublicViewPage({
                           <div>
                             {!activeView.presentation?.hideHeaderActiveView && !showViewTabs && (
                               <p>
-                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                                <span className="font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
                               </p>
                             )}
                             {!activeView.presentation?.hideHeaderRows && (
@@ -333,7 +333,7 @@ export default async function PublicViewPage({
                                     : ""
                                 }
                               >
-                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
+                                <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
                                 {formatTimestamp(page.fetchedAt)}
                               </p>
                             )}
@@ -387,7 +387,7 @@ export default async function PublicViewPage({
                 {!activeView.presentation?.hideViewTitleSection &&
                   (activeView.label !== page.title || activeView.description) && (
                   <>
-                    <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+                    <h2 className="view-section-title text-[color:var(--wsu-ink)]">{activeView.label}</h2>
                     {activeView.description && (
                       <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
                     )}

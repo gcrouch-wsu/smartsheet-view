@@ -100,7 +100,7 @@ export function PrintViewDocument({
 
         <header className="mb-8 border-b border-[color:var(--wsu-border)] pb-6">
           <p className="view-field-label text-[color:var(--wsu-crimson)]">{sourceLabel}</p>
-          <h1 className="font-view-heading mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
+          <h1 className="view-page-title mt-2 tracking-tight text-[color:var(--wsu-ink)]">
             {pageTitle}
           </h1>
           {(view.label !== pageTitle || view.description) && (

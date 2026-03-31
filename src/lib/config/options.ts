@@ -22,6 +22,10 @@ export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
   { value: "1.125rem", label: "Extra large (18px)" },
   { value: "1.25rem", label: "2XL (20px)" },
   { value: "1.5rem", label: "3XL (24px)" },
+  { value: "1.75rem", label: "4XL (28px)" },
+  { value: "2rem", label: "5XL (32px)" },
+  { value: "2.25rem", label: "6XL (36px)" },
+  { value: "2.5rem", label: "7XL (40px)" },
 ];
 
 export const LETTER_SPACING_OPTIONS: { value: string; label: string }[] = [

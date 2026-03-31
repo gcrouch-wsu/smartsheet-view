@@ -251,6 +251,30 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   </select>
                 </div>
                 <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Page title size</label>
+                  <select
+                    value={getValue("pageTitleFontSize")}
+                    onChange={(e) => updateStyle("pageTitleFontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Action button size</label>
+                  <select
+                    value={getValue("actionFontSize")}
+                    onChange={(e) => updateStyle("actionFontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label size</label>
                   <select
                     value={getValue("fieldLabelFontSize")}

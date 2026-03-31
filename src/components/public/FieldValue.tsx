@@ -162,7 +162,7 @@ export function FieldValue({
   if (field.renderType === "people_group") {
     const populated = field.people?.filter((p) => !p.isEmpty) ?? [];
     if (populated.length > 0) {
-      const displayMode = stacked || field.listDisplay === "stacked" ? "stacked" : "inline";
+      const displayMode = field.listDisplay === "stacked" ? "stacked" : "inline";
       const peopleStyle = field.peopleStyle === "capsule" ? "capsule" : "plain";
       if (displayMode === "inline") {
         return (

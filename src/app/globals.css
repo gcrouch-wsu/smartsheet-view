@@ -98,6 +98,7 @@ a {
   border: 1px solid var(--view-control-border, var(--wsu-border));
   background: var(--view-control-bg, #ffffff);
   color: var(--view-control-text, var(--wsu-muted));
+  font-size: var(--view-action-font-size, inherit);
   font-weight: 600;
   box-shadow: 0 1px 0 rgba(35, 31, 32, 0.02);
   transition:
@@ -157,9 +158,25 @@ a {
 /* Theme font overrides (set by ViewStyleWrapper) */
 .font-view-heading {
   font-family: var(--view-heading-font, inherit);
-  font-size: var(--view-heading-font-size, inherit);
   font-weight: var(--view-heading-font-weight, inherit);
   font-style: var(--view-heading-font-style, inherit);
+}
+
+/* Page-level title (h1) — separate variable so headingFontSize doesn't override it */
+.view-page-title {
+  font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-page-title-font-size, 2.25rem);
+  font-weight: var(--view-heading-font-weight, 600);
+  font-style: var(--view-heading-font-style, normal);
+  line-height: 1.15;
+}
+
+/* Section-level title (h2 view label) */
+.view-section-title {
+  font-family: var(--view-heading-font, inherit);
+  font-size: 1.5rem;
+  font-weight: var(--view-heading-font-weight, 600);
+  font-style: var(--view-heading-font-style, normal);
 }
 
 .view-field-label {

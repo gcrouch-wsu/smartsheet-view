@@ -97,7 +97,7 @@ export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): Car
 
   return layout
     .map((layoutRow) =>
-      layoutRow.fieldKeys.map((key): CardLayoutCell | null => {
+      layoutRow.fieldKeys.map((key): CardLayoutCell => {
         if (key === CARD_LAYOUT_PLACEHOLDER) {
           return { type: "placeholder" };
         }
@@ -108,8 +108,9 @@ export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): Car
         if (field && fieldCanRender(field)) {
           return { type: "field", field };
         }
-        return null;
-      }).filter((c): c is CardLayoutCell => c != null)
+        // Field absent or hidden: keep a placeholder so column positions stay aligned
+        return { type: "placeholder" };
+      })
     )
     .filter((cells) => cells.some((c) => c.type === "field" || c.type === "text"));
 }

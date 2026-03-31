@@ -245,6 +245,10 @@ export interface ViewStyleConfig {
   cardShadow?: string;
   badgeBg?: string;
   badgeText?: string;
+  /** Page-level h1 font size (e.g. 2.25rem). */
+  pageTitleFontSize?: string;
+  /** Font size for action link buttons (Contributor sign in, Print/PDF, etc.). */
+  actionFontSize?: string;
   /** @deprecated Use accentColor. Kept for backward compatibility. */
   primaryColor?: string;
 }

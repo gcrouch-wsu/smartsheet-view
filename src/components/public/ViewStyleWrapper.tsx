@@ -35,6 +35,8 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   cardShadow: "--view-card-shadow",
   badgeBg: "--view-badge-bg",
   badgeText: "--view-badge-text",
+  pageTitleFontSize: "--view-page-title-font-size",
+  actionFontSize: "--view-action-font-size",
   primaryColor: "--view-accent",
 };
 
