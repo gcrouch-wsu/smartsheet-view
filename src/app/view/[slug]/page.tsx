@@ -57,11 +57,13 @@ function PublicActionLink({
   label,
   primary = false,
   newWindow = false,
+  compact = false,
 }: {
   href: string;
   label: string;
   primary?: boolean;
   newWindow?: boolean;
+  compact?: boolean;
 }) {
   return (
     <Link
@@ -70,6 +72,7 @@ function PublicActionLink({
       rel={newWindow ? "noopener noreferrer" : undefined}
       title={newWindow ? `${label} (opens in a new window)` : undefined}
       className={`${primary ? "link-pill" : "link-pill-muted"} justify-center`}
+      style={compact ? { padding: "0.5rem 0.875rem", fontSize: "0.95rem" } : undefined}
     >
       {label}
     </Link>
@@ -98,9 +101,11 @@ export default async function PublicViewPage({
           <p className="text-sm text-[color:var(--wsu-muted)]">
             We encountered a problem loading this data view. This usually happens if the Smartsheet source is unavailable or the configuration is incomplete.
           </p>
-          <div className="max-h-32 overflow-auto rounded bg-gray-50 p-2 text-left font-mono text-[10px]">
-            {error instanceof Error ? error.message : String(error)}
-          </div>
+          {process.env.NODE_ENV !== "production" && (
+            <div className="max-h-32 overflow-auto rounded bg-gray-50 p-2 text-left font-mono text-[10px]">
+              {error instanceof Error ? error.message : String(error)}
+            </div>
+          )}
           <Link
             href="/"
             className="btn-crimson inline-block rounded-full bg-[color:var(--wsu-crimson)] px-6 py-2 text-sm font-medium"
@@ -143,6 +148,7 @@ export default async function PublicViewPage({
   const tokens = mergeThemeTokens(activeView.themePresetId ?? "wsu_crimson", activeView.style);
   const mainStyle = !embed && tokens.backgroundColor ? { backgroundColor: tokens.backgroundColor } : undefined;
 
+  const showViewTabs = !activeView.presentation?.hideViewTabs && page.resolvedViews.length > 1;
   const contributorConfigurationError = getContributorConfigurationError();
   const editingEnabled = !embed && activeViewConfig.editing?.enabled && !contributorConfigurationError;
   const showContributorLoginLink = editingEnabled && activeViewConfig.editing?.showLoginLink !== false;
@@ -194,6 +200,7 @@ export default async function PublicViewPage({
     const rows = activeView.rows.filter((row) => editableSet.has(row.id));
     viewForDisplay = { ...activeView, rows, rowCount: rows.length };
   }
+  const contributorRowsFiltered = Boolean(contributorEmail && editableRowIds.length > 0);
 
   return (
     <main className={mainClassName} style={mainStyle}>
@@ -209,6 +216,7 @@ export default async function PublicViewPage({
       <div className={containerClassName}>
         <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           {!embed && !activeView.presentation?.hideHeader && (
+            <div>
             <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
               <div className="flex flex-wrap items-start justify-between gap-6">
                 <div className="min-w-0 flex-1 space-y-3">
@@ -217,7 +225,7 @@ export default async function PublicViewPage({
                     (contributorEmail ? (
                       <p className="text-sm text-[color:var(--wsu-muted)]">
                         <Link href="/" className="link-inline">
-                          Published views home
+                          All views
                         </Link>
                         <span className="mt-1 block text-xs text-[color:var(--wsu-muted)]">
                           Use <strong className="font-medium text-[color:var(--wsu-ink)]">Sign out</strong> below to
@@ -227,7 +235,7 @@ export default async function PublicViewPage({
                       </p>
                     ) : (
                       <Link href="/" className="link-inline-muted">
-                        Back to configured pages
+                        All views
                       </Link>
                     ))}
                   <div>
@@ -299,7 +307,7 @@ export default async function PublicViewPage({
                           !activeView.presentation?.hideHeaderRows ||
                           !activeView.presentation?.hideHeaderRefreshed) && (
                           <div>
-                            {!activeView.presentation?.hideHeaderActiveView && (
+                            {!activeView.presentation?.hideHeaderActiveView && !showViewTabs && (
                               <p>
                                 <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
                               </p>
@@ -342,15 +350,12 @@ export default async function PublicViewPage({
                       {!contributorEmail && (loginHref || printHref || contributorInstructionsHref) ? (
                         <div className={`${(!activeView.presentation?.hideHeaderInfoBox || layoutSwitcher) ? "mt-4 border-t border-[color:var(--wsu-border)]/60 pt-4" : ""}`}>
                           <div className="flex flex-col gap-2">
-                            {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
-                            {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
+                            {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary compact /> : null}
+                            {printHref ? <PublicActionLink href={printHref} label="Print / PDF" compact /> : null}
                             {contributorInstructionsHref ? (
-                              <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow />
+                              <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow compact />
                             ) : null}
                           </div>
-                          {contributorInstructionsHref ? (
-                            <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">Contributor instructions open in a new window.</p>
-                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -358,10 +363,11 @@ export default async function PublicViewPage({
                 )}
               </div>
             </header>
+            </div>
           )}
 
           <section id="main-view-content" className={embed ? "space-y-3 scroll-mt-4" : "space-y-4 scroll-mt-4"}>
-            {!activeView.presentation?.hideViewTabs && (
+            {showViewTabs && (
               <ViewTabs
                 slug={slug}
                 views={page.resolvedViews.map((view) => ({
@@ -378,7 +384,8 @@ export default async function PublicViewPage({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                {!activeView.presentation?.hideViewTitleSection && (
+                {!activeView.presentation?.hideViewTitleSection &&
+                  (activeView.label !== page.title || activeView.description) && (
                   <>
                     <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{activeView.label}</h2>
                     {activeView.description && (

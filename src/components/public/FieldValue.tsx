@@ -162,15 +162,21 @@ export function FieldValue({
   if (field.renderType === "people_group") {
     const populated = field.people?.filter((p) => !p.isEmpty) ?? [];
     if (populated.length > 0) {
-      const displayMode = field.listDisplay === "stacked" ? "stacked" : "inline";
+      const displayMode = stacked || field.listDisplay === "stacked" ? "stacked" : "inline";
       const peopleStyle = field.peopleStyle === "capsule" ? "capsule" : "plain";
       if (displayMode === "inline") {
         return (
-          <ul className={peopleStyle === "capsule" ? "flex flex-wrap gap-3" : "flex flex-wrap gap-x-6 gap-y-2"}>
+          <ul
+            className={peopleStyle === "capsule" ? "grid gap-3" : "grid gap-x-6 gap-y-3"}
+            style={{
+              gridTemplateColumns:
+                populated.length > 1 ? "repeat(auto-fit, minmax(11rem, 1fr))" : "minmax(0, 1fr)",
+            }}
+          >
             {populated.map((person) => (
               <li
                 key={person.slot}
-                className={peopleStyle === "capsule" ? "min-w-[14rem] max-w-full rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]" : "leading-6 text-[color:var(--wsu-ink)]"}
+                className={peopleStyle === "capsule" ? "min-w-0 rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]" : "min-w-0 leading-6 text-[color:var(--wsu-ink)]"}
                 style={
                   peopleStyle === "capsule"
                     ? {
@@ -180,8 +186,8 @@ export function FieldValue({
                     : undefined
                 }
               >
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <PersonSummary name={person.name} email={person.email} phone={person.phone} compact />
+                <div className="min-w-0">
+                  <PersonSummary name={person.name} email={person.email} phone={person.phone} />
                 </div>
               </li>
             ))}

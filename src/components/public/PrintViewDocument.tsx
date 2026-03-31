@@ -21,6 +21,9 @@ const PRINT_STYLES = `
       page-break-inside: avoid;
       vertical-align: top;
     }
+    .print-table th {
+      letter-spacing: 0.1em;
+    }
     a:link,
     a:visited {
       color: inherit;
@@ -100,10 +103,12 @@ export function PrintViewDocument({
           <h1 className="font-view-heading mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
             {pageTitle}
           </h1>
-          <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
-            <span className="font-medium text-[color:var(--wsu-ink)]">{view.label}</span>
-            {view.description ? ` - ${view.description}` : null}
-          </p>
+          {(view.label !== pageTitle || view.description) && (
+            <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+              <span className="font-medium text-[color:var(--wsu-ink)]">{view.label}</span>
+              {view.description ? ` - ${view.description}` : null}
+            </p>
+          )}
           <p className="mt-3 text-sm text-[color:var(--wsu-muted)]">
             Data from <span className="font-medium text-[color:var(--wsu-ink)]">{sourceName}</span>. Refreshed{" "}
             <time dateTime={fetchedAt}>{refreshed}</time>.
@@ -119,7 +124,7 @@ export function PrintViewDocument({
               <thead>
                 <tr className="view-surface-muted border-b border-[color:var(--wsu-border)]">
                   {columns.map((column) => (
-                    <th key={column.key} scope="col" className="view-field-label px-4 py-3 text-[color:var(--wsu-muted)]">
+                    <th key={column.key} scope="col" className="view-field-label min-w-[9rem] px-4 py-3 text-[color:var(--wsu-muted)]">
                       {column.label}
                     </th>
                   ))}

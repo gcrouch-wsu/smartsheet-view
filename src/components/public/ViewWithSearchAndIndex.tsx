@@ -198,42 +198,52 @@ export function ViewWithSearchAndIndex({
         )}
 
         {showSearchAndIndex && (
-          <>
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-md">
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={
-                    contributorRowsFiltered
-                      ? "Search within your assigned rows..."
-                      : "Search programs, names, emails..."
-                  }
-                  className="view-input w-full rounded-xl px-4 py-2.5 pl-10 text-sm"
-                  aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
-                />
-                <svg
-                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--wsu-muted)]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
-                {contributorRowsFiltered
-                  ? `${filteredView.rowCount} of ${view.rowCount} your rows`
-                  : `${filteredView.rowCount} of ${view.rowCount} results`}
-              </span>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  contributorRowsFiltered
+                    ? "Search within your assigned rows..."
+                    : "Search programs, names, emails..."
+                }
+                className="view-input w-full rounded-xl px-4 py-2.5 pl-10 text-sm"
+                aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
+              />
+              <svg
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--wsu-muted)]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
+            <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
+              {contributorRowsFiltered
+                ? `${filteredView.rowCount} of ${view.rowCount} your rows`
+                : `${filteredView.rowCount} of ${view.rowCount} rows`}
+            </span>
+          </div>
+        )}
 
-            {showAlphabetIndex ? (
+        <div className={showSearchAndIndex && showAlphabetIndex ? "flex items-start gap-3" : ""}>
+          <div className="min-w-0 flex-1">
+            <PublicViewRenderer
+              layout={layout}
+              view={filteredView}
+              editableRowIds={editableRowIdSet}
+              onEditRow={canOpenContributorEditor(embed, contributorEmail, editingConfig) ? handleEditRow : undefined}
+            />
+          </div>
+
+          {showSearchAndIndex && showAlphabetIndex && (
             <nav
               aria-label="Alphabetical index"
-              className="fixed right-4 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]/95 px-1.5 py-2 shadow-lg backdrop-blur-sm"
+              className="sticky top-6 shrink-0 flex flex-col gap-0.5 rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]/95 px-1.5 py-2 shadow-lg backdrop-blur-sm"
             >
               {["#", ...ALPHABET].map((letter) => {
                 const hasEntries = activeLetters.has(letter);
@@ -261,17 +271,7 @@ export function ViewWithSearchAndIndex({
                 );
               })}
             </nav>
-            ) : null}
-          </>
-        )}
-
-        <div className={showSearchAndIndex && showAlphabetIndex ? "pr-12" : ""}>
-          <PublicViewRenderer
-            layout={layout}
-            view={filteredView}
-            editableRowIds={editableRowIdSet}
-            onEditRow={canOpenContributorEditor(embed, contributorEmail, editingConfig) ? handleEditRow : undefined}
-          />
+          )}
         </div>
 
         <EditRowDrawer
