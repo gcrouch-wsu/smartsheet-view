@@ -21,7 +21,7 @@ export const BUILT_IN_THEMES: ThemeConfig[] = [
       fontFamily: "system-ui, sans-serif",
       headingFontFamily: "system-ui, sans-serif",
       fontSize: "1rem",
-      headingFontSize: "1.25rem",
+      headingFontSize: "1.5rem",
       fieldLabelFontSize: "0.75rem",
       rowHeadingFontSize: "1.125rem",
       fontWeight: "normal",

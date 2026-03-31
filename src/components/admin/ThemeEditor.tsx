@@ -201,223 +201,162 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
             </Section>
 
             <Section title="Typography">
-              <div className="space-y-4">
+              <div className="space-y-5">
+
+                {/* ── Families ── */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body font</label>
-                  <select
-                    value={getValue("fontFamily")}
-                    onChange={(e) => updateStyle("fontFamily", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Families</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body font</label>
+                      <select value={getValue("fontFamily")} onChange={(e) => updateStyle("fontFamily", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">All body text, cell values, descriptions</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading font</label>
+                      <select value={getValue("headingFontFamily")} onChange={(e) => updateStyle("headingFontFamily", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Page title, section title, row headings, field labels, brand strip</p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* ── Sizes ── */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading font</label>
-                  <select
-                    value={getValue("headingFontFamily")}
-                    onChange={(e) => updateStyle("headingFontFamily", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Sizes</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body size</label>
+                      <select value={getValue("fontSize")} onChange={(e) => updateStyle("fontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">All body text and cell values</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Page title size</label>
+                      <select value={getValue("pageTitleFontSize")} onChange={(e) => updateStyle("pageTitleFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Main page h1 (e.g. "Graduate Program Contact List")</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Section title size</label>
+                      <select value={getValue("headingFontSize")} onChange={(e) => updateStyle("headingFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">View label h2 below tabs (e.g. "Faculty")</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading size</label>
+                      <select value={getValue("rowHeadingFontSize")} onChange={(e) => updateStyle("rowHeadingFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Card, list, accordion, and table row titles</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label size</label>
+                      <select value={getValue("fieldLabelFontSize")} onChange={(e) => updateStyle("fieldLabelFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Column headers and field labels in cards/lists</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Action button size</label>
+                      <select value={getValue("actionFontSize")} onChange={(e) => updateStyle("actionFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Contributor sign in, Print/PDF, layout switcher pills</p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* ── Weights ── */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body size</label>
-                  <select
-                    value={getValue("fontSize")}
-                    onChange={(e) => updateStyle("fontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Weights</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body weight</label>
+                      <select value={getFontWeightValue("fontWeight")} onChange={(e) => updateStyle("fontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">All body text</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading weight</label>
+                      <select value={getFontWeightValue("headingFontWeight")} onChange={(e) => updateStyle("headingFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Page title, section title, brand strip (not row headings)</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading weight</label>
+                      <select value={getNumericFontWeightValue("rowHeadingFontWeight")} onChange={(e) => updateStyle("rowHeadingFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Card, list, accordion, and table row titles</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label weight</label>
+                      <select value={getNumericFontWeightValue("fieldLabelFontWeight")} onChange={(e) => updateStyle("fieldLabelFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Column headers and field labels in cards/lists</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">People name weight</label>
+                      <select value={getNumericFontWeightValue("peopleNameFontWeight")} onChange={(e) => updateStyle("peopleNameFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Name line in grouped people fields (people_group)</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">People contact weight</label>
+                      <select value={getNumericFontWeightValue("peopleDetailFontWeight")} onChange={(e) => updateStyle("peopleDetailFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Email and phone lines in grouped people fields</p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* ── Style & case ── */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading size</label>
-                  <select
-                    value={getValue("headingFontSize")}
-                    onChange={(e) => updateStyle("headingFontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Style & case</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body style</label>
+                      <select value={getValue("fontStyle")} onChange={(e) => updateStyle("fontStyle", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_STYLE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Normal or italic on all body text</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading style</label>
+                      <select value={getValue("headingFontStyle")} onChange={(e) => updateStyle("headingFontStyle", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {FONT_STYLE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Normal or italic on page title, section title, row headings</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label spacing</label>
+                      <select value={getValue("fieldLabelLetterSpacing")} onChange={(e) => updateStyle("fieldLabelLetterSpacing", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {LETTER_SPACING_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Letter spacing on column headers and card field labels</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label case</label>
+                      <select value={getValue("fieldLabelTextTransform")} onChange={(e) => updateStyle("fieldLabelTextTransform", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
+                        {TEXT_TRANSFORM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Uppercase, capitalize, or none on column headers and labels</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Page title size</label>
-                  <select
-                    value={getValue("pageTitleFontSize")}
-                    onChange={(e) => updateStyle("pageTitleFontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Action button size</label>
-                  <select
-                    value={getValue("actionFontSize")}
-                    onChange={(e) => updateStyle("actionFontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label size</label>
-                  <select
-                    value={getValue("fieldLabelFontSize")}
-                    onChange={(e) => updateStyle("fieldLabelFontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading size</label>
-                  <select
-                    value={getValue("rowHeadingFontSize")}
-                    onChange={(e) => updateStyle("rowHeadingFontSize", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_SIZE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body weight</label>
-                  <select
-                    value={getFontWeightValue("fontWeight")}
-                    onChange={(e) => updateStyle("fontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading weight</label>
-                  <select
-                    value={getFontWeightValue("headingFontWeight")}
-                    onChange={(e) => updateStyle("headingFontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label weight</label>
-                  <select
-                    value={getNumericFontWeightValue("fieldLabelFontWeight")}
-                    onChange={(e) => updateStyle("fieldLabelFontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading weight</label>
-                  <select
-                    value={getNumericFontWeightValue("rowHeadingFontWeight")}
-                    onChange={(e) => updateStyle("rowHeadingFontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Grouped people name weight</label>
-                  <select
-                    value={getNumericFontWeightValue("peopleNameFontWeight")}
-                    onChange={(e) => updateStyle("peopleNameFontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Grouped people email/phone weight</label>
-                  <select
-                    value={getNumericFontWeightValue("peopleDetailFontWeight")}
-                    onChange={(e) => updateStyle("peopleDetailFontWeight", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_WEIGHT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Body style</label>
-                  <select
-                    value={getValue("fontStyle")}
-                    onChange={(e) => updateStyle("fontStyle", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_STYLE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Heading style</label>
-                  <select
-                    value={getValue("headingFontStyle")}
-                    onChange={(e) => updateStyle("headingFontStyle", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {FONT_STYLE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label spacing</label>
-                  <select
-                    value={getValue("fieldLabelLetterSpacing")}
-                    onChange={(e) => updateStyle("fieldLabelLetterSpacing", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {LETTER_SPACING_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Field label transform</label>
-                  <select
-                    value={getValue("fieldLabelTextTransform")}
-                    onChange={(e) => updateStyle("fieldLabelTextTransform", e.target.value)}
-                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                  >
-                    {TEXT_TRANSFORM_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
+
               </div>
             </Section>
 

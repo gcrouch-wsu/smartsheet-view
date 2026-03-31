@@ -171,10 +171,10 @@ a {
   line-height: 1.15;
 }
 
-/* Section-level title (h2 view label) */
+/* Section-level title (h2 view label below tabs) */
 .view-section-title {
   font-family: var(--view-heading-font, inherit);
-  font-size: 1.5rem;
+  font-size: var(--view-heading-font-size, 1.5rem);
   font-weight: var(--view-heading-font-weight, 600);
   font-style: var(--view-heading-font-style, normal);
 }
