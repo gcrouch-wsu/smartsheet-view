@@ -99,6 +99,7 @@ export interface TransformConfig {
 }
 
 export type ListDisplayMode = "inline" | "stacked";
+export type PeopleGroupStyle = "plain" | "capsule";
 
 export interface ViewFieldRender {
   type: RenderType;
@@ -107,6 +108,8 @@ export interface ViewFieldRender {
   listDelimiter?: string;
   /** "inline" = one line with delimiter; "stacked" = each item on its own row. */
   listDisplay?: ListDisplayMode;
+  /** Visual treatment for grouped people items. */
+  peopleStyle?: PeopleGroupStyle;
 }
 
 export interface ViewFieldConfig {
@@ -228,6 +231,8 @@ export interface ViewStyleConfig {
   rowHeadingFontWeight?: string;
   /** Name weight inside grouped people fields. */
   peopleNameFontWeight?: string;
+  /** Email/phone weight inside grouped people fields. */
+  peopleDetailFontWeight?: string;
   /** Body font style (e.g. normal, italic). */
   fontStyle?: string;
   /** Heading font style (e.g. normal, italic). */
@@ -393,6 +398,8 @@ export interface ResolvedFieldValue {
   listDelimiter?: string;
   /** "inline" = one line with delimiter; "stacked" = each item on its own row. */
   listDisplay?: ListDisplayMode;
+  /** Visual treatment for grouped people items. */
+  peopleStyle?: PeopleGroupStyle;
 }
 
 export interface ResolvedViewRow {

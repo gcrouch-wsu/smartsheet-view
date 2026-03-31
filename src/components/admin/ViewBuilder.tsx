@@ -8,7 +8,7 @@ import { PublicHeaderBrandStrip } from "@/components/public/PublicHeaderBrandStr
 import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
-import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
+import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, PEOPLE_STYLE_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
 import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { getEligibleEditableFieldDefinitions, getFieldsForMultiPersonGroup } from "@/lib/contributor-utils";
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
@@ -497,7 +497,7 @@ export function ViewBuilder({
           label: rg.defaultDisplayLabel ?? rg.label,
           source: { kind: "role_group", roleGroupId },
           transforms: [],
-          render: { type: "people_group", listDisplay: "inline" },
+          render: { type: "people_group", listDisplay: "inline", peopleStyle: "plain" },
         },
       ],
     }));
@@ -1908,7 +1908,7 @@ export function ViewBuilder({
                             label: rg?.defaultDisplayLabel ?? rg?.label ?? field.label,
                             source: { kind: "role_group", roleGroupId: id },
                             transforms: [],
-                            render: { ...field.render, type: "people_group", listDisplay: field.render.listDisplay ?? "inline" },
+                            render: { ...field.render, type: "people_group", listDisplay: field.render.listDisplay ?? "inline", peopleStyle: field.render.peopleStyle ?? "plain" },
                           });
                         }}
                         className="max-w-md rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium"
@@ -1945,16 +1945,30 @@ export function ViewBuilder({
                       (field.render.type === "text" && field.transforms?.some((t) => t.op === "split"))) && (
                       <>
                         <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
-                          <span>List display</span>
+                          <span>{field.render.type === "people_group" ? "People layout" : "List display"}</span>
                           <select
                             value={field.render.listDisplay ?? (field.render.type === "people_group" ? "inline" : "stacked")}
                             onChange={(e) => updateField(index, { ...field, render: { ...field.render, listDisplay: (e.target.value || undefined) as "inline" | "stacked" | undefined } })}
                             className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
                           >
-                            <option value="stacked">{field.render.type === "people_group" ? "Stacked (one person per block)" : "Stacked (each on own row)"}</option>
-                            <option value="inline">{field.render.type === "people_group" ? "Inline cards (wrap across row)" : "Inline (delimiter between)"}</option>
+                            <option value="stacked">{field.render.type === "people_group" ? "Vertical (one person per block)" : "Stacked (each on own row)"}</option>
+                            <option value="inline">{field.render.type === "people_group" ? "Horizontal (wrap across row)" : "Inline (delimiter between)"}</option>
                           </select>
                         </label>
+                        {field.render.type === "people_group" && (
+                          <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                            <span>People style</span>
+                            <select
+                              value={field.render.peopleStyle ?? "plain"}
+                              onChange={(e) => updateField(index, { ...field, render: { ...field.render, peopleStyle: (e.target.value || "plain") as "plain" | "capsule" } })}
+                              className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                            >
+                              {PEOPLE_STYLE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
                         {field.render.listDisplay === "inline" && field.render.type !== "people_group" && (
                           <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                             <span>Delimiter</span>

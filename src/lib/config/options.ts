@@ -38,6 +38,11 @@ export const TEXT_TRANSFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "capitalize", label: "Capitalize" },
 ];
 
+export const PEOPLE_STYLE_OPTIONS: { value: "plain" | "capsule"; label: string }[] = [
+  { value: "plain", label: "Plain" },
+  { value: "capsule", label: "Capsule" },
+];
+
 /** Font weight options for body and heading. */
 export const FONT_WEIGHT_OPTIONS: { value: string; label: string }[] = [
   { value: "100", label: "Thin (100)" },

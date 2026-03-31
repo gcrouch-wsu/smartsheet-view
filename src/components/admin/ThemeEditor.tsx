@@ -84,7 +84,13 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
   };
 
   const getNumericFontWeightValue = (
-    token: "fontWeight" | "headingFontWeight" | "fieldLabelFontWeight" | "rowHeadingFontWeight" | "peopleNameFontWeight",
+    token:
+      | "fontWeight"
+      | "headingFontWeight"
+      | "fieldLabelFontWeight"
+      | "rowHeadingFontWeight"
+      | "peopleNameFontWeight"
+      | "peopleDetailFontWeight",
   ) => {
     const v = getValue(token);
     if (v === "normal") return "400";
@@ -321,6 +327,18 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   <select
                     value={getNumericFontWeightValue("peopleNameFontWeight")}
                     onChange={(e) => updateStyle("peopleNameFontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Grouped people email/phone weight</label>
+                  <select
+                    value={getNumericFontWeightValue("peopleDetailFontWeight")}
+                    onChange={(e) => updateStyle("peopleDetailFontWeight", e.target.value)}
                     className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
                   >
                     {FONT_WEIGHT_OPTIONS.map((opt) => (

@@ -23,7 +23,7 @@ function PersonSummary({
       {email ? (
         <a
           href={`mailto:${email}`}
-          className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+          className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
         >
           {email}
         </a>
@@ -32,7 +32,7 @@ function PersonSummary({
         compact ? (
           <a
             href={telHref}
-            className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+            className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
           >
             {phone}
           </a>
@@ -40,7 +40,7 @@ function PersonSummary({
           <span className="mt-0.5 block">
             <a
               href={telHref}
-              className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+              className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
             >
               {phone}
             </a>
@@ -163,17 +163,22 @@ export function FieldValue({
     const populated = field.people?.filter((p) => !p.isEmpty) ?? [];
     if (populated.length > 0) {
       const displayMode = field.listDisplay === "stacked" ? "stacked" : "inline";
+      const peopleStyle = field.peopleStyle === "capsule" ? "capsule" : "plain";
       if (displayMode === "inline") {
         return (
-          <ul className="flex flex-wrap gap-3">
+          <ul className={peopleStyle === "capsule" ? "flex flex-wrap gap-3" : "flex flex-wrap gap-x-6 gap-y-2"}>
             {populated.map((person) => (
               <li
                 key={person.slot}
-                className="min-w-[14rem] max-w-full rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]"
-                style={{
-                  borderColor: "var(--view-control-border, var(--wsu-border))",
-                  backgroundColor: "color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 32%, white)",
-                }}
+                className={peopleStyle === "capsule" ? "min-w-[14rem] max-w-full rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]" : "leading-6 text-[color:var(--wsu-ink)]"}
+                style={
+                  peopleStyle === "capsule"
+                    ? {
+                        borderColor: "var(--view-control-border, var(--wsu-border))",
+                        backgroundColor: "color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 32%, white)",
+                      }
+                    : undefined
+                }
               >
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <PersonSummary name={person.name} email={person.email} phone={person.phone} compact />
@@ -185,9 +190,20 @@ export function FieldValue({
       }
 
       return (
-        <ul className="space-y-3">
+        <ul className={peopleStyle === "capsule" ? "space-y-3" : "space-y-2"}>
           {populated.map((person) => (
-            <li key={person.slot} className="leading-6 text-[color:var(--wsu-ink)]">
+            <li
+              key={person.slot}
+              className={peopleStyle === "capsule" ? "rounded-2xl border px-3 py-2 leading-6 text-[color:var(--wsu-ink)]" : "leading-6 text-[color:var(--wsu-ink)]"}
+              style={
+                peopleStyle === "capsule"
+                  ? {
+                      borderColor: "var(--view-control-border, var(--wsu-border))",
+                      backgroundColor: "color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 24%, white)",
+                    }
+                  : undefined
+              }
+            >
               <PersonSummary name={person.name} email={person.email} phone={person.phone} />
             </li>
           ))}

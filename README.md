@@ -9,7 +9,7 @@ Staff manage data in Smartsheet as they always haveâ€”no changes to their w
 - **Visual Admin Builder**: Configure sources and public views with a five-section builder (**Setup**, **Fields**, **Filters & Sort**, **Editing**, **Preview**).
 - **Custom Header WYSIWYG**: Rich text editor for page headers with headings, bold, italic, underline, alignment, bullet lists, text color, highlighting, and links. Use `{{PUBLIC_URL}}` to insert a live, clickable link to the current view.
 - **Flexible Layouts**: Tables, Cards, Lists, Stacked, Accordions, Tabbed panels, and Listâ€“Detail.
-- **Advanced Theme System**: Expanded design tokens for surfaces, controls, typography, row headings, field labels, and grouped people names, with live WCAG AA contrast validation.
+- **Advanced Theme System**: Expanded design tokens for surfaces, controls, typography, row headings, field labels, grouped people names, and grouped people email/phone weight, with live WCAG AA contrast validation.
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
 - **Universal Embed**: Standalone pages or iframe embeds for WordPress/CMS with automatic height reporting.
@@ -82,7 +82,7 @@ Review the **Role groups** section on the source editor after merging:
 
 Views can then add a grouped role field as one public header instead of mapping every numbered source column separately.
 
-Grouped role display defaults to a compact inline layout so multiple people use horizontal space better in cards, stacked rows, tables, and print views. Admins can switch a grouped role field back to stacked display in the view builder.
+Grouped role display defaults to a compact plain inline layout so multiple people use horizontal space better in cards, stacked rows, tables, and print views. Admins can switch each grouped role field between horizontal and vertical layouts and choose either plain or capsule styling in the view builder.
 
 ## Vercel Deployment
 

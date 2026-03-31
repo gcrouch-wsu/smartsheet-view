@@ -26,6 +26,7 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   fieldLabelFontWeight: "--view-field-label-font-weight",
   rowHeadingFontWeight: "--view-row-heading-font-weight",
   peopleNameFontWeight: "--view-people-name-font-weight",
+  peopleDetailFontWeight: "--view-people-detail-font-weight",
   fontStyle: "--view-font-style",
   headingFontStyle: "--view-heading-font-style",
   fieldLabelLetterSpacing: "--view-field-label-letter-spacing",

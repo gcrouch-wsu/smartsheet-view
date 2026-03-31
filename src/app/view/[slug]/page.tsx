@@ -151,6 +151,23 @@ export default async function PublicViewPage({
     editingEnabled && activeViewConfig.editing?.showContributorInstructions !== false;
   const printHref = !embed ? `/view/${slug}/print?view=${activeView.id}` : null;
   const contributorInstructionsHref = showContributorInstructions ? "/instructions/contributor" : null;
+  const layoutSwitcher = !activeView.fixedLayout ? (
+    <nav aria-label="Layout" className="flex flex-wrap gap-2">
+      {LAYOUT_OPTIONS.map((option) => {
+        const active = option === layout;
+        return (
+          <Link
+            key={option}
+            href={buildHref(slug, activeView.id, option, embed)}
+            aria-current={active ? "page" : undefined}
+            className={active ? "view-control-active px-3 py-1.5 text-sm font-medium" : "view-control px-3 py-1.5 text-sm font-medium"}
+          >
+            {formatLayoutLabel(option)}
+          </Link>
+        );
+      })}
+    </nav>
+  ) : null;
 
   let contributorEmail: string | null = null;
   let editingConfig = null;
@@ -273,60 +290,70 @@ export default async function PublicViewPage({
                   (!activeView.presentation?.hideHeaderActiveView ||
                     !activeView.presentation?.hideHeaderRows ||
                     !activeView.presentation?.hideHeaderRefreshed)) ||
+                  layoutSwitcher ||
                   ((loginHref && !contributorEmail) || printHref || contributorInstructionsHref)) && (
-                  <div className="shrink-0 space-y-3">
-                    {!activeView.presentation?.hideHeaderInfoBox &&
-                      (!activeView.presentation?.hideHeaderActiveView ||
-                        !activeView.presentation?.hideHeaderRows ||
-                        !activeView.presentation?.hideHeaderRefreshed) && (
-                        <div className="view-surface-muted rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
-                          {!activeView.presentation?.hideHeaderActiveView && (
-                            <p>
-                              <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
-                            </p>
-                          )}
-                          {!activeView.presentation?.hideHeaderRows && (
-                            <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
-                              <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span>{" "}
-                              {contributorEmail && editableRowIds.length > 0 ? (
-                                <>
-                                  {viewForDisplay.rowCount} assigned to you
-                                  <span className="text-[color:var(--wsu-muted)]"> ({activeView.rowCount} in this view)</span>
-                                </>
-                              ) : (
-                                activeView.rowCount
-                              )}
-                            </p>
-                          )}
-                          {!activeView.presentation?.hideHeaderRefreshed && (
-                            <p
-                              className={
-                                !activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows
-                                  ? "mt-2"
-                                  : ""
-                              }
-                            >
-                              <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
-                              {formatTimestamp(page.fetchedAt)}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                  <div className="shrink-0">
+                    <div className="view-surface-muted min-w-[18rem] rounded-[1.75rem] border border-[color:var(--wsu-border)] px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+                      {!activeView.presentation?.hideHeaderInfoBox &&
+                        (!activeView.presentation?.hideHeaderActiveView ||
+                          !activeView.presentation?.hideHeaderRows ||
+                          !activeView.presentation?.hideHeaderRefreshed) && (
+                          <div>
+                            {!activeView.presentation?.hideHeaderActiveView && (
+                              <p>
+                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {activeView.label}
+                              </p>
+                            )}
+                            {!activeView.presentation?.hideHeaderRows && (
+                              <p className={!activeView.presentation?.hideHeaderActiveView ? "mt-2" : ""}>
+                                <span className="font-semibold text-[color:var(--wsu-ink)]">Rows:</span>{" "}
+                                {contributorEmail && editableRowIds.length > 0 ? (
+                                  <>
+                                    {viewForDisplay.rowCount} assigned to you
+                                    <span className="text-[color:var(--wsu-muted)]"> ({activeView.rowCount} in this view)</span>
+                                  </>
+                                ) : (
+                                  activeView.rowCount
+                                )}
+                              </p>
+                            )}
+                            {!activeView.presentation?.hideHeaderRefreshed && (
+                              <p
+                                className={
+                                  !activeView.presentation?.hideHeaderActiveView || !activeView.presentation?.hideHeaderRows
+                                    ? "mt-2"
+                                    : ""
+                                }
+                              >
+                                <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
+                                {formatTimestamp(page.fetchedAt)}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
-                    {(!contributorEmail && (loginHref || printHref || contributorInstructionsHref)) && (
-                      <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-4 py-4">
-                        <div className="flex min-w-[14rem] flex-col gap-2">
-                          {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
-                          {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
+                      {layoutSwitcher ? (
+                        <div className={`${!activeView.presentation?.hideHeaderInfoBox ? "mt-4 border-t border-[color:var(--wsu-border)]/60 pt-4" : ""}`}>
+                          <p className="view-field-label mb-2 text-[color:var(--wsu-muted)]">View controls</p>
+                          {layoutSwitcher}
+                        </div>
+                      ) : null}
+
+                      {!contributorEmail && (loginHref || printHref || contributorInstructionsHref) ? (
+                        <div className={`${(!activeView.presentation?.hideHeaderInfoBox || layoutSwitcher) ? "mt-4 border-t border-[color:var(--wsu-border)]/60 pt-4" : ""}`}>
+                          <div className="flex flex-col gap-2">
+                            {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
+                            {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
+                            {contributorInstructionsHref ? (
+                              <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow />
+                            ) : null}
+                          </div>
                           {contributorInstructionsHref ? (
-                            <PublicActionLink href={contributorInstructionsHref} label="Contributor instructions" newWindow />
+                            <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">Contributor instructions open in a new window.</p>
                           ) : null}
                         </div>
-                        {contributorInstructionsHref ? (
-                          <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">Contributor instructions open in a new window.</p>
-                        ) : null}
-                      </div>
-                    )}
+                      ) : null}
+                    </div>
                   </div>
                 )}
               </div>
@@ -369,25 +396,7 @@ export default async function PublicViewPage({
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                {!activeView.fixedLayout && (
-                  <nav aria-label="Layout" className="flex flex-wrap gap-2">
-                    {LAYOUT_OPTIONS.map((option) => {
-                      const active = option === layout;
-                      return (
-                        <Link
-                          key={option}
-                          href={buildHref(slug, activeView.id, option, embed)}
-                          aria-current={active ? "page" : undefined}
-                          className={active ? "view-control-active px-3 py-1.5 text-sm font-medium" : "view-control px-3 py-1.5 text-sm font-medium"}
-                        >
-                          {formatLayoutLabel(option)}
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                )}
-              </div>
+              {activeView.presentation?.hideHeader ? <div className="flex flex-wrap items-center gap-3">{layoutSwitcher}</div> : null}
             </div>
 
             <ToastProvider>

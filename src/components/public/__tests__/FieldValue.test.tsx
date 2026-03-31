@@ -30,6 +30,7 @@ function buildPeopleField(overrides?: Partial<ResolvedFieldValue>): ResolvedFiel
     ],
     roleGroupReadOnly: false,
     listDisplay: "inline",
+    peopleStyle: "plain",
     ...overrides,
   };
 }
@@ -38,15 +39,22 @@ describe("FieldValue people_group", () => {
   it("renders grouped people inline by default", () => {
     const html = renderToStaticMarkup(<FieldValue field={buildPeopleField({ listDisplay: undefined })} />);
 
-    expect(html).toContain("flex flex-wrap gap-3");
+    expect(html).toContain("flex flex-wrap gap-x-6 gap-y-2");
     expect(html).toContain("view-people-name");
+    expect(html).not.toContain("rounded-2xl border");
     expect(html).not.toContain("space-y-3");
   });
 
   it("supports the stacked mode when explicitly requested", () => {
     const html = renderToStaticMarkup(<FieldValue field={buildPeopleField({ listDisplay: "stacked" })} />);
 
-    expect(html).toContain("space-y-3");
-    expect(html).not.toContain("flex flex-wrap gap-3");
+    expect(html).toContain("space-y-2");
+    expect(html).not.toContain("flex flex-wrap gap-x-6 gap-y-2");
+  });
+
+  it("supports capsule styling when requested", () => {
+    const html = renderToStaticMarkup(<FieldValue field={buildPeopleField({ peopleStyle: "capsule" })} />);
+
+    expect(html).toContain("rounded-2xl border");
   });
 });

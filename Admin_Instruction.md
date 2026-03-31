@@ -127,7 +127,7 @@ Customization controls include:
 
 - colors: page background, card background, accent color, primary text, muted text, borders, and badges
 - colors for muted surfaces and controls: control background, control text, control border, hover background, active background, and active text
-- typography: body font, heading font, field label size/weight/spacing/transform, row heading size/weight, grouped people name weight, and body/heading styles
+- typography: body font, heading font, field label size/weight/spacing/transform, row heading size/weight, grouped people name weight, grouped people email/phone weight, and body/heading styles
 - shape and shadow: border radius and card shadow
 
 Important behavior:
@@ -164,7 +164,8 @@ The Fields tab can also add grouped role fields from the source:
 - use `Add grouped role field` to append one `people_group` field backed by a source role group
 - grouped role fields render under one shared header instead of exposing every numbered Smartsheet column separately
 - if the linked source role group uses legacy delimited data, the field badge will tell you it is a delimited role group
-- grouped role fields now support `List display` so you can choose compact inline people cards or a taller stacked layout
+- grouped role fields now support `People layout` so you can choose horizontal or vertical rendering
+- grouped role fields also support `People style` so you can use a plain layout or a capsule treatment for each person block
 
 Use `Hide when empty` for optional fields that only apply to some rows so the page does not show empty labels.
 

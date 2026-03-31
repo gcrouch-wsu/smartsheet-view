@@ -411,6 +411,12 @@ function parseFieldConfig(input: unknown, index: number, options?: { knownRoleGr
             emptyLabel: asOptionalString(renderInput.emptyLabel),
             listDelimiter: asOptionalString(renderInput.listDelimiter),
             listDisplay: asOptionalString(renderInput.listDisplay) === "stacked" ? "stacked" : asOptionalString(renderInput.listDisplay) === "inline" ? "inline" : undefined,
+            peopleStyle:
+              asOptionalString(renderInput.peopleStyle) === "capsule"
+                ? "capsule"
+                : asOptionalString(renderInput.peopleStyle) === "plain"
+                  ? "plain"
+                  : undefined,
           },
           emptyBehavior: emptyBehavior as ViewFieldConfig["emptyBehavior"],
           hideLabel: hideLabel || undefined,
@@ -675,6 +681,7 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "fieldLabelFontWeight",
   "rowHeadingFontWeight",
   "peopleNameFontWeight",
+  "peopleDetailFontWeight",
   "fontStyle",
   "headingFontStyle",
   "fieldLabelLetterSpacing",

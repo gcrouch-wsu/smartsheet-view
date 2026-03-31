@@ -557,6 +557,7 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     hideLabel: field.hideLabel,
     listDelimiter: field.render.listDelimiter,
     listDisplay: field.render.listDisplay,
+    peopleStyle: field.render.peopleStyle,
   };
 }
 
@@ -621,5 +622,6 @@ export function buildResolvedPeopleGroupField(
     hideLabel: field.hideLabel,
     listDelimiter: field.render.listDelimiter,
     listDisplay: field.render.listDisplay ?? "inline",
+    peopleStyle: field.render.peopleStyle ?? "plain",
   };
 }

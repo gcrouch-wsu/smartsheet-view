@@ -181,6 +181,10 @@ a {
   font-weight: var(--view-people-name-font-weight, 500);
 }
 
+.view-people-detail {
+  font-weight: var(--view-people-detail-font-weight, 400);
+}
+
 .view-input {
   border: 1px solid var(--view-control-border, var(--wsu-border));
   background: var(--view-control-bg, #ffffff);
