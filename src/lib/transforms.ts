@@ -288,6 +288,19 @@ export function normalizedValueToPlainText(value: unknown): string {
   return asText(value);
 }
 
+export function normalizedValueToRoleAttributeText(
+  value: unknown,
+  attr: "name" | "email" | "phone",
+): string {
+  if (attr === "email") {
+    return extractEmails(value).join(", ");
+  }
+  if (attr === "phone") {
+    return extractPhones(value).join(", ");
+  }
+  return extractNames(value).join(", ");
+}
+
 function sortKeyForDateRaw(rawDateStr: string): string | undefined {
   if (!rawDateStr.trim()) {
     return undefined;
@@ -610,4 +623,3 @@ export function buildResolvedPeopleGroupField(
     listDisplay: field.render.listDisplay,
   };
 }
-

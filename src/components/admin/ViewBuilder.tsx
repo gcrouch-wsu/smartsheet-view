@@ -19,8 +19,10 @@ import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/t
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
 import type {
+  FieldSourceSelector,
   RenderType,
   SourceConfig,
+  SourceRoleGroupConfig,
   SmartsheetColumn,
   TransformConfig,
   ViewConfig,
@@ -179,14 +181,74 @@ function toggleNumberSelection(values: number[], id: number, checked: boolean) {
 }
 
 const FETCH_CREDENTIALS: RequestCredentials = "include";
+type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId">;
+type RoleGroupOverlapWarning = {
+  roleFieldKey: string;
+  roleFieldLabel: string;
+  roleGroupId: string;
+  overlappingFields: Array<{
+    key: string;
+    label: string;
+    sourceLabel: string;
+  }>;
+};
+
+function normalizedCompareKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function selectorsMatch(left?: FieldSourceSelector, right?: FieldSourceSelector) {
+  if (!left || !right) {
+    return false;
+  }
+  if (typeof left.columnId === "number" && typeof right.columnId === "number" && left.columnId === right.columnId) {
+    return true;
+  }
+  const leftTitle = normalizedCompareKey(left.columnTitle);
+  const rightTitle = normalizedCompareKey(right.columnTitle);
+  return Boolean(leftTitle && rightTitle && leftTitle === rightTitle);
+}
+
+function collectRawFieldSelectors(source: ViewFieldSource): FieldSourceSelector[] {
+  return [
+    { columnId: source.columnId, columnTitle: source.columnTitle, columnType: source.columnType },
+    { columnId: source.preferredColumnId, columnTitle: source.preferredColumnTitle, columnType: source.preferredColumnType },
+    { columnId: source.fallbackColumnId, columnTitle: source.fallbackColumnTitle, columnType: source.fallbackColumnType },
+    ...(source.coalesce ?? []),
+  ].filter((selector) => typeof selector.columnId === "number" || Boolean(selector.columnTitle?.trim()));
+}
+
+function collectRoleGroupSelectors(group: SourceRoleGroupConfig): FieldSourceSelector[] {
+  if (group.mode === "numbered_slots") {
+    return (group.slots ?? [])
+      .flatMap((slot) => [slot.name, slot.email, slot.phone])
+      .filter((selector): selector is FieldSourceSelector => Boolean(selector));
+  }
+
+  return [group.delimited?.name?.source, group.delimited?.email?.source, group.delimited?.phone?.source].filter(
+    (selector): selector is FieldSourceSelector => Boolean(selector)
+  );
+}
+
+function rawFieldOverlapsRoleGroup(field: ViewFieldConfig, group: SourceRoleGroupConfig) {
+  if (isRoleGroupFieldSource(field.source)) {
+    return false;
+  }
+
+  const rawSelectors = collectRawFieldSelectors(field.source as ViewFieldSource);
+  const roleSelectors = collectRoleGroupSelectors(group);
+  return rawSelectors.some((rawSelector) => roleSelectors.some((roleSelector) => selectorsMatch(rawSelector, roleSelector)));
+}
 
 export function ViewBuilder({
   initialView,
   sources,
+  existingViews,
   isNew,
 }: {
   initialView: ViewConfig | null;
   sources: SourceConfig[];
+  existingViews: ExistingViewMeta[];
   isNew: boolean;
 }) {
   const router = useRouter();
@@ -202,6 +264,33 @@ export function ViewBuilder({
   const [schemaLoading, setSchemaLoading] = useState(false);
   const sourceMap = useMemo(() => new Map(sources.map((source) => [source.id, source.label])), [sources]);
   const activeSource = useMemo(() => sources.find((s) => s.id === view.sourceId), [sources, view.sourceId]);
+  const comparisonViewId = initialView?.id ?? null;
+  const comparisonViews = useMemo(
+    () => existingViews.filter((candidate) => candidate.id !== comparisonViewId),
+    [comparisonViewId, existingViews],
+  );
+  const duplicateIdView = useMemo(() => {
+    const targetId = normalizedCompareKey(view.id);
+    if (!targetId) {
+      return null;
+    }
+    return comparisonViews.find((candidate) => normalizedCompareKey(candidate.id) === targetId) ?? null;
+  }, [comparisonViews, view.id]);
+  const duplicateLabelViews = useMemo(() => {
+    const targetLabel = normalizedCompareKey(view.label);
+    if (!targetLabel) {
+      return [];
+    }
+    return comparisonViews.filter((candidate) => normalizedCompareKey(candidate.label) === targetLabel);
+  }, [comparisonViews, view.label]);
+  const sharedSlugViews = useMemo(() => {
+    const targetSlug = normalizedCompareKey(view.slug);
+    if (!targetSlug) {
+      return [];
+    }
+    return comparisonViews.filter((candidate) => normalizedCompareKey(candidate.slug) === targetSlug);
+  }, [comparisonViews, view.slug]);
+  const hasBlockingIdConflict = Boolean(isNew && duplicateIdView);
   const contactColumns = useMemo(
     () => schema?.columns.filter((column) => column.type === "CONTACT_LIST" || column.type === "MULTI_CONTACT_LIST") ?? [],
     [schema],
@@ -228,6 +317,52 @@ export function ViewBuilder({
     const contactIds = new Set(contactColumns.map((column) => column.id));
     return view.editing.contactColumnIds.filter((columnId) => !contactIds.has(columnId));
   }, [contactColumns, schema, view.editing]);
+  const roleGroupOverlapWarnings = useMemo<RoleGroupOverlapWarning[]>(() => {
+    if (!activeSource?.roleGroups?.length) {
+      return [];
+    }
+
+    const roleGroupsById = new Map(activeSource.roleGroups.map((group) => [group.id, group]));
+    const rawFields = view.fields.filter((field) => !isRoleGroupFieldSource(field.source)) as Array<
+      ViewFieldConfig & { source: ViewFieldSource }
+    >;
+
+    return view.fields.flatMap((field) => {
+      if (!isRoleGroupFieldSource(field.source)) {
+        return [];
+      }
+
+      const roleGroup = roleGroupsById.get(field.source.roleGroupId);
+      if (!roleGroup) {
+        return [];
+      }
+
+      const overlappingFields = rawFields
+        .filter((rawField) => rawFieldOverlapsRoleGroup(rawField, roleGroup))
+        .map((rawField) => ({
+          key: rawField.key,
+          label: rawField.label || rawField.key,
+          sourceLabel: rawField.source.columnTitle || String(rawField.source.columnId ?? rawField.key),
+        }));
+
+      if (overlappingFields.length === 0) {
+        return [];
+      }
+
+      return [
+        {
+          roleFieldKey: field.key,
+          roleFieldLabel: field.label || roleGroup.defaultDisplayLabel || roleGroup.label || field.key,
+          roleGroupId: roleGroup.id,
+          overlappingFields,
+        },
+      ];
+    });
+  }, [activeSource?.roleGroups, view.fields]);
+  const roleGroupOverlapByFieldKey = useMemo(
+    () => new Map(roleGroupOverlapWarnings.map((warning) => [warning.roleFieldKey, warning])),
+    [roleGroupOverlapWarnings],
+  );
 
   function update<K extends keyof ViewConfig>(key: K, value: ViewConfig[K]) {
     setView((current) => ({ ...current, [key]: value }));
@@ -369,6 +504,14 @@ export function ViewBuilder({
   }
 
   async function saveView() {
+    if (hasBlockingIdConflict && duplicateIdView) {
+      const msg = `View ID "${view.id}" already belongs to "${duplicateIdView.label || duplicateIdView.id}". Choose a different View ID before saving a new view.`;
+      setErrors([msg]);
+      setNotice("");
+      toast.addToast(msg, "error");
+      return;
+    }
+
     setErrors([]);
     setNotice("");
     setIsSaving(true);
@@ -683,6 +826,14 @@ export function ViewBuilder({
                 Preview
               </Link>
             )}
+            {!isNew && view.id && (
+              <a
+                href={`/api/admin/views/${view.id}/export`}
+                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+              >
+                Export JSON
+              </a>
+            )}
             {!isNew && (
               <button
                 type="button"
@@ -841,6 +992,40 @@ export function ViewBuilder({
               className="w-full rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-3"
             />
           </label>
+          {(duplicateIdView || duplicateLabelViews.length > 0 || sharedSlugViews.length > 0) && (
+            <div className="space-y-3 md:col-span-2">
+              {duplicateIdView && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  <p className="font-semibold text-rose-900">View ID already exists</p>
+                  <p className="mt-1">
+                    The new view ID <span className="font-mono">{view.id || "(empty)"}</span> is already used by{" "}
+                    <strong>{duplicateIdView.label || duplicateIdView.id}</strong>. Saving a new view with that ID would
+                    target the existing record, so create is blocked until you change the View ID.
+                  </p>
+                </div>
+              )}
+              {duplicateLabelViews.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold text-amber-950">Another view already uses this label</p>
+                  <p className="mt-1">
+                    {duplicateLabelViews.map((candidate) => candidate.label || candidate.id).join(", ")} already use{" "}
+                    <strong>{view.label || "(empty label)"}</strong>. This does not overwrite anything by itself, but it can
+                    make the admin list harder to distinguish.
+                  </p>
+                </div>
+              )}
+              {sharedSlugViews.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold text-amber-950">This slug is already in use</p>
+                  <p className="mt-1">
+                    {sharedSlugViews.map((candidate) => candidate.label || candidate.id).join(", ")} already publish to{" "}
+                    <span className="font-mono">/view/{view.slug}</span>. Shared slugs create multiple tabs on the same
+                    public page, which may be intentional.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
             <div className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Layout (override)</span>
               <p className="text-xs text-[color:var(--wsu-muted)]">Override the template layout if you want the same fields in a different arrangement (e.g. cards instead of table).</p>
@@ -1637,6 +1822,20 @@ export function ViewBuilder({
                   To control field layout <em>within</em> each card (rows, side-by-side), go to <strong>Setup</strong> → <strong>Custom card layout</strong> and enable it.
                 </p>
               )}
+              {roleGroupOverlapWarnings.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold text-amber-950">Possible duplicate grouped-role content in preview</p>
+                  <ul className="mt-2 space-y-1">
+                    {roleGroupOverlapWarnings.map((warning) => (
+                      <li key={warning.roleFieldKey}>
+                        <strong>{warning.roleFieldLabel}</strong> overlaps raw fields{" "}
+                        {warning.overlappingFields.map((field) => field.label).join(", ")}. Remove the raw fields if you
+                        want one grouped header without duplicated names or contact lines.
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="mt-4 space-y-3">
           {view.fields.length === 0 ? (
             <p className="text-sm text-[color:var(--wsu-muted)]">Select columns above to add them here, then reorder.</p>
@@ -1644,6 +1843,7 @@ export function ViewBuilder({
             view.fields.map((field, index) => {
               const rgSrc = isRoleGroupFieldSource(field.source) ? field.source : null;
               const colSource = (rgSrc ? null : field.source) as ViewFieldSource | null;
+              const overlapWarning = roleGroupOverlapByFieldKey.get(field.key);
               const isUnmapped = Boolean(colSource && !colSource.columnId && !colSource.columnTitle);
               return (
               <div
@@ -1688,6 +1888,13 @@ export function ViewBuilder({
                       </>
                     )}
                   </p>
+                  {overlapWarning && (
+                    <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      This grouped role field overlaps raw fields still included in the view:{" "}
+                      {overlapWarning.overlappingFields.map((overlappingField) => overlappingField.label).join(", ")}.
+                      Remove the raw fields if you want one grouped block in preview.
+                    </p>
+                  )}
                   {rgSrc && activeSource?.roleGroups?.length ? (
                     <label className="mt-2 flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                       <span>Linked role group</span>

@@ -80,6 +80,17 @@ describe("admin management", () => {
     expect(smartsheetMock.getSmartsheetSchema).not.toHaveBeenCalled();
   });
 
+  it("blocks creating a new view when the id already exists", async () => {
+    storeMock.getViewConfigById.mockResolvedValue(viewConfig);
+
+    await expect(saveAdminViewConfig({ ...viewConfig, public: false }, { rejectOnExistingId: true })).rejects.toMatchObject({
+      status: 409,
+      errors: [expect.stringContaining('View ID "faculty"')],
+    } satisfies Partial<AdminActionError>);
+
+    expect(adminStoreMock.saveViewConfig).not.toHaveBeenCalled();
+  });
+
   it("blocks saving a published view when schema drift warnings exist", async () => {
     storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
     smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });

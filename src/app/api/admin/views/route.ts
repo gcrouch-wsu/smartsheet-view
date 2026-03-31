@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   result.data.public = false;
 
   try {
-    const view = await saveAdminViewConfig(result.data);
+    const view = await saveAdminViewConfig(result.data, { rejectOnExistingId: true });
     return NextResponse.json({ view }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminActionError) {

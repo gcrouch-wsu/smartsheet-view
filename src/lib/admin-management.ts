@@ -78,7 +78,23 @@ async function validateContributorEditing(view: ViewConfig) {
   }
 }
 
-export async function saveAdminViewConfig(view: ViewConfig) {
+export async function saveAdminViewConfig(
+  view: ViewConfig,
+  options?: { rejectOnExistingId?: boolean },
+) {
+  if (options?.rejectOnExistingId) {
+    const existing = await getViewConfigById(view.id);
+    if (existing) {
+      throw new AdminActionError({
+        status: 409,
+        message: `A view with ID "${view.id}" already exists.`,
+        errors: [
+          `View ID "${view.id}" is already used by "${existing.label || existing.id}". Open that existing view or choose a different View ID before saving a new view.`,
+        ],
+      });
+    }
+  }
+
   await validateContributorEditing(view);
 
   if (view.public) {

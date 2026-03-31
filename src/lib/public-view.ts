@@ -28,6 +28,7 @@ import {
   buildResolvedFieldValue,
   buildResolvedPeopleGroupField,
   normalizeSourceValue,
+  normalizedValueToRoleAttributeText,
   normalizedValueToPlainText,
 } from "@/lib/transforms";
 import { humanizeSlug } from "@/lib/utils";
@@ -140,12 +141,25 @@ function resolveCellPlainText(row: SmartsheetRow, selector: FieldSourceSelector 
   return normalizedValueToPlainText(normalized).trim();
 }
 
+function resolveCellRoleAttributeText(
+  row: SmartsheetRow,
+  selector: FieldSourceSelector | undefined,
+  attr: "name" | "email" | "phone",
+): string {
+  if (!selector) {
+    return "";
+  }
+  const cell = resolveSelector(row, selector);
+  const normalized = normalizeSourceValue(cell);
+  return normalizedValueToRoleAttributeText(normalized, attr).trim();
+}
+
 function resolveNumberedRoleGroupPeople(row: SmartsheetRow, group: SourceRoleGroupConfig): ResolvedPersonRoleEntry[] {
   const slots = group.slots ?? [];
   return slots.map((slotDef) => {
-    const name = slotDef.name ? resolveCellPlainText(row, slotDef.name) : "";
-    const email = slotDef.email ? resolveCellPlainText(row, slotDef.email) : "";
-    const phone = slotDef.phone ? resolveCellPlainText(row, slotDef.phone) : "";
+    const name = slotDef.name ? resolveCellRoleAttributeText(row, slotDef.name, "name") : "";
+    const email = slotDef.email ? resolveCellRoleAttributeText(row, slotDef.email, "email") : "";
+    const phone = slotDef.phone ? resolveCellRoleAttributeText(row, slotDef.phone, "phone") : "";
     const hasAttr = Boolean(slotDef.name || slotDef.email || slotDef.phone);
     const anyValue = [slotDef.name ? name : "", slotDef.email ? email : "", slotDef.phone ? phone : ""].some((s) =>
       s.trim(),
@@ -182,7 +196,7 @@ function resolveDelimitedParallelRoleGroup(row: SmartsheetRow, group: SourceRole
     }
     const cell = resolveSelector(row, cfg.source);
     const normalized = normalizeSourceValue(cell);
-    const raw = normalizedValueToPlainText(normalized);
+    const raw = normalizedValueToRoleAttributeText(normalized, attr);
     const delims = cfg.delimiters?.length ? cfg.delimiters : [",", ";", "\n"];
     const tokens = delims
       .reduce<string[]>((segments, delimiter) => segments.flatMap((s) => s.split(delimiter)), [raw])

@@ -29,6 +29,26 @@ function createCell(columnId: number, columnTitle: string, value: unknown): Smar
   };
 }
 
+function createContactCell(
+  columnId: number,
+  columnTitle: string,
+  email: string,
+  name: string,
+): SmartsheetCell {
+  return {
+    columnId,
+    columnTitle,
+    columnType: "CONTACT_LIST",
+    value: email,
+    displayValue: name,
+    objectValue: {
+      objectType: "CONTACT",
+      email,
+      name,
+    },
+  };
+}
+
 function createRow(id: number, cells: SmartsheetCell[]): SmartsheetRow {
   return {
     id,
@@ -304,6 +324,69 @@ describe("public view resolution", () => {
     expect(field?.textValue).toContain("Lisa Lujan");
     expect(field?.textValue).not.toContain("slot 2");
     expect(field?.listValue).toEqual(["Lisa Lujan\nllujan@wsu.edu"]);
+  });
+
+  it("extracts only email text from CONTACT_LIST role-group email slots", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        fields: [
+          {
+            key: "staffCoordinators",
+            label: "Staff Coordinators",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff Coordinators",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 201, columnTitle: "Staff Coordinator 1" },
+              email: { columnId: 202, columnTitle: "Staff Coordinator Email 1", columnType: "CONTACT_LIST" },
+              phone: { columnId: 203, columnTitle: "Staff Coordinator Phone 1" },
+            },
+          ],
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 201, index: 0, title: "Staff Coordinator 1", type: "TEXT_NUMBER" },
+          { id: 202, index: 1, title: "Staff Coordinator Email 1", type: "CONTACT_LIST" },
+          { id: 203, index: 2, title: "Staff Coordinator Phone 1", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(201, "Staff Coordinator 1", "Lisa Lujan"),
+            createContactCell(202, "Staff Coordinator Email 1", "llujan@wsu.edu", "Lisa Lujan"),
+            createCell(203, "Staff Coordinator Phone 1", "(509) 335-9542"),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const field = page?.views[0]?.rows[0]?.fieldMap.staffCoordinators;
+
+    expect(field?.people).toEqual([
+      {
+        slot: "1",
+        name: "Lisa Lujan",
+        email: "llujan@wsu.edu",
+        phone: "(509) 335-9542",
+        isEmpty: false,
+      },
+    ]);
+    expect(field?.textValue).toBe("Lisa Lujan\nllujan@wsu.edu\n(509) 335-9542");
   });
 
   it("marks trusted multi-attribute delimited role groups writable at runtime", async () => {
