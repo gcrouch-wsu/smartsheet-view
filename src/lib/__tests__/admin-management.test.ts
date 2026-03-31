@@ -102,6 +102,7 @@ describe("admin management", () => {
     await updateAdminViewPublication("faculty", true);
 
     expect(smartsheetMock.getSmartsheetSchema).toHaveBeenCalledWith(sourceConfig, { fresh: true });
+    expect(publicViewMock.collectSchemaDriftWarnings).toHaveBeenCalledWith(viewConfig, [], sourceConfig);
     expect(adminStoreMock.updateViewPublication).toHaveBeenCalledWith("faculty", true);
   });
 

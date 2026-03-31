@@ -11,6 +11,7 @@ export type RenderType =
   | "link"
   | "date"
   | "badge"
+  | "people_group"
   | "hidden";
 export type FilterOperator =
   | "equals"
@@ -22,6 +23,31 @@ export type FilterOperator =
   | "is_empty"
   | "not_empty";
 
+export type RoleGroupMode = "numbered_slots" | "delimited_parallel";
+
+export interface SourceRoleGroupSlotConfig {
+  slot: string;
+  name?: FieldSourceSelector;
+  email?: FieldSourceSelector;
+  phone?: FieldSourceSelector;
+}
+
+export interface SourceRoleGroupConfig {
+  id: string;
+  label: string;
+  defaultDisplayLabel?: string;
+  mode: RoleGroupMode;
+  slots?: SourceRoleGroupSlotConfig[];
+  delimited?: {
+    name?: { source: FieldSourceSelector; delimiters?: string[] };
+    email?: { source: FieldSourceSelector; delimiters?: string[] };
+    phone?: { source: FieldSourceSelector; delimiters?: string[] };
+    pairing?: "by_position";
+    /** Explicit admin override when parallel delimited attributes are known to stay aligned. */
+    trustPairing?: boolean;
+  };
+}
+
 export interface SourceConfig {
   id: string;
   label: string;
@@ -30,6 +56,8 @@ export interface SourceConfig {
   connectionKey?: string;
   apiBaseUrl?: string;
   cacheTtlSeconds?: number;
+  /** Reusable grouped contact columns (numbered Smartsheet slots or legacy delimited). */
+  roleGroups?: SourceRoleGroupConfig[];
   fetchOptions?: {
     includeObjectValue?: boolean;
     includeColumnOptions?: boolean;
@@ -52,6 +80,13 @@ export interface ViewFieldSource extends FieldSourceSelector {
   fallbackColumnType?: string;
   coalesce?: FieldSourceSelector[];
 }
+
+export interface RoleGroupFieldSource {
+  kind: "role_group";
+  roleGroupId: string;
+}
+
+export type ViewFieldSourceConfig = ViewFieldSource | RoleGroupFieldSource;
 
 export interface TransformConfig {
   op: string;
@@ -77,7 +112,7 @@ export interface ViewFieldRender {
 export interface ViewFieldConfig {
   key: string;
   label: string;
-  source: ViewFieldSource;
+  source: ViewFieldSourceConfig;
   transforms?: TransformConfig[];
   render: ViewFieldRender;
   emptyBehavior?: "show" | "hide";
@@ -204,12 +239,20 @@ export interface EditableFieldGroupAttribute {
   columnType?: string;
   /** Smartsheet column title; set when building contributor client config (not stored in view JSON). */
   columnTitle?: string;
+  /** Slot id within a numbered role group (e.g. "1"); enables per-column write-back for that slot. */
+  slot?: string;
 }
 
 export interface EditableFieldGroup {
   id: string;
   label: string;
   attributes: EditableFieldGroupAttribute[];
+  /** Load/save uses `ResolvedFieldValue.people` on this view field (numbered slot role groups). */
+  fromRoleGroupViewFieldKey?: string;
+  /** Contributor UI is display-only (e.g. unsafe delimited multi-attribute role group). */
+  readOnly?: boolean;
+  /** Hide add/remove person controls; slot list is fixed by the source role group. */
+  usesFixedSlots?: boolean;
 }
 
 export interface ViewEditingConfig {
@@ -302,6 +345,14 @@ export interface ContactValue {
   email?: string;
 }
 
+export interface ResolvedPersonRoleEntry {
+  slot: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  isEmpty: boolean;
+}
+
 export interface ResolvedFieldValue {
   key: string;
   label: string;
@@ -313,6 +364,10 @@ export interface ResolvedFieldValue {
   isEmpty: boolean;
   hideWhenEmpty: boolean;
   hideLabel?: boolean;
+  /** Set for `people_group` when data is structured from numbered slots (or safe single-attribute delimited). */
+  people?: ResolvedPersonRoleEntry[];
+  /** When true, contributor editing must not expose this group as editable. */
+  roleGroupReadOnly?: boolean;
   /** Delimiter between list items when inline (e.g. ", ", " | "). */
   listDelimiter?: string;
   /** "inline" = one line with delimiter; "stacked" = each item on its own row. */

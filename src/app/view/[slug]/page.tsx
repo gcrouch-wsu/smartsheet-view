@@ -120,7 +120,7 @@ export default async function PublicViewPage({
   const mainStyle = !embed && tokens.backgroundColor ? { backgroundColor: tokens.backgroundColor } : undefined;
 
   const contributorConfigurationError = getContributorConfigurationError();
-  const editingEnabled = activeViewConfig.editing?.enabled && !contributorConfigurationError;
+  const editingEnabled = !embed && activeViewConfig.editing?.enabled && !contributorConfigurationError;
   const showContributorLoginLink = editingEnabled && activeViewConfig.editing?.showLoginLink !== false;
   const loginHref = showContributorLoginLink ? `/view/${slug}/contributor/login?view=${activeView.id}` : null;
   const showContributorInstructions =
@@ -138,7 +138,7 @@ export default async function PublicViewPage({
       const dataset = await loadContributorDataset(page.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
       if (isContributorStillInSheet(dataset.rows, session.payload.email, activeViewConfig.editing!.contactColumnIds)) {
         contributorEmail = session.payload.email;
-        editingConfig = buildContributorEditingClientConfig(activeViewConfig, dataset.columns);
+        editingConfig = buildContributorEditingClientConfig(activeViewConfig, dataset.columns, page.sourceConfig);
         editableRowIds = getEditableRowIdsForView(dataset.rows, activeViewConfig, contributorEmail);
       }
     }
@@ -354,27 +354,37 @@ export default async function PublicViewPage({
                   </div>
                 )}
               </div>
-              {!activeView.fixedLayout && (
-                <nav aria-label="Layout" className="flex flex-wrap gap-2">
-                  {LAYOUT_OPTIONS.map((option) => {
-                    const active = option === layout;
-                    return (
-                      <Link
-                        key={option}
-                        href={buildHref(slug, activeView.id, option, embed)}
-                        aria-current={active ? "page" : undefined}
-                        className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                          active
-                            ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
-                            : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-                        }`}
-                      >
-                        {formatLayoutLabel(option)}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              )}
+              <div className="flex flex-wrap items-center gap-3">
+                {!activeView.fixedLayout && (
+                  <nav aria-label="Layout" className="flex flex-wrap gap-2">
+                    {LAYOUT_OPTIONS.map((option) => {
+                      const active = option === layout;
+                      return (
+                        <Link
+                          key={option}
+                          href={buildHref(slug, activeView.id, option, embed)}
+                          aria-current={active ? "page" : undefined}
+                          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                            active
+                              ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                              : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                          }`}
+                        >
+                          {formatLayoutLabel(option)}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                )}
+                {!embed && (
+                  <Link
+                    href={`/view/${slug}/print?view=${activeView.id}`}
+                    className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                  >
+                    Print / PDF
+                  </Link>
+                )}
+              </div>
             </div>
 
             {showContributorInstructions && (

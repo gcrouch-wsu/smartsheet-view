@@ -7,10 +7,13 @@ import type {
   SmartsheetCell,
   SmartsheetColumn,
   SmartsheetRow,
+  SourceConfig,
   ViewConfig,
   ViewFieldConfig,
 } from "@/lib/config/types";
 import { applyViewFilters } from "@/lib/filters";
+import { isRoleGroupFieldSource, isUnsafeDelimitedRoleGroup } from "@/lib/role-groups";
+import { normalizeColumnKey } from "@/lib/smartsheet";
 import { normalizeSourceValue, toContactList } from "@/lib/transforms";
 
 const CONTRIBUTOR_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
@@ -139,6 +142,18 @@ export function parseMultiPersonRow(
   row: ResolvedViewRow,
   group: EditableFieldGroup,
 ): MultiPersonEntry[] {
+  if (group.fromRoleGroupViewFieldKey) {
+    const people = row.fieldMap[group.fromRoleGroupViewFieldKey]?.people;
+    if (!people?.length) {
+      return [];
+    }
+    return people.map((p) => ({
+      name: p.name?.trim() ?? "",
+      email: p.email?.trim() ?? "",
+      phone: p.phone?.trim() ?? "",
+    }));
+  }
+
   const attrArrays = group.attributes.map((attr) => {
     const field = row.fieldMap[attr.fieldKey];
     return stringsForMultiPersonAttribute(field);
@@ -219,12 +234,80 @@ export function serializeContactDisplayToObjectValue(
 }
 
 /** Serialize person entries back to cell values. Uses value for TEXT_NUMBER/PHONE, objectValue for CONTACT_LIST/MULTI_CONTACT_LIST. */
+function compareSlotIds(a: string, b: string): number {
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb)) {
+    return na - nb;
+  }
+  return a.localeCompare(b, undefined, { numeric: true });
+}
+
+function slotOrderFromAttributes(attributes: EditableFieldGroup["attributes"]): string[] {
+  const order: string[] = [];
+  for (const attr of attributes) {
+    if (attr.slot && !order.includes(attr.slot)) {
+      order.push(attr.slot);
+    }
+  }
+  return order.sort(compareSlotIds);
+}
+
+function serializeSlotBasedMultiPersonToCells(
+  persons: MultiPersonEntry[],
+  group: EditableFieldGroup & { attributes: Array<EditableFieldGroupAttribute & { columnType?: string }> },
+): Array<{ columnId: number; value?: string; objectValue?: unknown }> {
+  const slotOrder = slotOrderFromAttributes(group.attributes);
+  const result: Array<{ columnId: number; value?: string; objectValue?: unknown }> = [];
+  const isContact = (t?: string) => t === "CONTACT_LIST" || t === "MULTI_CONTACT_LIST";
+
+  for (const attr of group.attributes) {
+    if (!attr.slot) {
+      continue;
+    }
+    const personIdx = slotOrder.indexOf(attr.slot);
+    const p = persons[personIdx] ?? { name: "", email: "", phone: "" };
+
+    if (isContact(attr.columnType)) {
+      const c: { objectType: "CONTACT"; email?: string; name?: string } = { objectType: "CONTACT" };
+      if (attr.attribute === "email" && p.email.trim()) {
+        c.email = p.email.trim();
+      }
+      if (attr.attribute === "name" && p.name.trim()) {
+        c.name = p.name.trim();
+      }
+      if (!c.email && !c.name) {
+        result.push({ columnId: attr.columnId, value: "" });
+      } else if (attr.columnType === "MULTI_CONTACT_LIST") {
+        result.push({
+          columnId: attr.columnId,
+          objectValue: { objectType: "MULTI_CONTACT" as const, values: [c] },
+        });
+      } else {
+        result.push({ columnId: attr.columnId, objectValue: c });
+      }
+      continue;
+    }
+
+    const val =
+      attr.attribute === "name" ? p.name.trim() : attr.attribute === "email" ? p.email.trim() : p.phone.trim();
+    result.push({ columnId: attr.columnId, value: val });
+  }
+
+  return result;
+}
+
 export function serializeMultiPersonToCells(
   persons: MultiPersonEntry[],
   group: EditableFieldGroup & { attributes: Array<EditableFieldGroupAttribute & { columnType?: string }> },
 ): Array<{ columnId: number; value?: string; objectValue?: unknown }> {
   const isContact = (t?: string) =>
     t === "CONTACT_LIST" || t === "MULTI_CONTACT_LIST";
+
+  const usesSlots = group.attributes.length > 0 && group.attributes.every((a) => a.slot != null && a.slot !== "");
+  if (usesSlots) {
+    return serializeSlotBasedMultiPersonToCells(persons, group);
+  }
 
   const contactAttrsByColumn = new Map<number, Array<typeof group.attributes[0]>>();
   const nonContactAttrs: Array<typeof group.attributes[0]> = [];
@@ -406,6 +489,9 @@ function hasEditableSafeTransforms(field: ViewFieldConfig, columnType: string): 
  * transforms (trim, etc.)—we still treat the field as one column for editing.
  */
 export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: SmartsheetColumn | null) {
+  if (isRoleGroupFieldSource(field.source)) {
+    return false;
+  }
   if (
     typeof field.source.columnId !== "number" ||
     field.render.type === "hidden" ||
@@ -442,6 +528,9 @@ function buildDirectMappedFieldCounts(view: ViewConfig, columns: SmartsheetColum
   const counts = new Map<number, number>();
 
   for (const field of view.fields) {
+    if (isRoleGroupFieldSource(field.source)) {
+      continue;
+    }
     const columnId = field.source.columnId as number;
     const column = columnsById.get(columnId);
     if (!isEditableFieldDirectMapped(field, column)) {
@@ -476,6 +565,9 @@ export function getEligibleEditableFieldDefinitions(
   const contactFieldsByColumn = new Map<number, Array<{ field: ViewFieldConfig; column: SmartsheetColumn }>>();
 
   for (const field of view.fields) {
+    if (isRoleGroupFieldSource(field.source)) {
+      continue;
+    }
     const columnId = field.source.columnId as number;
     const column = columnsById.get(columnId);
     if (!isEditableFieldDirectMapped(field, column)) {
@@ -564,6 +656,7 @@ export function getFieldsForMultiPersonGroup(
 
   for (const field of view.fields) {
     if (field.render.type === "hidden") continue;
+    if (isRoleGroupFieldSource(field.source)) continue;
     const columnId =
       (typeof field.source.columnId === "number" ? field.source.columnId : null) ??
       (typeof field.source.preferredColumnId === "number" ? field.source.preferredColumnId : null);
@@ -596,14 +689,142 @@ export function getFieldsForMultiPersonGroup(
   return result;
 }
 
-export function buildContributorEditingClientConfig(view: ViewConfig, columns: SmartsheetColumn[]) {
+function resolveSelectorColumn(
+  selector: { columnId?: number; columnTitle?: string; columnType?: string } | undefined,
+  columnsById: Map<number, SmartsheetColumn>,
+  columnsByTitle: Map<string, SmartsheetColumn>,
+) {
+  if (!selector) {
+    return null;
+  }
+  if (typeof selector.columnId === "number") {
+    return columnsById.get(selector.columnId) ?? null;
+  }
+  if (selector.columnTitle) {
+    return columnsByTitle.get(normalizeColumnKey(selector.columnTitle)) ?? null;
+  }
+  return null;
+}
+
+export function buildDerivedRoleGroupEditableFieldGroups(
+  view: ViewConfig,
+  sourceConfig: SourceConfig | null | undefined,
+  columns: SmartsheetColumn[],
+): EditableFieldGroup[] {
+  if (!sourceConfig?.roleGroups?.length) {
+    return [];
+  }
+  const columnsById = new Map(columns.map((c) => [c.id, c]));
+  const columnsByTitle = new Map(columns.map((c) => [normalizeColumnKey(c.title), c]));
+  const out: EditableFieldGroup[] = [];
+
+  for (const field of view.fields) {
+    const fieldSrc = field.source;
+    if (!isRoleGroupFieldSource(fieldSrc) || field.render.type !== "people_group") {
+      continue;
+    }
+    const rg = sourceConfig.roleGroups.find((g) => g.id === fieldSrc.roleGroupId);
+    if (!rg) {
+      continue;
+    }
+
+    if (rg.mode === "delimited_parallel") {
+      const attrs: EditableFieldGroupAttribute[] = [];
+      const d = rg.delimited;
+      if (d) {
+        for (const attr of ["name", "email", "phone"] as const) {
+          const cfg = d[attr];
+          if (!cfg?.source) {
+            continue;
+          }
+          const col = resolveSelectorColumn(cfg.source, columnsById, columnsByTitle);
+          const columnId = col?.id ?? cfg.source.columnId;
+          if (typeof columnId !== "number") {
+            continue;
+          }
+          attrs.push({
+            attribute: attr,
+            fieldKey: field.key,
+            columnId,
+            columnType: col?.type ?? cfg.source.columnType,
+            columnTitle: col?.title?.trim() ?? cfg.source.columnTitle ?? attr,
+          });
+        }
+      }
+      if (attrs.length > 0) {
+        const unsafe = isUnsafeDelimitedRoleGroup(rg);
+        out.push({
+          id: unsafe ? `rg-readonly:${field.key}:${rg.id}` : `rg:${field.key}:${rg.id}`,
+          label: rg.defaultDisplayLabel ?? rg.label,
+          attributes: attrs,
+          fromRoleGroupViewFieldKey: field.key,
+          readOnly: unsafe || undefined,
+          usesFixedSlots: false,
+        });
+      }
+      continue;
+    }
+
+    if (rg.mode !== "numbered_slots" || !rg.slots?.length) {
+      continue;
+    }
+
+    const attrs: EditableFieldGroupAttribute[] = [];
+    for (const slot of rg.slots) {
+      for (const attr of ["name", "email", "phone"] as const) {
+        const sel = slot[attr];
+        if (!sel) {
+          continue;
+        }
+        const col = resolveSelectorColumn(sel, columnsById, columnsByTitle);
+        const columnId = col?.id ?? sel.columnId;
+        if (typeof columnId !== "number") {
+          continue;
+        }
+        attrs.push({
+          attribute: attr,
+          fieldKey: field.key,
+          columnId,
+          columnType: col?.type ?? sel.columnType,
+          columnTitle: col?.title?.trim() ?? sel.columnTitle ?? attr,
+          slot: slot.slot,
+        });
+      }
+    }
+    if (attrs.length === 0) {
+      continue;
+    }
+    out.push({
+      id: `rg:${field.key}:${rg.id}`,
+      label: rg.defaultDisplayLabel ?? rg.label,
+      attributes: attrs,
+      fromRoleGroupViewFieldKey: field.key,
+      usesFixedSlots: true,
+    });
+  }
+
+  return out;
+}
+
+export function buildContributorEditingClientConfig(
+  view: ViewConfig,
+  columns: SmartsheetColumn[],
+  sourceConfig?: SourceConfig | null,
+) {
   const editing = view.editing;
   if (!editing?.enabled) {
     return null;
   }
 
   const columnsById = new Map(columns.map((c) => [c.id, c]));
-  const groups = (editing.editableFieldGroups ?? []).map((group) => ({
+  const derivedGroups = buildDerivedRoleGroupEditableFieldGroups(view, sourceConfig ?? null, columns);
+  const derivedColumnIds = new Set(derivedGroups.flatMap((g) => g.attributes.map((a) => a.columnId)));
+
+  const legacyGroupsFiltered = (editing.editableFieldGroups ?? []).filter(
+    (group) => !group.attributes.some((a) => derivedColumnIds.has(a.columnId)),
+  );
+
+  const groups = [...derivedGroups, ...legacyGroupsFiltered].map((group) => ({
     ...group,
     attributes: group.attributes.map((attr) => {
       const column = columnsById.get(attr.columnId);
@@ -636,7 +857,11 @@ export function buildContributorEditingClientConfig(view: ViewConfig, columns: S
   } satisfies ContributorEditingClientConfig;
 }
 
-export function getContributorEditingValidationErrors(view: ViewConfig, columns: SmartsheetColumn[]) {
+export function getContributorEditingValidationErrors(
+  view: ViewConfig,
+  columns: SmartsheetColumn[],
+  sourceConfig?: SourceConfig | null,
+) {
   const editing = view.editing;
   if (!editing?.enabled) {
     return [];
@@ -659,9 +884,9 @@ export function getContributorEditingValidationErrors(view: ViewConfig, columns:
   const eligibleFields = getEligibleEditableFieldDefinitions(view, columns);
   const eligibleByColumnId = new Map(eligibleFields.map((field) => [field.columnId, field]));
 
-  const groupColumnIds = new Set(
-    (editing.editableFieldGroups ?? []).flatMap((g) => g.attributes.map((a) => a.columnId)),
-  );
+  const derivedGroups = buildDerivedRoleGroupEditableFieldGroups(view, sourceConfig ?? null, columns);
+  const allGroups = [...derivedGroups, ...(editing.editableFieldGroups ?? [])];
+  const groupColumnIds = new Set(allGroups.flatMap((g) => g.attributes.map((a) => a.columnId)));
 
   for (const columnId of editing.editableColumnIds) {
     if (groupColumnIds.has(columnId)) continue;
@@ -687,6 +912,16 @@ export function getContributorEditingValidationErrors(view: ViewConfig, columns:
         errors.push(`Editable field group "${group.label}": column ${attr.columnId} does not exist in the source schema.`);
       }
     }
+  }
+
+  const runtimeEditingConfig = buildContributorEditingClientConfig(view, columns, sourceConfig ?? null);
+  const hasWritableContent =
+    (runtimeEditingConfig?.editableFields.length ?? 0) > 0 ||
+    Boolean(runtimeEditingConfig?.editableFieldGroups.some((group) => !group.readOnly));
+  if (!hasWritableContent) {
+    errors.push(
+      "Select at least one Editable Field (what contributors can edit), add a Multi-person field group, or include a writable role-group field. Contact columns only define who can edit, not what."
+    );
   }
 
   return errors;

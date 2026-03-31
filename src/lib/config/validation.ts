@@ -1,17 +1,24 @@
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { HEADER_BRAND_TEXT_MAX_LENGTH, validateHeaderLogoPair } from "@/lib/header-logo";
+import { isWritableRoleGroup } from "@/lib/role-groups";
 import type {
   EditableFieldGroup,
   EditableFieldGroupAttribute,
+  FieldSourceSelector,
   FilterOperator,
   LayoutType,
+  RoleGroupFieldSource,
   RenderType,
   RowDividerStyle,
   SourceConfig,
+  SourceRoleGroupConfig,
+  SourceRoleGroupSlotConfig,
   TransformConfig,
   ViewConfig,
   ViewEditingConfig,
   ViewFieldConfig,
+  ViewFieldSource,
+  ViewFieldSourceConfig,
   ViewFilterConfig,
   ViewPresentationConfig,
   ViewSortConfig,
@@ -36,8 +43,10 @@ const RENDER_TYPES: RenderType[] = [
   "link",
   "date",
   "badge",
+  "people_group",
   "hidden",
 ];
+const ROLE_GROUP_MODES: SourceRoleGroupConfig["mode"][] = ["numbered_slots", "delimited_parallel"];
 const FILTER_OPERATORS: FilterOperator[] = [
   "equals",
   "not_equals",
@@ -137,7 +146,154 @@ function parseTransformConfig(input: unknown, path: string): ValidationResult<Tr
   };
 }
 
-function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewFieldConfig> {
+function parseFieldSourceSelector(input: unknown, path: string): ValidationResult<FieldSourceSelector> {
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+  const columnId = asOptionalNumber(input.columnId);
+  const columnTitle = asOptionalString(input.columnTitle);
+  const columnType = asOptionalString(input.columnType);
+  if (columnId === undefined && !columnTitle) {
+    return { success: false, errors: [`${path} must define columnId or columnTitle.`] };
+  }
+  return {
+    success: true,
+    errors: [],
+    data: { columnId, columnTitle, columnType },
+  };
+}
+
+function parseDelimitedParallelConfig(
+  input: unknown,
+  path: string,
+): ValidationResult<NonNullable<SourceRoleGroupConfig["delimited"]>> {
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+  const errors: string[] = [];
+  const out: NonNullable<SourceRoleGroupConfig["delimited"]> = { pairing: "by_position" };
+  if (input.trustPairing === true) {
+    out.trustPairing = true;
+  }
+
+  for (const key of ["name", "email", "phone"] as const) {
+    const raw = input[key];
+    if (raw === undefined || raw === null) {
+      continue;
+    }
+    if (!isRecord(raw)) {
+      errors.push(`${path}.${key} must be an object.`);
+      continue;
+    }
+    const src = parseFieldSourceSelector(raw.source, `${path}.${key}.source`);
+    errors.push(...src.errors);
+    if (!src.data) {
+      continue;
+    }
+    const delimiters = Array.isArray(raw.delimiters)
+      ? raw.delimiters.map((d) => asTrimmedString(d)).filter(Boolean)
+      : undefined;
+    out[key] = { source: src.data, ...(delimiters?.length ? { delimiters } : {}) };
+  }
+
+  return { success: errors.length === 0, errors, data: errors.length ? undefined : out };
+}
+
+function parseRoleGroupSlot(input: unknown, path: string): ValidationResult<SourceRoleGroupSlotConfig> {
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+  const slot = asTrimmedString(input.slot);
+  if (!slot) {
+    return { success: false, errors: [`${path}.slot is required.`] };
+  }
+  const errors: string[] = [];
+  const row: SourceRoleGroupSlotConfig = { slot };
+
+  for (const attr of ["name", "email", "phone"] as const) {
+    if (input[attr] === undefined || input[attr] === null) {
+      continue;
+    }
+    const sel = parseFieldSourceSelector(input[attr], `${path}.${attr}`);
+    errors.push(...sel.errors);
+    if (sel.data) {
+      row[attr] = sel.data;
+    }
+  }
+
+  const hasAny = row.name || row.email || row.phone;
+  if (!hasAny) {
+    errors.push(`${path} must define at least one of name, email, or phone selectors.`);
+  }
+
+  return { success: errors.length === 0, errors, data: errors.length ? undefined : row };
+}
+
+function parseSourceRoleGroup(input: unknown, index: number): ValidationResult<SourceRoleGroupConfig> {
+  const path = `roleGroups[${index}]`;
+  const errors: string[] = [];
+  if (!isRecord(input)) {
+    return { success: false, errors: [`${path} must be an object.`] };
+  }
+
+  const id = asTrimmedString(input.id);
+  const label = asTrimmedString(input.label);
+  const mode = asTrimmedString(input.mode);
+  if (!id) {
+    errors.push(`${path}.id is required.`);
+  }
+  if (!label) {
+    errors.push(`${path}.label is required.`);
+  }
+  if (!ROLE_GROUP_MODES.includes(mode as SourceRoleGroupConfig["mode"])) {
+    errors.push(`${path}.mode must be "numbered_slots" or "delimited_parallel".`);
+  }
+
+  let slots: SourceRoleGroupSlotConfig[] | undefined;
+  if (Array.isArray(input.slots)) {
+    slots = [];
+    for (const [i, slot] of input.slots.entries()) {
+      const res = parseRoleGroupSlot(slot, `${path}.slots[${i}]`);
+      errors.push(...res.errors);
+      if (res.data) {
+        slots.push(res.data);
+      }
+    }
+  }
+
+  let delimited: SourceRoleGroupConfig["delimited"];
+  if (input.delimited !== undefined && input.delimited !== null) {
+    const dRes = parseDelimitedParallelConfig(input.delimited, `${path}.delimited`);
+    errors.push(...dRes.errors);
+    if (dRes.data) {
+      delimited = dRes.data;
+    }
+  }
+
+  if (mode === "numbered_slots" && (!slots || slots.length === 0)) {
+    errors.push(`${path}.slots must be a non-empty array when mode is "numbered_slots".`);
+  }
+  if (mode === "delimited_parallel" && !delimited) {
+    errors.push(`${path}.delimited is required when mode is "delimited_parallel".`);
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    data: errors.length
+      ? undefined
+      : {
+          id,
+          label,
+          defaultDisplayLabel: asOptionalString(input.defaultDisplayLabel),
+          mode: mode as SourceRoleGroupConfig["mode"],
+          ...(slots?.length ? { slots } : {}),
+          ...(delimited ? { delimited } : {}),
+        },
+  };
+}
+
+function parseFieldConfig(input: unknown, index: number, options?: { knownRoleGroupIds?: Set<string> }): ValidationResult<ViewFieldConfig> {
   const path = `fields[${index}]`;
   const errors: string[] = [];
 
@@ -152,16 +308,7 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
   }
 
   const sourceInput = isRecord(input.source) ? input.source : {};
-  const coalesceTitles = Array.isArray(sourceInput.coalesce)
-    ? sourceInput.coalesce
-        .filter((entry) => isRecord(entry))
-        .map((entry) => ({
-          columnId: asOptionalNumber(entry.columnId),
-          columnTitle: asOptionalString(entry.columnTitle),
-          columnType: asOptionalString(entry.columnType),
-        }))
-        .filter((entry) => typeof entry.columnId === "number" || Boolean(entry.columnTitle))
-    : [];
+  const isRoleGroup = asTrimmedString(sourceInput.kind) === "role_group";
 
   const renderInput = isRecord(input.render) ? input.render : {};
   const renderType = asTrimmedString(renderInput.type);
@@ -178,31 +325,67 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
     }
   }
 
-  const source = {
-    columnId: asOptionalNumber(sourceInput.columnId),
-    columnTitle: asOptionalString(sourceInput.columnTitle),
-    columnType: asOptionalString(sourceInput.columnType),
-    preferredColumnId: asOptionalNumber(sourceInput.preferredColumnId),
-    preferredColumnTitle: asOptionalString(sourceInput.preferredColumnTitle),
-    preferredColumnType: asOptionalString(sourceInput.preferredColumnType),
-    fallbackColumnId: asOptionalNumber(sourceInput.fallbackColumnId),
-    fallbackColumnTitle: asOptionalString(sourceInput.fallbackColumnTitle),
-    fallbackColumnType: asOptionalString(sourceInput.fallbackColumnType),
-    coalesce: coalesceTitles.length > 0 ? coalesceTitles : undefined,
-  };
+  let source: ViewFieldSourceConfig;
 
-  const hasSelector = [
-    source.columnId,
-    source.columnTitle,
-    source.preferredColumnId,
-    source.preferredColumnTitle,
-    source.fallbackColumnId,
-    source.fallbackColumnTitle,
-    ...(source.coalesce ?? []).flatMap((entry) => [entry.columnId, entry.columnTitle]),
-  ].some((value) => value !== undefined && value !== "");
+  if (isRoleGroup) {
+    const roleGroupId = asTrimmedString(sourceInput.roleGroupId);
+    if (!roleGroupId) {
+      errors.push(`${path}.source.roleGroupId is required when source.kind is "role_group".`);
+    }
+    if (options?.knownRoleGroupIds && roleGroupId && !options.knownRoleGroupIds.has(roleGroupId)) {
+      errors.push(`${path}.source.roleGroupId "${roleGroupId}" is not defined on the view's source.`);
+    }
+    if (renderType && renderType !== "people_group") {
+      errors.push(`${path}.render.type must be "people_group" when source.kind is "role_group".`);
+    }
+    if (transforms.length > 0) {
+      errors.push(`${path}.transforms must be empty for role_group source fields.`);
+    }
+    source = { kind: "role_group", roleGroupId };
+  } else {
+    if (renderType === "people_group") {
+      errors.push(`${path}.render.type "people_group" requires source.kind "role_group".`);
+    }
 
-  if (!hasSelector) {
-    errors.push(`${path}.source must define at least one column selector.`);
+    const coalesceTitles = Array.isArray(sourceInput.coalesce)
+      ? sourceInput.coalesce
+          .filter((entry) => isRecord(entry))
+          .map((entry) => ({
+            columnId: asOptionalNumber(entry.columnId),
+            columnTitle: asOptionalString(entry.columnTitle),
+            columnType: asOptionalString(entry.columnType),
+          }))
+          .filter((entry) => typeof entry.columnId === "number" || Boolean(entry.columnTitle))
+      : [];
+
+    const colSource: ViewFieldSource = {
+      columnId: asOptionalNumber(sourceInput.columnId),
+      columnTitle: asOptionalString(sourceInput.columnTitle),
+      columnType: asOptionalString(sourceInput.columnType),
+      preferredColumnId: asOptionalNumber(sourceInput.preferredColumnId),
+      preferredColumnTitle: asOptionalString(sourceInput.preferredColumnTitle),
+      preferredColumnType: asOptionalString(sourceInput.preferredColumnType),
+      fallbackColumnId: asOptionalNumber(sourceInput.fallbackColumnId),
+      fallbackColumnTitle: asOptionalString(sourceInput.fallbackColumnTitle),
+      fallbackColumnType: asOptionalString(sourceInput.fallbackColumnType),
+      coalesce: coalesceTitles.length > 0 ? coalesceTitles : undefined,
+    };
+
+    const hasSelector = [
+      colSource.columnId,
+      colSource.columnTitle,
+      colSource.preferredColumnId,
+      colSource.preferredColumnTitle,
+      colSource.fallbackColumnId,
+      colSource.fallbackColumnTitle,
+      ...(colSource.coalesce ?? []).flatMap((entry) => [entry.columnId, entry.columnTitle]),
+    ].some((value) => value !== undefined && value !== "");
+
+    if (!hasSelector) {
+      errors.push(`${path}.source must define at least one column selector.`);
+    }
+
+    source = colSource;
   }
 
   const emptyBehavior = asOptionalString(input.emptyBehavior);
@@ -222,7 +405,7 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
           label,
           description: asOptionalString(input.description),
           source,
-          transforms,
+          transforms: isRoleGroup ? [] : transforms,
           render: {
             type: renderType as RenderType,
             emptyLabel: asOptionalString(renderInput.emptyLabel),
@@ -233,6 +416,26 @@ function parseFieldConfig(input: unknown, index: number): ValidationResult<ViewF
           hideLabel: hideLabel || undefined,
         },
   };
+}
+
+function isRoleGroupField(field: ViewFieldConfig): field is ViewFieldConfig & { source: RoleGroupFieldSource } {
+  return typeof field.source === "object" && field.source !== null && "kind" in field.source && field.source.kind === "role_group";
+}
+
+function hasWritableDerivedRoleGroupField(fields: ViewFieldConfig[], sourceConfig?: SourceConfig) {
+  const roleGroupFields = fields.filter(isRoleGroupField);
+  if (roleGroupFields.length === 0) {
+    return false;
+  }
+
+  if (!sourceConfig?.roleGroups?.length) {
+    return true;
+  }
+
+  return roleGroupFields.some((field) => {
+    const group = sourceConfig.roleGroups?.find((entry) => entry.id === field.source.roleGroupId);
+    return Boolean(group && isWritableRoleGroup(group));
+  });
 }
 
 function parseFilterConfig(input: unknown, index: number): ValidationResult<ViewFilterConfig> {
@@ -539,13 +742,6 @@ function parseEditingConfig(input: unknown): ValidationResult<ViewEditingConfig 
   const editableFieldGroups = parseEditableFieldGroups(input.editableFieldGroups);
   errors.push(...editableFieldGroups.errors);
 
-  const hasEditableContent = editableColumnIds.values.length > 0 || editableFieldGroups.data.length > 0;
-  if (enabled && !hasEditableContent) {
-    errors.push(
-      "Select at least one Editable Field (what contributors can edit) or add a Multi-person field group. Contact columns only define who can edit, not what."
-    );
-  }
-
   return {
     success: errors.length === 0,
     errors,
@@ -618,11 +814,13 @@ function parseEditableFieldGroups(input: unknown): {
         continue;
       }
       const columnType = asOptionalString(a.columnType);
+      const slot = asOptionalString(a.slot);
       attributes.push({
         attribute: attribute as EditableFieldGroupAttribute["attribute"],
         fieldKey,
         columnId,
         ...(columnType && { columnType }),
+        ...(slot && { slot }),
       });
     }
 
@@ -665,6 +863,17 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
     errors.push("fetchOptions.level must be a number.");
   }
 
+  const roleGroups: SourceRoleGroupConfig[] = [];
+  if (Array.isArray(input.roleGroups)) {
+    for (const [i, rg] of input.roleGroups.entries()) {
+      const res = parseSourceRoleGroup(rg, i);
+      errors.push(...res.errors);
+      if (res.data) {
+        roleGroups.push(res.data);
+      }
+    }
+  }
+
   return {
     success: errors.length === 0,
     errors,
@@ -678,6 +887,7 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
           connectionKey: asOptionalString(input.connectionKey),
           apiBaseUrl: asOptionalString(input.apiBaseUrl),
           cacheTtlSeconds: asOptionalNumber(input.cacheTtlSeconds),
+          ...(roleGroups.length > 0 ? { roleGroups } : {}),
           fetchOptions: {
             includeObjectValue: asBoolean(fetchOptionsInput.includeObjectValue, true),
             includeColumnOptions: asBoolean(fetchOptionsInput.includeColumnOptions, true),
@@ -687,7 +897,10 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
   };
 }
 
-export function validateViewConfig(input: unknown, options?: { knownSourceIds?: string[] }): ValidationResult<ViewConfig> {
+export function validateViewConfig(
+  input: unknown,
+  options?: { knownSourceIds?: string[]; sources?: SourceConfig[] },
+): ValidationResult<ViewConfig> {
   const errors: string[] = [];
 
   if (!isRecord(input)) {
@@ -719,6 +932,12 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
     errors.push(`layout must be one of: ${LAYOUT_TYPES.join(", ")}.`);
   }
 
+  const sourceForRoleGroups = options?.sources?.find((s) => s.id === sourceId);
+  const knownRoleGroupIds =
+    sourceForRoleGroups?.roleGroups && sourceForRoleGroups.roleGroups.length > 0
+      ? new Set(sourceForRoleGroups.roleGroups.map((g) => g.id))
+      : undefined;
+
   const defaultSort: ViewSortConfig[] = [];
   for (const [index, sort] of (Array.isArray(input.defaultSort) ? input.defaultSort : []).entries()) {
     const result = parseSortConfig(sort, index);
@@ -739,7 +958,7 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
 
   const fields: ViewFieldConfig[] = [];
   for (const [index, field] of (Array.isArray(input.fields) ? input.fields : []).entries()) {
-    const result = parseFieldConfig(field, index);
+    const result = parseFieldConfig(field, index, { knownRoleGroupIds });
     errors.push(...result.errors);
     if (result.data) {
       fields.push(result.data);
@@ -755,6 +974,15 @@ export function validateViewConfig(input: unknown, options?: { knownSourceIds?: 
   const styleResult = parseStyleConfig(input.style);
   const editingResult = parseEditingConfig(input.editing);
   errors.push(...presentationResult.errors, ...styleResult.errors, ...editingResult.errors);
+
+  const hasConfiguredEditableContent =
+    (editingResult.data?.editableColumnIds.length ?? 0) > 0 || (editingResult.data?.editableFieldGroups?.length ?? 0) > 0;
+  const hasDerivedRoleGroupEditableContent = hasWritableDerivedRoleGroupField(fields, sourceForRoleGroups);
+  if (editingResult.data?.enabled && !hasConfiguredEditableContent && !hasDerivedRoleGroupEditableContent) {
+    errors.push(
+      "Select at least one Editable Field (what contributors can edit), add a Multi-person field group, or include a writable role-group field. Contact columns only define who can edit, not what."
+    );
+  }
 
   return {
     success: errors.length === 0,

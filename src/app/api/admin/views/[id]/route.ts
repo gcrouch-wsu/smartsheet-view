@@ -35,7 +35,7 @@ export async function PUT(
   const { id } = await params;
   const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const sources = await listSourceConfigs();
-  const result = validateViewConfig({ ...body, id }, { knownSourceIds: sources.map((source) => source.id) });
+  const result = validateViewConfig({ ...body, id }, { knownSourceIds: sources.map((source) => source.id), sources });
 
   if (!result.success || !result.data) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });

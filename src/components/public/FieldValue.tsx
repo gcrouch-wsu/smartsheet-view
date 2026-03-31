@@ -112,6 +112,42 @@ export function FieldValue({
     );
   }
 
+  if (field.renderType === "people_group") {
+    const populated = field.people?.filter((p) => !p.isEmpty) ?? [];
+    if (populated.length > 0) {
+      return (
+        <ul className="space-y-3">
+          {populated.map((person) => (
+            <li key={person.slot} className="leading-6 text-[color:var(--wsu-ink)]">
+              {person.name ? <span className="block font-medium">{person.name}</span> : null}
+              {person.email ? (
+                <a
+                  href={`mailto:${person.email}`}
+                  className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                >
+                  {person.email}
+                </a>
+              ) : null}
+              {person.phone ? (
+                <span className="mt-0.5 block">
+                  <a
+                    href={`tel:${person.phone.replace(/[^\d+]/g, "")}`}
+                    className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                  >
+                    {person.phone}
+                  </a>
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    if (field.textValue) {
+      return <span className="leading-6 whitespace-pre-line text-[color:var(--wsu-ink)]">{field.textValue}</span>;
+    }
+  }
+
   if (field.renderType === "multiline_text") {
     return field.textValue ? (
       <p className="whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]">{field.textValue}</p>

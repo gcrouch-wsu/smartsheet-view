@@ -64,8 +64,13 @@ export function EditRowDrawer({
         keys.add(a.fieldKey);
       }
     }
+    for (const vf of view.fields) {
+      if (vf.renderType === "people_group") {
+        keys.add(vf.key);
+      }
+    }
     return keys;
-  }, [editableFields, editableFieldGroups]);
+  }, [editableFields, editableFieldGroups, view.fields]);
 
   const orderedFields = useMemo(
     () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys) : []),
@@ -90,9 +95,14 @@ export function EditRowDrawer({
     return m;
   }, [editableFieldGroups]);
 
+  const writableFieldGroups = useMemo(
+    () => editableFieldGroups.filter((g) => !g.readOnly),
+    [editableFieldGroups],
+  );
+
   const multiPersonValidation = useMemo(
-    () => validateMultiPersonGroupsForSave(editableFieldGroups, groupValues),
-    [editableFieldGroups, groupValues],
+    () => validateMultiPersonGroupsForSave(writableFieldGroups, groupValues),
+    [writableFieldGroups, groupValues],
   );
   const multiPersonHasErrors = hasMultiPersonValidationErrors(multiPersonValidation);
 
@@ -207,7 +217,7 @@ export function EditRowDrawer({
     if (!row || !contributor || isSaving) {
       return;
     }
-    const mpErrors = validateMultiPersonGroupsForSave(editableFieldGroups, groupValues);
+    const mpErrors = validateMultiPersonGroupsForSave(writableFieldGroups, groupValues);
     if (hasMultiPersonValidationErrors(mpErrors)) {
       const firstMsg = Object.values(mpErrors)
         .flatMap((m) => Object.values(m))
@@ -241,7 +251,7 @@ export function EditRowDrawer({
         }
         return { columnId: field.columnId, value: raw };
       }),
-      ...editableFieldGroups.flatMap((group) =>
+      ...writableFieldGroups.flatMap((group) =>
         serializeMultiPersonToCells(groupValues[group.id] ?? [], group),
       ),
     ];
@@ -345,6 +355,27 @@ export function EditRowDrawer({
                           return null;
                         }
                         groupsRendered.add(group.id);
+                        if (group.readOnly) {
+                          const rf = group.fromRoleGroupViewFieldKey
+                            ? row.fieldMap[group.fromRoleGroupViewFieldKey]
+                            : undefined;
+                          return (
+                            <div
+                              key={`group-ro-${group.id}`}
+                              className="space-y-2 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0"
+                            >
+                              <p className={labelClass}>{group.label}</p>
+                              <p className="text-xs text-amber-900/90">
+                                Read-only: multi-attribute delimited role data cannot be edited safely in this form.
+                              </p>
+                              {rf ? (
+                                <div className="text-sm text-[color:var(--wsu-ink)]">
+                                  <FieldValue field={rf} stacked />
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        }
                         const persons = groupValues[group.id] ?? [];
                         const hasName = group.attributes.some((a) => a.attribute === "name");
                         const hasEmail = group.attributes.some((a) => a.attribute === "email");
@@ -384,18 +415,20 @@ export function EditRowDrawer({
                                       <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--wsu-muted)]">
                                         {preview}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setGroupValues((prev) => ({
-                                            ...prev,
-                                            [group.id]: persons.filter((_, i) => i !== idx),
-                                          }));
-                                        }}
-                                        className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
-                                      >
-                                        Remove
-                                      </button>
+                                      {!group.usesFixedSlots ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setGroupValues((prev) => ({
+                                              ...prev,
+                                              [group.id]: persons.filter((_, i) => i !== idx),
+                                            }));
+                                          }}
+                                          className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                                        >
+                                          Remove
+                                        </button>
+                                      ) : null}
                                     </div>
                                     <div className="grid gap-2">
                                       {hasName &&
@@ -496,29 +529,31 @@ export function EditRowDrawer({
                                   </fieldset>
                                 );
                               })}
-                              <div className="flex flex-col gap-2 sm:flex-row">
-                                {persons.length > 0 && (
+                              {!group.usesFixedSlots ? (
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                  {persons.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setGroupValues((prev) => ({ ...prev, [group.id]: [] }))}
+                                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                                    >
+                                      Clear everyone
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
-                                    onClick={() => setGroupValues((prev) => ({ ...prev, [group.id]: [] }))}
-                                    className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                                    onClick={() =>
+                                      setGroupValues((prev) => ({
+                                        ...prev,
+                                        [group.id]: [...persons, { name: "", email: "", phone: "" }],
+                                      }))
+                                    }
+                                    className="rounded-lg border border-dashed border-[color:var(--wsu-crimson)]/50 bg-[color:var(--wsu-crimson)]/5 px-3 py-2 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10"
                                   >
-                                    Clear everyone
+                                    + Add person
                                   </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setGroupValues((prev) => ({
-                                      ...prev,
-                                      [group.id]: [...persons, { name: "", email: "", phone: "" }],
-                                    }))
-                                  }
-                                  className="rounded-lg border border-dashed border-[color:var(--wsu-crimson)]/50 bg-[color:var(--wsu-crimson)]/5 px-3 py-2 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10"
-                                >
-                                  + Add person
-                                </button>
-                              </div>
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         );
@@ -631,7 +666,7 @@ export function EditRowDrawer({
             </button>
             <button
               type="submit"
-              disabled={isSaving || (editableFields.length === 0 && editableFieldGroups.length === 0)}
+              disabled={isSaving || (editableFields.length === 0 && writableFieldGroups.length === 0)}
               className="rounded-full bg-[color:var(--wsu-crimson)] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save changes"}

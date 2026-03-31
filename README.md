@@ -13,7 +13,9 @@ Staff manage data in Smartsheet as they always haveâ€”no changes to their w
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
 - **Universal Embed**: Standalone pages or iframe embeds for WordPress/CMS with automatic height reporting.
-- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and multi-person groups). Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
+- **Grouped Role Fields**: Sources can define reusable role groups from numbered Smartsheet columns and add them to views as a single `people_group` field under one shared header.
+- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and grouped role fields). Numbered-slot role groups are deterministic by structure; legacy multi-attribute delimited role groups stay read-only unless explicitly trusted at the source level. Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
+- **Print / PDF Phase 1**: Public views include a print-friendly route for browser print or save-as-PDF from semantic HTML.
 - **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
 - **Header branding (admin)**: In **Setup â†’ Page header & branding**, optional PNG/JPEG logo (â‰¤256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical ruleâ€”stored in view config. Shown at the top of the public header when visible.
 - **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) â€” static, accessible guides that deploy with the app on Vercel.
@@ -63,6 +65,22 @@ Go to **Admin â†’ Sources** and click **Create source**. Youâ€™ll conf
 | **Smartsheet ID** | The numeric ID from Smartsheet. Find it in the sheet/report URL: `https://app.smartsheet.com/sheets/XXXXXXXXXXXXXXX` or `.../reports/XXXXXXXXXXXXXXX` â€” the long number is the ID. |
 
 After saving, use **Test connection** to verify the Smartsheet API can reach the sheet or report. Then create **Views** that select columns and define how data is displayed.
+
+### Source role groups
+
+After you fetch schema, use **Merge detected role groups** to append numbered role groups from column titles such as:
+
+- `... Name 1`
+- `... Email 1`
+- bare role labels like `... Coordinator or Designee 1`
+
+Review the **Role groups** section on the source editor after merging:
+
+- numbered-slot groups are safe by structure
+- single-attribute delimited groups are safe because there is no cross-column pairing
+- multi-attribute delimited groups are read-only by default unless you explicitly enable **Trust positional pairing** for a known-good aligned source
+
+Views can then add a grouped role field as one public header instead of mapping every numbered source column separately.
 
 ## Vercel Deployment
 

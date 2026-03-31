@@ -11,6 +11,12 @@ function fieldCanRender(field: ResolvedFieldValue) {
 }
 
 export function describeResolvedField(field: ResolvedFieldValue) {
+  if (field.renderType === "people_group" && field.people?.some((p) => !p.isEmpty)) {
+    return field.people
+      .filter((p) => !p.isEmpty)
+      .map((p) => [p.name, p.email, p.phone].filter(Boolean).join(" "))
+      .join("; ");
+  }
   if (field.textValue) {
     return field.textValue;
   }

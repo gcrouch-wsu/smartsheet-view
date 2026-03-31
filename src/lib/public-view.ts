@@ -7,12 +7,14 @@ import {
 import type {
   FieldSourceSelector,
   PublicPageSummary,
+  ResolvedPersonRoleEntry,
   ResolvedPublicPage,
   ResolvedView,
   SmartsheetColumn,
   SmartsheetCell,
   SmartsheetRow,
   SourceConfig,
+  SourceRoleGroupConfig,
   ViewConfig,
   ViewFieldConfig,
   ViewFieldSource,
@@ -20,7 +22,14 @@ import type {
 import { applyViewFilters, sortResolvedRows } from "@/lib/filters";
 import type { FetchBehaviorOptions } from "@/lib/smartsheet";
 import { getSmartsheetDataset, normalizeColumnKey } from "@/lib/smartsheet";
-import { applyTransforms, buildResolvedFieldValue, normalizeSourceValue } from "@/lib/transforms";
+import { isRoleGroupFieldSource, isUnsafeDelimitedRoleGroup } from "@/lib/role-groups";
+import {
+  applyTransforms,
+  buildResolvedFieldValue,
+  buildResolvedPeopleGroupField,
+  normalizeSourceValue,
+  normalizedValueToPlainText,
+} from "@/lib/transforms";
 import { humanizeSlug } from "@/lib/utils";
 
 export interface AdminViewPreview {
@@ -114,8 +123,129 @@ function buildEmptyResolvedField(field: ViewFieldConfig) {
   return buildResolvedFieldValue(field, null);
 }
 
-function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConfig) {
+function getRoleGroupConfig(sourceConfig: SourceConfig | undefined, roleGroupId: string): SourceRoleGroupConfig | null {
+  const groups = sourceConfig?.roleGroups;
+  if (!groups?.length) {
+    return null;
+  }
+  return groups.find((g) => g.id === roleGroupId) ?? null;
+}
+
+function resolveCellPlainText(row: SmartsheetRow, selector: FieldSourceSelector | undefined): string {
+  if (!selector) {
+    return "";
+  }
+  const cell = resolveSelector(row, selector);
+  const normalized = normalizeSourceValue(cell);
+  return normalizedValueToPlainText(normalized).trim();
+}
+
+function resolveNumberedRoleGroupPeople(row: SmartsheetRow, group: SourceRoleGroupConfig): ResolvedPersonRoleEntry[] {
+  const slots = group.slots ?? [];
+  return slots.map((slotDef) => {
+    const name = slotDef.name ? resolveCellPlainText(row, slotDef.name) : "";
+    const email = slotDef.email ? resolveCellPlainText(row, slotDef.email) : "";
+    const phone = slotDef.phone ? resolveCellPlainText(row, slotDef.phone) : "";
+    const hasAttr = Boolean(slotDef.name || slotDef.email || slotDef.phone);
+    const anyValue = [slotDef.name ? name : "", slotDef.email ? email : "", slotDef.phone ? phone : ""].some((s) =>
+      s.trim(),
+    );
+    const isEmpty = !hasAttr || !anyValue;
+    const entry: ResolvedPersonRoleEntry = {
+      slot: slotDef.slot,
+      isEmpty,
+    };
+    if (name.trim()) {
+      entry.name = name.trim();
+    }
+    if (email.trim()) {
+      entry.email = email.trim();
+    }
+    if (phone.trim()) {
+      entry.phone = phone.trim();
+    }
+    return entry;
+  });
+}
+
+function resolveDelimitedParallelRoleGroup(row: SmartsheetRow, group: SourceRoleGroupConfig): ResolvedPersonRoleEntry[] {
+  const d = group.delimited;
+  if (!d) {
+    return [];
+  }
+  type Part = { attr: "name" | "email" | "phone"; tokens: string[] };
+  const parts: Part[] = [];
+  for (const attr of ["name", "email", "phone"] as const) {
+    const cfg = d[attr];
+    if (!cfg?.source) {
+      continue;
+    }
+    const cell = resolveSelector(row, cfg.source);
+    const normalized = normalizeSourceValue(cell);
+    const raw = normalizedValueToPlainText(normalized);
+    const delims = cfg.delimiters?.length ? cfg.delimiters : [",", ";", "\n"];
+    const tokens = delims
+      .reduce<string[]>((segments, delimiter) => segments.flatMap((s) => s.split(delimiter)), [raw])
+      .map((s) => s.trim())
+      .filter(Boolean);
+    parts.push({ attr, tokens });
+  }
+  if (parts.length === 0) {
+    return [];
+  }
+  const maxLen = Math.max(...parts.map((p) => p.tokens.length));
+  const people: ResolvedPersonRoleEntry[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    const name = parts.find((p) => p.attr === "name")?.tokens[i]?.trim() ?? "";
+    const email = parts.find((p) => p.attr === "email")?.tokens[i]?.trim() ?? "";
+    const phone = parts.find((p) => p.attr === "phone")?.tokens[i]?.trim() ?? "";
+    const isEmpty = !name && !email && !phone;
+    people.push({
+      slot: String(i + 1),
+      ...(name ? { name } : {}),
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
+      isEmpty,
+    });
+  }
+  return people;
+}
+
+function resolveRoleGroupField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConfig, sourceConfig: SourceConfig) {
+  if (!isRoleGroupFieldSource(field.source)) {
+    return buildEmptyResolvedField(field);
+  }
+  const rg = getRoleGroupConfig(sourceConfig, field.source.roleGroupId);
+  if (!rg) {
+    return buildEmptyResolvedField(field);
+  }
   try {
+    if (rg.mode === "numbered_slots") {
+      const people = resolveNumberedRoleGroupPeople(row, rg);
+      return buildResolvedPeopleGroupField(field, people, {
+        roleGroupReadOnly: false,
+      });
+    }
+    const unsafe = isUnsafeDelimitedRoleGroup(rg);
+    const people = resolveDelimitedParallelRoleGroup(row, rg);
+    return buildResolvedPeopleGroupField(field, people, {
+      roleGroupReadOnly: unsafe,
+    });
+  } catch (error) {
+    console.error(
+      `[smartsheets_view] Failed to resolve role group field "${field.key}" for view "${view.id}" row "${row.id}": ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return buildEmptyResolvedField(field);
+  }
+}
+
+function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConfig, sourceConfig: SourceConfig) {
+  try {
+    if (isRoleGroupFieldSource(field.source)) {
+      return resolveRoleGroupField(row, view, field, sourceConfig);
+    }
     const sourceCell = resolveSourceCell(row, field.source);
     const normalizedSourceValue = normalizeSourceValue(sourceCell);
     const transformedValue = applyTransforms(normalizedSourceValue, field.transforms, {
@@ -134,9 +264,9 @@ function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConf
   }
 }
 
-function resolveRow(row: SmartsheetRow, view: ViewConfig) {
+function resolveRow(row: SmartsheetRow, view: ViewConfig, sourceConfig: SourceConfig) {
   const fields = view.fields
-    .map((field) => resolveField(row, view, field))
+    .map((field) => resolveField(row, view, field, sourceConfig))
     .filter((field) => field.renderType !== "hidden");
 
   const fieldMap = fields.reduce<Record<string, (typeof fields)[number]>>((map, field) => {
@@ -164,10 +294,65 @@ function selectorExists(selector: FieldSourceSelector, columns: SmartsheetColumn
   return false;
 }
 
-export function collectSchemaDriftWarnings(view: ViewConfig, columns: SmartsheetColumn[]) {
+function describeSelector(selector: FieldSourceSelector) {
+  if (selector.columnTitle) {
+    return `"${selector.columnTitle}"`;
+  }
+  if (typeof selector.columnId === "number") {
+    return `column ${selector.columnId}`;
+  }
+  return "unknown selector";
+}
+
+export function collectSelectorsFromRoleGroup(group: SourceRoleGroupConfig): FieldSourceSelector[] {
+  const out: FieldSourceSelector[] = [];
+  if (group.mode === "numbered_slots") {
+    for (const slot of group.slots ?? []) {
+      if (slot.name) {
+        out.push(slot.name);
+      }
+      if (slot.email) {
+        out.push(slot.email);
+      }
+      if (slot.phone) {
+        out.push(slot.phone);
+      }
+    }
+    return out;
+  }
+  const d = group.delimited;
+  if (!d) {
+    return out;
+  }
+  for (const key of ["name", "email", "phone"] as const) {
+    const src = d[key]?.source;
+    if (src) {
+      out.push(src);
+    }
+  }
+  return out;
+}
+
+export function collectSchemaDriftWarnings(view: ViewConfig, columns: SmartsheetColumn[], sourceConfig?: SourceConfig) {
   const warnings = new Set<string>();
 
   for (const field of view.fields) {
+    if (isRoleGroupFieldSource(field.source)) {
+      const rg = getRoleGroupConfig(sourceConfig, field.source.roleGroupId);
+      if (!rg) {
+        warnings.add(`field "${field.key}" references unknown role group "${field.source.roleGroupId}"`);
+        continue;
+      }
+      const selectors = collectSelectorsFromRoleGroup(rg);
+      const missingSelectors = selectors.filter((selector) => !selectorExists(selector, columns));
+      if (missingSelectors.length === selectors.length && selectors.length > 0) {
+        warnings.add(`field "${field.key}" (role group "${rg.id}") does not match any current column in the source schema`);
+      } else if (missingSelectors.length > 0) {
+        const missingLabels = [...new Set(missingSelectors.map((selector) => describeSelector(selector)))];
+        warnings.add(`field "${field.key}" (role group "${rg.id}") is missing source columns: ${missingLabels.join(", ")}`);
+      }
+      continue;
+    }
     const selectors = buildFieldSelectors(field.source);
     if (selectors.length > 0 && selectors.every((selector) => !selectorExists(selector, columns))) {
       warnings.add(`field "${field.key}" does not match any current column in the source schema`);
@@ -198,10 +383,10 @@ function logSchemaDriftWarnings(slug: string, viewId: string, warnings: string[]
   );
 }
 
-function resolveView(view: ViewConfig, rows: SmartsheetRow[]): ResolvedView {
+function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: SourceConfig): ResolvedView {
   const filteredRows = applyViewFilters(rows, view.filters);
   const resolvedRows = filteredRows
-    .map((row) => resolveRow(row, view))
+    .map((row) => resolveRow(row, view, sourceConfig))
     .filter((row) => row.fields.some((field) => !field.isEmpty || field.textValue));
   const sortedRows = sortResolvedRows(resolvedRows, view.defaultSort);
 
@@ -299,13 +484,13 @@ export async function loadPublicPageState(
   const dataset = await getSmartsheetDataset(collection.sourceConfig, options?.datasetOptions);
 
   for (const view of collection.viewConfigs) {
-    logSchemaDriftWarnings(slug, view.id, collectSchemaDriftWarnings(view, dataset.columns));
+    logSchemaDriftWarnings(slug, view.id, collectSchemaDriftWarnings(view, dataset.columns, collection.sourceConfig));
   }
 
   return {
     ...collection,
     sourceName: dataset.name,
-    resolvedViews: collection.viewConfigs.map((view) => resolveView(view, dataset.rows)),
+    resolvedViews: collection.viewConfigs.map((view) => resolveView(view, dataset.rows, collection.sourceConfig)),
     fetchedAt: dataset.fetchedAt,
   };
 }
@@ -347,12 +532,12 @@ export async function loadAdminViewPreview(viewId: string): Promise<AdminViewPre
   }
 
   const dataset = await getSmartsheetDataset(sourceConfig, { fresh: true });
-  const schemaWarnings = collectSchemaDriftWarnings(viewConfig, dataset.columns);
+  const schemaWarnings = collectSchemaDriftWarnings(viewConfig, dataset.columns, sourceConfig);
   return {
     viewConfig,
     sourceConfig,
     sourceName: dataset.name,
-    resolvedView: resolveView(viewConfig, dataset.rows),
+    resolvedView: resolveView(viewConfig, dataset.rows, sourceConfig),
     schemaWarnings,
     fetchedAt: dataset.fetchedAt,
   };
@@ -373,8 +558,8 @@ export async function resolvePreviewFromConfig(viewConfig: ViewConfig): Promise<
   }
 
   const dataset = await getSmartsheetDataset(sourceConfig, { fresh: true });
-  const warnings = collectSchemaDriftWarnings(viewConfig, dataset.columns);
-  const resolvedView = resolveView(viewConfig, dataset.rows);
+  const warnings = collectSchemaDriftWarnings(viewConfig, dataset.columns, sourceConfig);
+  const resolvedView = resolveView(viewConfig, dataset.rows, sourceConfig);
 
   return {
     rows: resolvedView.rows,

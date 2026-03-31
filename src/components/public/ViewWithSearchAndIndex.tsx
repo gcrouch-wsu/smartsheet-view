@@ -13,6 +13,14 @@ import type { ContributorEditingClientConfig } from "@/lib/contributor-utils";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
+export function canOpenContributorEditor(
+  embed: boolean,
+  contributorEmail?: string | null,
+  editingConfig?: ContributorEditingClientConfig | null,
+) {
+  return !embed && Boolean(contributorEmail && editingConfig);
+}
+
 function getSearchableText(view: ResolvedView, row: ResolvedViewRow): string {
   const parts: string[] = [];
   for (const field of row.fields) {
@@ -251,7 +259,7 @@ export function ViewWithSearchAndIndex({
             layout={layout}
             view={filteredView}
             editableRowIds={editableRowIdSet}
-            onEditRow={contributorEmail && editingConfig ? handleEditRow : undefined}
+            onEditRow={canOpenContributorEditor(embed, contributorEmail, editingConfig) ? handleEditRow : undefined}
           />
         </div>
 

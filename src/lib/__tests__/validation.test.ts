@@ -1,5 +1,6 @@
 ﻿import { describe, expect, it } from "vitest";
-import { validateViewConfig } from "@/lib/config/validation";
+import type { SourceConfig } from "@/lib/config/types";
+import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
 
 describe("validateViewConfig", () => {
   it("accepts supported layouts and presentation keys that match fields", () => {
@@ -148,6 +149,178 @@ describe("validateViewConfig", () => {
         { attribute: "email", fieldKey: "coordinator_email", columnId: 202 },
       ],
     });
+  });
+
+  it("allows editing when a numbered role-group field is the editable content source", () => {
+    const source: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff Graduate Program Coordinator",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 301, columnTitle: "Staff Coordinator 1" },
+              email: { columnId: 302, columnTitle: "Staff Coordinator Email 1" },
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = validateViewConfig(
+      {
+        id: "directory-role-group-editing",
+        slug: "directory",
+        sourceId: "grad-programs",
+        label: "Directory Editing",
+        layout: "table",
+        public: false,
+        fields: [
+          {
+            key: "staffCoordinators",
+            label: "Staff Coordinators",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+        editing: {
+          enabled: true,
+          contactColumnIds: [101],
+          editableColumnIds: [],
+        },
+      },
+      { knownSourceIds: ["grad-programs"], sources: [source] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.editing?.enabled).toBe(true);
+  });
+
+  it("allows editing when a trusted delimited role-group field is the editable content source", () => {
+    const source: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "legacy-coordinators",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 201, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 202, columnTitle: "Coordinator Email" } },
+            trustPairing: true,
+          },
+        },
+      ],
+    };
+
+    const result = validateViewConfig(
+      {
+        id: "directory-trusted-role-group-editing",
+        slug: "directory",
+        sourceId: "grad-programs",
+        label: "Directory Editing",
+        layout: "table",
+        public: false,
+        fields: [
+          {
+            key: "legacyCoordinators",
+            label: "Legacy Coordinators",
+            source: { kind: "role_group", roleGroupId: "legacy-coordinators" },
+            render: { type: "people_group" },
+          },
+        ],
+        editing: {
+          enabled: true,
+          contactColumnIds: [101],
+          editableColumnIds: [],
+        },
+      },
+      { knownSourceIds: ["grad-programs"], sources: [source] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.editing?.enabled).toBe(true);
+  });
+
+  it("rejects editing when only an unsafe delimited role-group field is present", () => {
+    const source: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "legacy-coordinators",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 201, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 202, columnTitle: "Coordinator Email" } },
+          },
+        },
+      ],
+    };
+
+    const result = validateViewConfig(
+      {
+        id: "directory-unsafe-role-group-editing",
+        slug: "directory",
+        sourceId: "grad-programs",
+        label: "Directory Editing",
+        layout: "table",
+        public: false,
+        fields: [
+          {
+            key: "legacyCoordinators",
+            label: "Legacy Coordinators",
+            source: { kind: "role_group", roleGroupId: "legacy-coordinators" },
+            render: { type: "people_group" },
+          },
+        ],
+        editing: {
+          enabled: true,
+          contactColumnIds: [101],
+          editableColumnIds: [],
+        },
+      },
+      { knownSourceIds: ["grad-programs"], sources: [source] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((error) => error.includes("writable role-group field"))).toBe(true);
+  });
+
+  it("preserves trusted pairing on delimited source role groups", () => {
+    const result = validateSourceConfig({
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "legacy-coordinators",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 201, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 202, columnTitle: "Coordinator Email" } },
+            trustPairing: true,
+          },
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data?.roleGroups?.[0]?.delimited?.trustPairing).toBe(true);
   });
 
   const TINY_VALID_PNG =

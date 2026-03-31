@@ -100,8 +100,8 @@ function parseSourceConfig(value: unknown, id: string): SourceConfig {
   return result.data;
 }
 
-function parseViewConfig(value: unknown, id: string, knownSourceIds: string[]): ViewConfig {
-  const result = validateViewConfig(value, { knownSourceIds });
+function parseViewConfig(value: unknown, id: string, knownSourceIds: string[], sources: SourceConfig[]): ViewConfig {
+  const result = validateViewConfig(value, { knownSourceIds, sources });
   if (!result.success || !result.data) {
     throw new Error(`Invalid view config ${id}: ${result.errors.join(" ")}`);
   }
@@ -119,7 +119,7 @@ export async function listViewConfigs(): Promise<ViewConfig[]> {
   const knownSourceIds = sources.map((s) => s.id);
   await ensureConfigTables();
   const { rows } = await queryConfigDb<{ id: string; data: unknown }>("SELECT id, data FROM config_views ORDER BY id");
-  return rows.map((row) => parseViewConfig(row.data, row.id, knownSourceIds));
+  return rows.map((row) => parseViewConfig(row.data, row.id, knownSourceIds, sources));
 }
 
 export async function getSourceConfigById(sourceId: string): Promise<SourceConfig | null> {
@@ -139,7 +139,7 @@ export async function getViewConfigById(viewId: string): Promise<ViewConfig | nu
     viewId,
   ]);
   const row = rows[0];
-  return row ? parseViewConfig(row.data, row.id, knownSourceIds) : null;
+  return row ? parseViewConfig(row.data, row.id, knownSourceIds, sources) : null;
 }
 
 export async function getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }): Promise<ViewConfig[]> {
@@ -193,7 +193,7 @@ export async function saveSourceConfig(config: SourceConfig): Promise<void> {
 
 export async function saveViewConfig(config: ViewConfig): Promise<void> {
   const sources = await listSourceConfigs();
-  const result = validateViewConfig(config, { knownSourceIds: sources.map((s) => s.id) });
+  const result = validateViewConfig(config, { knownSourceIds: sources.map((s) => s.id), sources });
   if (!result.success || !result.data) {
     throw new Error(result.errors.join(" "));
   }

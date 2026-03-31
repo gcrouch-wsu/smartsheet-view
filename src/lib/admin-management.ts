@@ -50,7 +50,7 @@ async function getSourceForView(view: ViewConfig) {
 export async function getPublicationWarnings(view: ViewConfig) {
   const source = await getSourceForView(view);
   const schema = await getSmartsheetSchema(source, { fresh: true });
-  return collectSchemaDriftWarnings(view, schema.columns);
+  return collectSchemaDriftWarnings(view, schema.columns, source);
 }
 
 async function validateContributorEditing(view: ViewConfig) {
@@ -67,7 +67,7 @@ async function validateContributorEditing(view: ViewConfig) {
 
   const source = await getSourceForView(view);
   const schema = await getSmartsheetSchema(source, { fresh: true });
-  const errors = getContributorEditingValidationErrors(view, schema.columns);
+  const errors = getContributorEditingValidationErrors(view, schema.columns, source);
 
   if (errors.length > 0) {
     throw new AdminActionError({

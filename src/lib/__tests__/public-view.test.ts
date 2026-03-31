@@ -18,7 +18,7 @@ vi.mock("@/lib/smartsheet", () => ({
   normalizeColumnKey: (value: string) => value.trim().toLowerCase(),
 }));
 
-import { loadPublicPage } from "@/lib/public-view";
+import { collectSchemaDriftWarnings, loadPublicPage } from "@/lib/public-view";
 
 function createCell(columnId: number, columnTitle: string, value: unknown): SmartsheetCell {
   return {
@@ -189,5 +189,222 @@ describe("public view resolution", () => {
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to resolve field "brokenDate"')
     );
+  });
+
+  it("reports partial schema drift for role groups when only some selectors disappear", () => {
+    const warnings = collectSchemaDriftWarnings(
+      createView({
+        fields: [
+          {
+            key: "staffCoordinators",
+            label: "Staff Coordinators",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+      [
+        { id: 201, index: 0, title: "Staff Coordinator 1", type: "TEXT_NUMBER" },
+        { id: 202, index: 1, title: "Staff Coordinator Email 1", type: "TEXT_NUMBER" },
+        { id: 203, index: 2, title: "Staff Coordinator 2", type: "TEXT_NUMBER" },
+      ],
+      {
+        ...sourceConfig,
+        roleGroups: [
+          {
+            id: "staff",
+            label: "Staff Coordinator",
+            mode: "numbered_slots",
+            slots: [
+              {
+                slot: "1",
+                name: { columnId: 201, columnTitle: "Staff Coordinator 1" },
+                email: { columnId: 202, columnTitle: "Staff Coordinator Email 1" },
+              },
+              {
+                slot: "2",
+                name: { columnId: 203, columnTitle: "Staff Coordinator 2" },
+                email: { columnId: 204, columnTitle: "Staff Coordinator Email 2" },
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('field "staffCoordinators"');
+    expect(warnings[0]).toContain("missing source columns");
+    expect(warnings[0]).toContain("Staff Coordinator Email 2");
+  });
+
+  it("resolves numbered role groups into structured people and excludes empty slots from text output", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        fields: [
+          {
+            key: "staffCoordinators",
+            label: "Staff Coordinators",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff Coordinators",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 201, columnTitle: "Staff Coordinator 1" },
+              email: { columnId: 202, columnTitle: "Staff Coordinator Email 1" },
+            },
+            {
+              slot: "2",
+              name: { columnId: 203, columnTitle: "Staff Coordinator 2" },
+              email: { columnId: 204, columnTitle: "Staff Coordinator Email 2" },
+            },
+          ],
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 201, index: 0, title: "Staff Coordinator 1", type: "TEXT_NUMBER" },
+          { id: 202, index: 1, title: "Staff Coordinator Email 1", type: "TEXT_NUMBER" },
+          { id: 203, index: 2, title: "Staff Coordinator 2", type: "TEXT_NUMBER" },
+          { id: 204, index: 3, title: "Staff Coordinator Email 2", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(201, "Staff Coordinator 1", "Lisa Lujan"),
+            createCell(202, "Staff Coordinator Email 1", "llujan@wsu.edu"),
+            createCell(203, "Staff Coordinator 2", ""),
+            createCell(204, "Staff Coordinator Email 2", ""),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const field = page?.views[0]?.rows[0]?.fieldMap.staffCoordinators;
+
+    expect(field?.renderType).toBe("people_group");
+    expect(field?.roleGroupReadOnly).toBe(false);
+    expect(field?.people).toEqual([
+      { slot: "1", name: "Lisa Lujan", email: "llujan@wsu.edu", isEmpty: false },
+      { slot: "2", isEmpty: true },
+    ]);
+    expect(field?.textValue).toContain("Lisa Lujan");
+    expect(field?.textValue).not.toContain("slot 2");
+    expect(field?.listValue).toEqual(["Lisa Lujan\nllujan@wsu.edu"]);
+  });
+
+  it("marks trusted multi-attribute delimited role groups writable at runtime", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        fields: [
+          {
+            key: "legacyCoordinators",
+            label: "Legacy Coordinators",
+            source: { kind: "role_group", roleGroupId: "legacy" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "legacy",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 301, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 302, columnTitle: "Coordinator Email" } },
+            trustPairing: true,
+          },
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 301, index: 0, title: "Coordinator", type: "TEXT_NUMBER" },
+          { id: 302, index: 1, title: "Coordinator Email", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(301, "Coordinator", "Bob Smith, Jane Doe"),
+            createCell(302, "Coordinator Email", "smith@wsu.edu, doe@wsu.edu"),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const field = page?.views[0]?.rows[0]?.fieldMap.legacyCoordinators;
+
+    expect(field?.roleGroupReadOnly).toBe(false);
+    expect(field?.people).toEqual([
+      { slot: "1", name: "Bob Smith", email: "smith@wsu.edu", isEmpty: false },
+      { slot: "2", name: "Jane Doe", email: "doe@wsu.edu", isEmpty: false },
+    ]);
+  });
+
+  it("marks untrusted multi-attribute delimited role groups read-only at runtime", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        fields: [
+          {
+            key: "legacyCoordinators",
+            label: "Legacy Coordinators",
+            source: { kind: "role_group", roleGroupId: "legacy" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "legacy",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 301, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 302, columnTitle: "Coordinator Email" } },
+          },
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 301, index: 0, title: "Coordinator", type: "TEXT_NUMBER" },
+          { id: 302, index: 1, title: "Coordinator Email", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(301, "Coordinator", "Bob Smith, Jane Doe"),
+            createCell(302, "Coordinator Email", "smith@wsu.edu, doe@wsu.edu"),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const field = page?.views[0]?.rows[0]?.fieldMap.legacyCoordinators;
+
+    expect(field?.roleGroupReadOnly).toBe(true);
+    expect(field?.people).toHaveLength(2);
   });
 });

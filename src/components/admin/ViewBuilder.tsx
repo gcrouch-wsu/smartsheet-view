@@ -14,10 +14,22 @@ import { getEligibleEditableFieldDefinitions, getFieldsForMultiPersonGroup } fro
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { HeaderLogoBrandingSection } from "./HeaderLogoBrandingSection";
 import { ThemeEditor } from "./ThemeEditor";
+import { isRoleGroupFieldSource } from "@/lib/role-groups";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
-import type { RenderType, SourceConfig, SmartsheetColumn, TransformConfig, ViewConfig, ViewEditingConfig, ViewFieldConfig, ViewFilterConfig, ViewSortConfig } from "@/lib/config/types";
+import type {
+  RenderType,
+  SourceConfig,
+  SmartsheetColumn,
+  TransformConfig,
+  ViewConfig,
+  ViewEditingConfig,
+  ViewFieldConfig,
+  ViewFieldSource,
+  ViewFilterConfig,
+  ViewSortConfig,
+} from "@/lib/config/types";
 import type { ResolvedView } from "@/lib/config/types";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 
@@ -189,6 +201,7 @@ export function ViewBuilder({
   const [schemaError, setSchemaError] = useState<string>("");
   const [schemaLoading, setSchemaLoading] = useState(false);
   const sourceMap = useMemo(() => new Map(sources.map((source) => [source.id, source.label])), [sources]);
+  const activeSource = useMemo(() => sources.find((s) => s.id === view.sourceId), [sources, view.sourceId]);
   const contactColumns = useMemo(
     () => schema?.columns.filter((column) => column.type === "CONTACT_LIST" || column.type === "MULTI_CONTACT_LIST") ?? [],
     [schema],
@@ -290,13 +303,17 @@ export function ViewBuilder({
 
   function toggleColumnIncluded(col: SmartsheetColumn) {
     const match = view.fields.find(
-      (f) => f.source.columnTitle === col.title || f.source.columnId === col.id
+      (f) =>
+        !isRoleGroupFieldSource(f.source) &&
+        (f.source.columnTitle === col.title || f.source.columnId === col.id),
     );
     if (match) {
       setView((current) => ({
         ...current,
         fields: current.fields.filter(
-          (f) => f.source.columnTitle !== col.title && f.source.columnId !== col.id
+          (f) =>
+            isRoleGroupFieldSource(f.source) ||
+            (f.source.columnTitle !== col.title && f.source.columnId !== col.id),
         ),
       }));
     } else {
@@ -309,13 +326,46 @@ export function ViewBuilder({
 
   function isColumnIncluded(col: SmartsheetColumn): boolean {
     const key = columnToKey(col);
-    return view.fields.some((f) => f.key === key || f.source.columnTitle === col.title || f.source.columnId === col.id);
+    return view.fields.some(
+      (f) =>
+        !isRoleGroupFieldSource(f.source) &&
+        (f.key === key || f.source.columnTitle === col.title || f.source.columnId === col.id),
+    );
   }
 
   function getFieldForColumn(col: SmartsheetColumn): ViewFieldConfig | undefined {
     return view.fields.find(
-      (f) => f.key === columnToKey(col) || f.source.columnTitle === col.title || f.source.columnId === col.id
+      (f) =>
+        !isRoleGroupFieldSource(f.source) &&
+        (f.key === columnToKey(col) || f.source.columnTitle === col.title || f.source.columnId === col.id),
     );
+  }
+
+  function addRoleGroupFieldToView(roleGroupId: string) {
+    const src = sources.find((s) => s.id === view.sourceId);
+    const rg = src?.roleGroups?.find((g) => g.id === roleGroupId);
+    if (!rg) {
+      return;
+    }
+    let key = slugify(rg.label);
+    let n = 0;
+    while (view.fields.some((f) => f.key === key)) {
+      n += 1;
+      key = `${slugify(rg.label)}_${n}`;
+    }
+    setView((v) => ({
+      ...v,
+      fields: [
+        ...v.fields,
+        {
+          key,
+          label: rg.defaultDisplayLabel ?? rg.label,
+          source: { kind: "role_group", roleGroupId },
+          transforms: [],
+          render: { type: "people_group" },
+        },
+      ],
+    }));
   }
 
   async function saveView() {
@@ -1557,7 +1607,9 @@ export function ViewBuilder({
                               onChange={(event) => {
                                 const nextLabel = event.target.value;
                                 const idx = view.fields.findIndex(
-                                  (f) => f.source.columnTitle === col.title || f.source.columnId === col.id
+                                  (f) =>
+                                    !isRoleGroupFieldSource(f.source) &&
+                                    (f.source.columnTitle === col.title || f.source.columnId === col.id),
                                 );
                                 if (idx >= 0 && view.fields[idx]) {
                                   updateField(idx, { ...view.fields[idx], label: nextLabel });
@@ -1590,7 +1642,9 @@ export function ViewBuilder({
             <p className="text-sm text-[color:var(--wsu-muted)]">Select columns above to add them here, then reorder.</p>
           ) : (
             view.fields.map((field, index) => {
-              const isUnmapped = !field.source.columnId && !field.source.columnTitle;
+              const rgSrc = isRoleGroupFieldSource(field.source) ? field.source : null;
+              const colSource = (rgSrc ? null : field.source) as ViewFieldSource | null;
+              const isUnmapped = Boolean(colSource && !colSource.columnId && !colSource.columnTitle);
               return (
               <div
                 key={`${field.key}-${index}`}
@@ -1608,27 +1662,77 @@ export function ViewBuilder({
                     />
                   </div>
                   <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-                    Smartsheet: {field.source.columnTitle ?? field.source.columnId ?? (isUnmapped ? "—" : "—")}
-                    {isUnmapped && (
-                      <span className="ml-2 text-amber-600 font-medium">Map this field to a column</span>
-                    )}
-                  {field.source.columnType && (
-                      <span className="ml-1.5 rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-[10px] font-mono">{field.source.columnType}</span>
+                    {rgSrc ? (
+                      <>
+                        Role group:{" "}
+                        <span className="font-mono text-[color:var(--wsu-ink)]">{rgSrc.roleGroupId}</span>
+                        {activeSource?.roleGroups?.find((g) => g.id === rgSrc.roleGroupId)
+                          ?.mode === "delimited_parallel" && (
+                          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+                            Delimited role group
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Smartsheet:{" "}
+                        {colSource?.columnTitle ?? colSource?.columnId ?? (isUnmapped ? "—" : "—")}
+                        {isUnmapped && (
+                          <span className="ml-2 text-amber-600 font-medium">Map this field to a column</span>
+                        )}
+                        {colSource?.columnType && (
+                          <span className="ml-1.5 rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-[10px] font-mono">
+                            {colSource.columnType}
+                          </span>
+                        )}
+                      </>
                     )}
                   </p>
+                  {rgSrc && activeSource?.roleGroups?.length ? (
+                    <label className="mt-2 flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                      <span>Linked role group</span>
+                      <select
+                        value={rgSrc.roleGroupId}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          const rg = activeSource.roleGroups?.find((g) => g.id === id);
+                          updateField(index, {
+                            ...field,
+                            label: rg?.defaultDisplayLabel ?? rg?.label ?? field.label,
+                            source: { kind: "role_group", roleGroupId: id },
+                            transforms: [],
+                            render: { ...field.render, type: "people_group" },
+                          });
+                        }}
+                        className="max-w-md rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium"
+                      >
+                        {activeSource.roleGroups.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.label} ({g.id})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
 
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
                     <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
                       <span>Render as</span>
-                      <select
-                        value={field.render.type}
-                        onChange={(e) => updateField(index, { ...field, render: { ...field.render, type: e.target.value as RenderType } })}
-                        className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
-                      >
-                        {RENDER_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
-                        ))}
-                      </select>
+                      {rgSrc ? (
+                        <p className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-3 py-2 text-xs font-medium text-[color:var(--wsu-ink)]">
+                          People group (fixed for role group fields)
+                        </p>
+                      ) : (
+                        <select
+                          value={field.render.type}
+                          onChange={(e) => updateField(index, { ...field, render: { ...field.render, type: e.target.value as RenderType } })}
+                          className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                        >
+                          {RENDER_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
+                          ))}
+                        </select>
+                      )}
                     </label>
                     {(["list", "mailto_list", "phone_list"].includes(field.render.type) ||
                       (field.render.type === "text" && field.transforms?.some((t) => t.op === "split"))) && (
@@ -1658,59 +1762,61 @@ export function ViewBuilder({
                         )}
                       </>
                     )}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Transforms</span>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {field.transforms?.map((t, ti) => (
-                          <span key={ti} className="group relative flex items-center gap-1 rounded-full bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[10px] font-medium text-[color:var(--wsu-muted)]">
-                            {t.op}
-                            {t.op === "split" && (
-                              <input
-                                type="text"
-                                value={t.delimiter ?? ","}
-                                onChange={(e) => {
+                    {!rgSrc ? (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">Transforms</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {field.transforms?.map((t, ti) => (
+                            <span key={ti} className="group relative flex items-center gap-1 rounded-full bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[10px] font-medium text-[color:var(--wsu-muted)]">
+                              {t.op}
+                              {t.op === "split" && (
+                                <input
+                                  type="text"
+                                  value={t.delimiter ?? ","}
+                                  onChange={(e) => {
+                                    const next = [...(field.transforms ?? [])];
+                                    next[ti] = { ...t, delimiter: e.target.value || undefined };
+                                    updateField(index, { ...field, transforms: next });
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-10 min-w-0 rounded border-0 bg-white/60 px-1 py-0 text-[10px] focus:ring-1"
+                                  placeholder=","
+                                  title="Delimiter (e.g. comma)"
+                                />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
                                   const next = [...(field.transforms ?? [])];
-                                  next[ti] = { ...t, delimiter: e.target.value || undefined };
+                                  next.splice(ti, 1);
                                   updateField(index, { ...field, transforms: next });
                                 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-10 min-w-0 rounded border-0 bg-white/60 px-1 py-0 text-[10px] focus:ring-1"
-                                placeholder=","
-                                title="Delimiter (e.g. comma)"
-                              />
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = [...(field.transforms ?? [])];
-                                next.splice(ti, 1);
-                                updateField(index, { ...field, transforms: next });
-                              }}
-                              className="text-[color:var(--wsu-muted)] hover:text-rose-600"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            if (!e.target.value) return;
-                            const op = e.target.value;
-                            const newTransform = op === "split" ? { op: "split", delimiter: "," } : { op };
-                            const next = [...(field.transforms ?? []), newTransform];
-                            updateField(index, { ...field, transforms: next });
-                            e.target.value = "";
-                          }}
-                          className="rounded-full border border-[color:var(--wsu-border)] bg-white px-2 py-0.5 text-[10px] font-medium"
-                        >
-                          <option value="">+ Add</option>
-                          {TRANSFORM_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
+                                className="text-[color:var(--wsu-muted)] hover:text-rose-600"
+                              >
+                                ×
+                              </button>
+                            </span>
                           ))}
-                        </select>
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (!e.target.value) return;
+                              const op = e.target.value;
+                              const newTransform = op === "split" ? { op: "split", delimiter: "," } : { op };
+                              const next = [...(field.transforms ?? []), newTransform];
+                              updateField(index, { ...field, transforms: next });
+                              e.target.value = "";
+                            }}
+                            className="rounded-full border border-[color:var(--wsu-border)] bg-white px-2 py-0.5 text-[10px] font-medium"
+                          >
+                            <option value="">+ Add</option>
+                            {TRANSFORM_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt.replace(/_/g, " ")}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-4">
@@ -1794,6 +1900,34 @@ export function ViewBuilder({
             );
             })
           )}
+              {activeSource?.roleGroups && activeSource.roleGroups.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--wsu-muted)]">Add grouped role field</p>
+                  <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                    Appends one people-group column backed by a role group from this view&apos;s source. Configure role groups on the source record (admin → Sources).
+                  </p>
+                  <div className="mt-2">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) {
+                          addRoleGroupFieldToView(v);
+                        }
+                        e.target.value = "";
+                      }}
+                      className="w-full max-w-md rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">Choose a role group to add…</option>
+                      {activeSource.roleGroups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.label} ({g.id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : null}
               </div>
             </div>
 

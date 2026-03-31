@@ -77,7 +77,7 @@ describe("transforms", () => {
     };
 
     const result = buildResolvedFieldValue(field, "2024-01-15");
-    expect(result.sortValue).toBe(new Date("2024-01-15").toISOString());
+    expect(result.sortValue).toBe("2024-01-15");
     // textValue should be the formatted display string, not the ISO string
     expect(result.textValue).toMatch(/Jan/);
     expect(result.textValue).not.toBe("2024-01-15");

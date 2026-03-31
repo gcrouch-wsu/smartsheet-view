@@ -2,6 +2,7 @@ import type {
   ContactValue,
   PublicLink,
   ResolvedFieldValue,
+  ResolvedPersonRoleEntry,
   SmartsheetCell,
   SmartsheetRow,
   TransformConfig,
@@ -245,7 +246,16 @@ function formatDate(value: unknown, config?: TransformConfig) {
     return "";
   }
 
-  const parsed = new Date(dateCandidate);
+  let parsed: Date;
+  const isoDateMatch = typeof dateCandidate === "string" ? dateCandidate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+
+  if (isoDateMatch) {
+    const [_, year, month, day] = isoDateMatch;
+    parsed = new Date(Number(year), Number(month) - 1, Number(day));
+  } else {
+    parsed = new Date(dateCandidate);
+  }
+
   if (Number.isNaN(parsed.getTime())) {
     return dateCandidate;
   }
@@ -271,6 +281,27 @@ function asText(value: unknown) {
       .join(", ");
   }
   return normalizeToStringList(value).join(", ").trim();
+}
+
+/** Plain text for role-group cells and search fallbacks (same rules as text render). */
+export function normalizedValueToPlainText(value: unknown): string {
+  return asText(value);
+}
+
+function sortKeyForDateRaw(rawDateStr: string): string | undefined {
+  if (!rawDateStr.trim()) {
+    return undefined;
+  }
+  const isoDateMatch = rawDateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateMatch) {
+    const [, y, m, d] = isoDateMatch;
+    return `${y}-${m}-${d}`;
+  }
+  const parsed = new Date(rawDateStr);
+  if (Number.isNaN(parsed.getTime())) {
+    return rawDateStr;
+  }
+  return parsed.toISOString();
 }
 
 export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
@@ -470,8 +501,7 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     case "date": {
       const rawDateStr = normalizeToStringList(value)[0] ?? "";
       if (rawDateStr) {
-        const parsed = new Date(rawDateStr);
-        sortValue = !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : rawDateStr;
+        sortValue = sortKeyForDateRaw(rawDateStr);
       }
       textValue = formatDate(value);
       listValue = textValue ? [textValue] : [];
@@ -483,6 +513,8 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
       break;
     case "hidden":
       break;
+    case "people_group":
+      return buildResolvedPeopleGroupField(field, []);
     default: {
       // "text" and others: when value is array (e.g. from split transform) and listDisplay is set, support stacked/inline list
       const isArray = Array.isArray(value) && value.length > 0;
@@ -507,6 +539,70 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     sortValue,
     listValue: isEmpty && emptyLabel ? [emptyLabel] : listValue,
     links,
+    isEmpty,
+    hideWhenEmpty: field.emptyBehavior === "hide",
+    hideLabel: field.hideLabel,
+    listDelimiter: field.render.listDelimiter,
+    listDisplay: field.render.listDisplay,
+  };
+}
+
+function personEntryToSummaryLines(entry: ResolvedPersonRoleEntry): { textLines: string[]; links: PublicLink[] } {
+  const textLines: string[] = [];
+  const links: PublicLink[] = [];
+  const name = entry.name?.trim();
+  const email = entry.email?.trim();
+  const phone = entry.phone?.trim();
+  if (name) {
+    textLines.push(name);
+  }
+  if (email) {
+    textLines.push(email);
+    links.push({ label: email, href: `mailto:${email}` });
+  }
+  if (phone) {
+    textLines.push(phone);
+    links.push({ label: phone, href: `tel:${phone.replace(/[^\d+]/g, "")}` });
+  }
+  return { textLines, links };
+}
+
+export function buildResolvedPeopleGroupField(
+  field: ViewFieldConfig,
+  people: ResolvedPersonRoleEntry[],
+  options?: { roleGroupReadOnly?: boolean },
+): ResolvedFieldValue {
+  const renderType = field.render.type;
+  const emptyLabel = field.render.emptyLabel ?? "";
+  const populated = people.filter((p) => !p.isEmpty);
+  const textSegments: string[] = [];
+  const listValue: string[] = [];
+  const links: PublicLink[] = [];
+
+  for (const entry of populated) {
+    const { textLines, links: entryLinks } = personEntryToSummaryLines(entry);
+    if (textLines.length > 0) {
+      const block = textLines.join("\n");
+      textSegments.push(block);
+      listValue.push(block);
+    }
+    links.push(...entryLinks);
+  }
+
+  const textValue = textSegments.join("\n\n").trim();
+  const isEmpty = populated.length === 0;
+  const firstSort = populated[0]?.name?.trim() || populated[0]?.email?.trim() || populated[0]?.phone?.trim();
+
+  return {
+    key: field.key,
+    label: field.label || field.key,
+    renderType,
+    textValue: isEmpty ? emptyLabel : textValue,
+    sortValue: firstSort?.toLowerCase(),
+    listValue: isEmpty && emptyLabel ? [emptyLabel] : listValue,
+    links,
+    people,
+    roleGroupReadOnly: options?.roleGroupReadOnly,
     isEmpty,
     hideWhenEmpty: field.emptyBehavior === "hide",
     hideLabel: field.hideLabel,

@@ -82,7 +82,7 @@ export async function PATCH(
     return NextResponse.json({ error: "You cannot edit this row." }, { status: 403 });
   }
 
-  const editingConfig = buildContributorEditingClientConfig(view, dataset.columns);
+  const editingConfig = buildContributorEditingClientConfig(view, dataset.columns, collection.sourceConfig);
   if (!editingConfig) {
     return NextResponse.json({ error: "View not found." }, { status: 404 });
   }

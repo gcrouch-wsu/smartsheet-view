@@ -74,6 +74,7 @@ export const RENDER_TYPE_OPTIONS: RenderType[] = [
   "link",
   "date",
   "badge",
+  "people_group",
   "hidden",
 ];
 export const FILTER_OPERATOR_OPTIONS: FilterOperator[] = [

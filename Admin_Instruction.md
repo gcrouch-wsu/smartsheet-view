@@ -46,6 +46,24 @@ When creating a source, enter:
 
 After saving, always use `Test connection`.
 
+### Role groups on sources
+
+After fetching schema, use `Merge detected role groups` to pull in numbered role patterns from Smartsheet column titles.
+
+Examples:
+
+- `Department Chair or School Director Name 1`
+- `Department Chair or School Director Email 1`
+- `Faculty Graduate Program Coordinator or Designee 1`
+
+Then review the `Role groups` section on the source page:
+
+- numbered-slot groups are safe by structure and pair people by shared slot number
+- single-attribute delimited groups are safe because there is no cross-column pairing
+- multi-attribute delimited groups are read-only by default unless you explicitly enable `Trust positional pairing`
+
+Only enable trusted pairing when you know the delimited name, email, and phone columns stay aligned in Smartsheet.
+
 ## Setup And Layout
 
 Use the Setup tab to define the structure of the page.
@@ -141,6 +159,12 @@ Field controls include:
 - `Hide when empty`: remove the field entirely when blank
 - `A-Z index`: choose the field used for alphabetical navigation
 
+The Fields tab can also add grouped role fields from the source:
+
+- use `Add grouped role field` to append one `people_group` field backed by a source role group
+- grouped role fields render under one shared header instead of exposing every numbered Smartsheet column separately
+- if the linked source role group uses legacy delimited data, the field badge will tell you it is a delimited role group
+
 Use `Hide when empty` for optional fields that only apply to some rows so the page does not show empty labels.
 
 ## Filters And Sort
@@ -167,27 +191,21 @@ Contributor access works like this:
 - they can then claim access to that row
 - they can edit only the selected editable fields or configured group fields
 
-### Multi-person field groups
+### Grouped role editing
 
-Use `Multi-person field groups` when a row stores repeated people data across separate columns, such as coordinator names, coordinator emails, and coordinator phone numbers.
+The current preferred model is source-level role groups, not manually reconstructed comma-separated people data.
 
-Groups let contributors use `Add person`, `Remove`, and sometimes `Clear everyone` instead of editing one long text string.
+When a view contains a grouped role field:
 
-Important matching rule:
+- numbered-slot role groups derive contributor editing automatically
+- fixed-slot groups keep each person tied to slot `1`, `2`, `3`, and so on
+- fixed-slot groups do not show `Add person` or `Remove` because the slots are defined by the source columns
+- trusted legacy delimited groups may still show add/remove behavior because they are serialized back as ordered delimited values
+- unsafe multi-attribute delimited groups stay read-only in the contributor drawer
 
-- the app matches people by position across the mapped columns
-- first name pairs with first email and first phone
-- second name pairs with second email and second phone
-- if counts or order do not match, people will be paired incorrectly
+This protects against Smartsheet reordering parallel delimited columns and breaking name/email alignment.
 
-Example:
-
-- `Jane Doe, Bob Smith`
-- must line up with `doe@wsu.edu, smith@wsu.edu`
-
-If the email order is reversed, or one column has an extra or missing person, the grouped cards will not represent the same people correctly.
-
-### Delimiters
+### Legacy delimiters
 
 The parser treats all of these as separators:
 
@@ -198,9 +216,11 @@ The parser treats all of these as separators:
 Important detail:
 
 - delimiter style does not carry meaning by itself
-- the app only cares about the order of people across the mapped columns
+- the app only cares about the order of people across the mapped columns when the group is explicitly trusted
 - plain-text and phone values are saved back as comma-separated text
 - contact columns still preserve the same person order when written back
+
+Do not assume a multi-attribute delimited source is safe just because the values currently look aligned. If Smartsheet reorders one parallel column independently, the pairing becomes wrong.
 
 The Editing tab also controls:
 
@@ -225,7 +245,18 @@ After schema changes:
 
 - refresh schema
 - recheck field mappings
+- recheck source role groups
 - recheck contributor contact columns and editable fields
+
+### Print / save as PDF
+
+Public views now include a print-friendly route. Use it when someone wants a printable or browser-generated PDF version of the current view.
+
+- open the public view
+- choose the print action
+- review the print route output before saving to PDF
+
+This is semantic HTML designed for browser print. It is not the same as a guaranteed tagged PDF / PDF-UA workflow.
 
 ## Release Checklist
 
@@ -239,6 +270,8 @@ After schema changes:
    - save to Smartsheet
    - password reset flow
    - grouped contact editing when groups are enabled
+   - read-only behavior for unsafe delimited grouped roles, if any exist
+   - trusted pairing behavior if any source role group uses legacy delimited columns
 5. Commit and push changes before expecting Vercel to deploy them.
 
 ## Reference Docs

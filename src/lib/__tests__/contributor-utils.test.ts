@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildContributorEditingClientConfig,
+  getContributorEditingValidationErrors,
   hasMultiPersonValidationErrors,
   parseMultiPersonValue,
   parseMultiPersonRow,
@@ -9,7 +11,7 @@ import {
   validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
-import type { EditableFieldGroup, ResolvedViewRow, SmartsheetColumn } from "@/lib/config/types";
+import type { EditableFieldGroup, ResolvedViewRow, SmartsheetColumn, SourceConfig, ViewConfig } from "@/lib/config/types";
 
 describe("serializeContactDisplayToObjectValue", () => {
   it("returns null for empty CONTACT_LIST so callers send value clear", () => {
@@ -410,5 +412,205 @@ describe("serializeMultiPersonToCells", () => {
         },
       },
     ]);
+  });
+});
+
+describe("derived role-group contributor editing", () => {
+  const contactColumn: SmartsheetColumn = {
+    id: 900,
+    index: 0,
+    title: "Editors",
+    type: "CONTACT_LIST",
+  };
+
+  it("derives fixed-slot editable groups from numbered role groups", () => {
+    const sourceConfig: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff Coordinators",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 301, columnTitle: "Staff Coordinator 1" },
+              email: { columnId: 302, columnTitle: "Staff Coordinator Email 1" },
+            },
+            {
+              slot: "2",
+              name: { columnId: 303, columnTitle: "Staff Coordinator 2" },
+            },
+          ],
+        },
+      ],
+    };
+    const view: ViewConfig = {
+      id: "faculty",
+      slug: "grad-programs",
+      sourceId: "grad-programs",
+      label: "Faculty",
+      layout: "table",
+      public: false,
+      fields: [
+        {
+          key: "staffCoordinators",
+          label: "Staff Coordinators",
+          source: { kind: "role_group", roleGroupId: "staff" },
+          render: { type: "people_group" },
+        },
+      ],
+      editing: {
+        enabled: true,
+        contactColumnIds: [900],
+        editableColumnIds: [],
+      },
+    };
+    const columns: SmartsheetColumn[] = [
+      contactColumn,
+      { id: 301, index: 1, title: "Staff Coordinator 1", type: "TEXT_NUMBER" },
+      { id: 302, index: 2, title: "Staff Coordinator Email 1", type: "TEXT_NUMBER" },
+      { id: 303, index: 3, title: "Staff Coordinator 2", type: "TEXT_NUMBER" },
+    ];
+
+    const result = buildContributorEditingClientConfig(view, columns, sourceConfig);
+
+    expect(result?.editableFields).toEqual([]);
+    expect(result?.editableFieldGroups).toHaveLength(1);
+    expect(result?.editableFieldGroups[0]).toMatchObject({
+      label: "Staff Coordinators",
+      fromRoleGroupViewFieldKey: "staffCoordinators",
+      usesFixedSlots: true,
+    });
+    expect(result?.editableFieldGroups[0]?.attributes).toEqual([
+      expect.objectContaining({ attribute: "name", columnId: 301, slot: "1" }),
+      expect.objectContaining({ attribute: "email", columnId: 302, slot: "1" }),
+      expect.objectContaining({ attribute: "name", columnId: 303, slot: "2" }),
+    ]);
+  });
+
+  it("marks unsafe multi-attribute delimited role groups read-only and invalid as sole editable content", () => {
+    const sourceConfig: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "legacy",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 401, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 402, columnTitle: "Coordinator Email" } },
+          },
+        },
+      ],
+    };
+    const view: ViewConfig = {
+      id: "faculty",
+      slug: "grad-programs",
+      sourceId: "grad-programs",
+      label: "Faculty",
+      layout: "table",
+      public: false,
+      fields: [
+        {
+          key: "legacyCoordinators",
+          label: "Legacy Coordinators",
+          source: { kind: "role_group", roleGroupId: "legacy" },
+          render: { type: "people_group" },
+        },
+      ],
+      editing: {
+        enabled: true,
+        contactColumnIds: [900],
+        editableColumnIds: [],
+      },
+    };
+    const columns: SmartsheetColumn[] = [
+      contactColumn,
+      { id: 401, index: 1, title: "Coordinator", type: "TEXT_NUMBER" },
+      { id: 402, index: 2, title: "Coordinator Email", type: "TEXT_NUMBER" },
+    ];
+
+    const result = buildContributorEditingClientConfig(view, columns, sourceConfig);
+
+    expect(result?.editableFieldGroups).toHaveLength(1);
+    expect(result?.editableFieldGroups[0]).toMatchObject({
+      readOnly: true,
+      usesFixedSlots: false,
+      fromRoleGroupViewFieldKey: "legacyCoordinators",
+    });
+    expect(getContributorEditingValidationErrors(view, columns, sourceConfig)).toContain(
+      "Select at least one Editable Field (what contributors can edit), add a Multi-person field group, or include a writable role-group field. Contact columns only define who can edit, not what.",
+    );
+  });
+
+  it("derives writable groups from trusted multi-attribute delimited role groups", () => {
+    const sourceConfig: SourceConfig = {
+      id: "grad-programs",
+      label: "GRAD Programs",
+      sourceType: "sheet",
+      smartsheetId: 1,
+      roleGroups: [
+        {
+          id: "legacy",
+          label: "Legacy Coordinators",
+          mode: "delimited_parallel",
+          delimited: {
+            name: { source: { columnId: 401, columnTitle: "Coordinator" } },
+            email: { source: { columnId: 402, columnTitle: "Coordinator Email" } },
+            trustPairing: true,
+          },
+        },
+      ],
+    };
+    const view: ViewConfig = {
+      id: "faculty",
+      slug: "grad-programs",
+      sourceId: "grad-programs",
+      label: "Faculty",
+      layout: "table",
+      public: false,
+      fields: [
+        {
+          key: "legacyCoordinators",
+          label: "Legacy Coordinators",
+          source: { kind: "role_group", roleGroupId: "legacy" },
+          render: { type: "people_group" },
+        },
+      ],
+      editing: {
+        enabled: true,
+        contactColumnIds: [900],
+        editableColumnIds: [],
+      },
+    };
+    const columns: SmartsheetColumn[] = [
+      contactColumn,
+      { id: 401, index: 1, title: "Coordinator", type: "TEXT_NUMBER" },
+      { id: 402, index: 2, title: "Coordinator Email", type: "TEXT_NUMBER" },
+    ];
+
+    const result = buildContributorEditingClientConfig(view, columns, sourceConfig);
+
+    expect(result?.editableFieldGroups).toHaveLength(1);
+    expect(result?.editableFieldGroups[0]).toMatchObject({
+      label: "Legacy Coordinators",
+      fromRoleGroupViewFieldKey: "legacyCoordinators",
+      usesFixedSlots: false,
+    });
+    expect(result?.editableFieldGroups[0]?.readOnly).toBeUndefined();
+    expect(result?.editableFieldGroups[0]?.attributes).toEqual([
+      expect.objectContaining({ attribute: "name", columnId: 401 }),
+      expect.objectContaining({ attribute: "email", columnId: 402 }),
+    ]);
+    expect(getContributorEditingValidationErrors(view, columns, sourceConfig)).not.toContain(
+      "Select at least one Editable Field (what contributors can edit), add a Multi-person field group, or include a writable role-group field. Contact columns only define who can edit, not what.",
+    );
   });
 });

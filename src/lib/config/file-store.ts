@@ -47,8 +47,8 @@ function parseSourceConfig(value: unknown, fileName: string): SourceConfig {
   return result.data;
 }
 
-function parseViewConfig(value: unknown, fileName: string, knownSourceIds: string[]): ViewConfig {
-  const result = validateViewConfig(value, { knownSourceIds });
+function parseViewConfig(value: unknown, fileName: string, knownSourceIds: string[], sources: SourceConfig[]): ViewConfig {
+  const result = validateViewConfig(value, { knownSourceIds, sources });
   if (!result.success || !result.data) {
     throw new Error(`Invalid view config in ${fileName}: ${result.errors.join(" ")}`);
   }
@@ -76,7 +76,7 @@ export async function listSourceConfigs(): Promise<SourceConfig[]> {
 export async function listViewConfigs(): Promise<ViewConfig[]> {
   const sources = await listSourceConfigs();
   const knownSourceIds = sources.map((source) => source.id);
-  return readConfigDir("views", (value, fileName) => parseViewConfig(value, fileName, knownSourceIds));
+  return readConfigDir("views", (value, fileName) => parseViewConfig(value, fileName, knownSourceIds, sources));
 }
 
 export async function getSourceConfigById(sourceId: string) {
@@ -141,7 +141,7 @@ export async function saveSourceConfig(config: SourceConfig) {
 
 export async function saveViewConfig(config: ViewConfig) {
   const sources = await listSourceConfigs();
-  const result = validateViewConfig(config, { knownSourceIds: sources.map((source) => source.id) });
+  const result = validateViewConfig(config, { knownSourceIds: sources.map((source) => source.id), sources });
   if (!result.success || !result.data) {
     throw new Error(result.errors.join(" "));
   }

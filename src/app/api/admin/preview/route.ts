@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as unknown;
   const sources = await listSourceConfigs();
-  const result = validateViewConfig(body, { knownSourceIds: sources.map((s) => s.id) });
+  const result = validateViewConfig(body, { knownSourceIds: sources.map((s) => s.id), sources });
 
   if (!result.success || !result.data) {
     return NextResponse.json(

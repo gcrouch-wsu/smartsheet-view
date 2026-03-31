@@ -66,6 +66,8 @@ When a page uses grouped contacts:
 - use `Add person` to add another person
 - use `Remove` to remove one person
 - some groups also show `Clear everyone`
+- some groups use fixed role slots and will not show `Add person` or `Remove`
+- some legacy grouped roles may be display-only if the page administrator marked them read-only for safety
 
 Important rules:
 
@@ -74,7 +76,10 @@ Important rules:
 - the form keeps each person's name, email, and phone together as one person block
 - you do not need to type comma-separated or semicolon-separated lists when the grouped editor is shown
 
-When you save, the app writes the people back to Smartsheet in the same order they appear in the editor.
+When you save:
+
+- numbered role groups write back to the matching Smartsheet slot columns
+- trusted legacy grouped roles write back in the same order they appear in the editor
 
 ## Password Reset
 
