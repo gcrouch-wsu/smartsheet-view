@@ -198,6 +198,7 @@ export function EditRowDrawer({
     };
   }, [open, contributor, row, returnFocusRef]);
 
+  /** Smartsheet: CONTACT_LIST = one contact per cell; MULTI_CONTACT_LIST = several (API uses different objectValue shapes). */
   const isContactEditableField = (columnType: string) =>
     columnType === "CONTACT_LIST" || columnType === "MULTI_CONTACT_LIST";
 
@@ -209,6 +210,9 @@ export function EditRowDrawer({
         ? "border border-[color:var(--wsu-border)]/40"
         : "border border-[color:var(--wsu-border)]";
   const labelClass = "view-field-label text-[color:var(--wsu-muted)]";
+  /** Visually distinct from the drawer surface so editable fields don’t look like empty paper until focus. */
+  const contributorEditControlClass =
+    "box-border min-h-[44px] w-full rounded-lg border-2 border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)] shadow-sm outline-none transition placeholder:text-[color:var(--wsu-muted)] focus:border-[color:var(--wsu-crimson)] focus:ring-2 focus:ring-[color:var(--wsu-crimson)]/20";
 
   if (!contributor || !open || !row) {
     return null;
@@ -344,7 +348,8 @@ export function EditRowDrawer({
               >
                 <p className="mb-4 text-xs leading-relaxed text-[color:var(--wsu-muted)]">
                   Fields appear in the <strong className="font-medium text-[color:var(--wsu-ink)]">same order as your public card</strong>.
-                  Edit inputs below; other values are shown for reference. Changes save to Smartsheet. For a single contact column, use{" "}
+                  <span className="text-[color:var(--wsu-ink)]"> White boxes with a border are editable</span>; plain text blocks
+                  are read-only. Changes save to Smartsheet. For a single contact column, use{" "}
                   <strong className="font-medium text-[color:var(--wsu-ink)]">Clear this role</strong>.
                 </p>
                 <div className="space-y-4">
@@ -462,11 +467,12 @@ export function EditRowDrawer({
                                                 aria-invalid={Boolean(rowErr?.name)}
                                                 aria-describedby={rowErr?.name ? `${group.id}-n-err-${idx}` : undefined}
                                                 autoComplete="name"
-                                                className={`min-h-[40px] w-full rounded-lg border px-3 py-2 text-sm ${
+                                                placeholder={person.name.trim() === "" ? "Name…" : undefined}
+                                                className={
                                                   rowErr?.name
-                                                    ? "border-rose-400 bg-rose-50/40"
-                                                    : "border-[color:var(--wsu-border)]"
-                                                }`}
+                                                    ? `${contributorEditControlClass} min-h-[40px] border-rose-400 bg-rose-50/50 focus:border-rose-500 focus:ring-rose-200/30`
+                                                    : `${contributorEditControlClass} min-h-[40px]`
+                                                }
                                               />
                                               {rowErr?.name ? (
                                                 <p id={`${group.id}-n-err-${idx}`} className="text-xs text-rose-700">
@@ -497,11 +503,12 @@ export function EditRowDrawer({
                                                 aria-invalid={Boolean(rowErr?.email)}
                                                 aria-describedby={rowErr?.email ? `${group.id}-e-err-${idx}` : undefined}
                                                 autoComplete="email"
-                                                className={`min-h-[40px] w-full rounded-lg border px-3 py-2 text-sm ${
+                                                placeholder={person.email.trim() === "" ? "Email…" : undefined}
+                                                className={
                                                   rowErr?.email
-                                                    ? "border-rose-400 bg-rose-50/40"
-                                                    : "border-[color:var(--wsu-border)]"
-                                                }`}
+                                                    ? `${contributorEditControlClass} min-h-[40px] border-rose-400 bg-rose-50/50 focus:border-rose-500 focus:ring-rose-200/30`
+                                                    : `${contributorEditControlClass} min-h-[40px]`
+                                                }
                                               />
                                               {rowErr?.email ? (
                                                 <p id={`${group.id}-e-err-${idx}`} className="text-xs text-rose-700">
@@ -530,7 +537,8 @@ export function EditRowDrawer({
                                                   setGroupValues((prev) => ({ ...prev, [group.id]: next }));
                                                 }}
                                                 autoComplete="tel"
-                                                className="min-h-[40px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                                placeholder={person.phone.trim() === "" ? "Phone (optional)…" : undefined}
+                                                className={`${contributorEditControlClass} min-h-[40px]`}
                                               />
                                               <span className="text-xs text-[color:var(--wsu-muted)]">Optional</span>
                                             </div>
@@ -578,7 +586,14 @@ export function EditRowDrawer({
                         return (
                           <div key={field.key} className="space-y-2 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
                             <div className="flex flex-wrap items-start justify-between gap-2">
-                              {!field.hideLabel && <p className={fieldLabelClassName(field)}>{fieldLabel}</p>}
+                              {!field.hideLabel && (
+                                <p className={fieldLabelClassName(field)}>
+                                  {fieldLabel}{" "}
+                                  <span className="rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                                    Editable
+                                  </span>
+                                </p>
+                              )}
                               {showContactClear && (
                                 <button
                                   type="button"
@@ -596,7 +611,7 @@ export function EditRowDrawer({
                                   setFormValues((current) => ({ ...current, [ed.columnId]: event.target.value }))
                                 }
                                 aria-label={fieldLabel}
-                                className="min-h-[44px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                className={contributorEditControlClass}
                               >
                                 <option value="">Select…</option>
                                 {ed.options.map((option) => (
@@ -613,7 +628,8 @@ export function EditRowDrawer({
                                 }
                                 rows={4}
                                 aria-label={fieldLabel}
-                                className="w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                placeholder="Edit text…"
+                                className={`${contributorEditControlClass} min-h-[7rem] resize-y`}
                               />
                             ) : (
                               <input
@@ -622,7 +638,8 @@ export function EditRowDrawer({
                                   setFormValues((current) => ({ ...current, [ed.columnId]: event.target.value }))
                                 }
                                 aria-label={fieldLabel}
-                                className="min-h-[44px] w-full rounded-lg border border-[color:var(--wsu-border)] px-3 py-2 text-sm"
+                                placeholder={value.trim() === "" ? "Click or tap to type…" : undefined}
+                                className={contributorEditControlClass}
                               />
                             )}
                           </div>
