@@ -421,6 +421,8 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
         label: field.label,
         renderType: field.render.type,
         description: field.description,
+        textStyle: field.render.textStyle,
+        labelStyle: field.render.labelStyle,
       })),
     rows: sortedRows,
   };

@@ -7,6 +7,7 @@ import { FieldValue } from "@/components/public/FieldValue";
 import { getContributorEditRowHeading, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
 import { useContributorContext } from "@/components/public/ContributorContext";
 import type { EditableFieldGroup, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import { fieldLabelClassName } from "@/lib/field-typography";
 import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import {
   countFixedSlotsInEditableGroup,
@@ -577,7 +578,7 @@ export function EditRowDrawer({
                         return (
                           <div key={field.key} className="space-y-2 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
                             <div className="flex flex-wrap items-start justify-between gap-2">
-                              {!field.hideLabel && <p className={labelClass}>{fieldLabel}</p>}
+                              {!field.hideLabel && <p className={fieldLabelClassName(field)}>{fieldLabel}</p>}
                               {showContactClear && (
                                 <button
                                   type="button"
@@ -630,7 +631,7 @@ export function EditRowDrawer({
 
                       return (
                         <div key={field.key} className="space-y-1 border-b border-[color:var(--wsu-border)]/50 pb-4 last:border-0 last:pb-0">
-                          {!field.hideLabel && <p className={labelClass}>{field.label}</p>}
+                          {!field.hideLabel && <p className={fieldLabelClassName(field)}>{field.label}</p>}
                           <div className="text-sm text-[color:var(--wsu-ink)]">
                             <FieldValue field={field} stacked />
                           </div>

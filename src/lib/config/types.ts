@@ -101,6 +101,10 @@ export interface TransformConfig {
 export type ListDisplayMode = "inline" | "stacked";
 export type PeopleGroupStyle = "plain" | "capsule";
 
+/** Optional per-field typography; theme defines tokens. CSS-only — does not emit heading elements. */
+export const FIELD_TEXT_STYLE_VALUES = ["display", "title", "subtitle", "body", "label", "muted"] as const;
+export type FieldTextStyle = (typeof FIELD_TEXT_STYLE_VALUES)[number];
+
 export interface ViewFieldRender {
   type: RenderType;
   emptyLabel?: string;
@@ -110,6 +114,10 @@ export interface ViewFieldRender {
   listDisplay?: ListDisplayMode;
   /** Visual treatment for grouped people items. */
   peopleStyle?: PeopleGroupStyle;
+  /** Cell value typography (optional; default follows global body/value styles). */
+  textStyle?: FieldTextStyle;
+  /** Column/field label typography (optional; default follows global field label styles). */
+  labelStyle?: FieldTextStyle;
 }
 
 export interface ViewFieldConfig {
@@ -243,6 +251,16 @@ export interface ViewStyleConfig {
   fieldLabelLetterSpacing?: string;
   /** Field label text transform (e.g. uppercase, none). */
   fieldLabelTextTransform?: string;
+  /** Per-field scale: display (e.g. large stat). Maps to .view-text-display / .view-label-display. */
+  displayTextFontSize?: string;
+  displayTextFontWeight?: string;
+  displayTextColor?: string;
+  titleTextFontSize?: string;
+  titleTextFontWeight?: string;
+  titleTextColor?: string;
+  subtitleTextFontSize?: string;
+  subtitleTextFontWeight?: string;
+  subtitleTextColor?: string;
   borderRadius?: string;
   cardShadow?: string;
   badgeBg?: string;
@@ -442,6 +460,8 @@ export interface ResolvedFieldValue {
   isEmpty: boolean;
   hideWhenEmpty: boolean;
   hideLabel?: boolean;
+  textStyle?: FieldTextStyle;
+  labelStyle?: FieldTextStyle;
   /** Set for `people_group` when data is structured from numbered slots (or safe single-attribute delimited). */
   people?: ResolvedPersonRoleEntry[];
   /** When true, contributor editing must not expose this group as editable. */
@@ -465,6 +485,8 @@ export interface ResolvedViewField {
   label: string;
   renderType: RenderType;
   description?: string;
+  textStyle?: FieldTextStyle;
+  labelStyle?: FieldTextStyle;
 }
 
 export interface ResolvedView {

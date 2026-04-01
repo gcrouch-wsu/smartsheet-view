@@ -15,10 +15,11 @@ import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { HeaderLogoBrandingSection } from "./HeaderLogoBrandingSection";
 import { ThemeEditor } from "./ThemeEditor";
 import { isRoleGroupFieldSource } from "@/lib/role-groups";
-import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
+import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX, FIELD_TEXT_STYLE_VALUES } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
 import type {
+  FieldTextStyle,
   FieldSourceSelector,
   RenderType,
   SourceConfig,
@@ -2078,6 +2079,59 @@ export function ViewBuilder({
                         </div>
                       </div>
                     ) : null}
+                  </div>
+
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                      <span>Value typography</span>
+                      <select
+                        value={field.render.textStyle ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateField(index, {
+                            ...field,
+                            render: {
+                              ...field.render,
+                              textStyle: v === "" ? undefined : (v as FieldTextStyle),
+                            },
+                          });
+                        }}
+                        className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                      >
+                        <option value="">Default (theme body)</option>
+                        {FIELD_TEXT_STYLE_VALUES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="font-normal normal-case text-[color:var(--wsu-muted)]">Optional per-cell value scale (mixed layouts).</p>
+                    </label>
+                    <label className="space-y-1.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                      <span>Label typography</span>
+                      <select
+                        value={field.render.labelStyle ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateField(index, {
+                            ...field,
+                            render: {
+                              ...field.render,
+                              labelStyle: v === "" ? undefined : (v as FieldTextStyle),
+                            },
+                          });
+                        }}
+                        className="w-full rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium focus:border-[color:var(--wsu-crimson)] focus:outline-none"
+                      >
+                        <option value="">Default (theme labels)</option>
+                        {FIELD_TEXT_STYLE_VALUES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="font-normal normal-case text-[color:var(--wsu-muted)]">Column header / field label style.</p>
+                    </label>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-4">

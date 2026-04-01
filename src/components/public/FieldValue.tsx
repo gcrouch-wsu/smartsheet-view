@@ -1,4 +1,10 @@
 import type { ResolvedFieldValue } from "@/lib/config/types";
+import { fieldValueTypographyClass } from "@/lib/field-typography";
+
+function tx(field: ResolvedFieldValue, ...classes: string[]) {
+  const t = fieldValueTypographyClass(field);
+  return [t, ...classes].filter(Boolean).join(" ");
+}
 
 function EmptyValue() {
   return <span className="text-[color:var(--wsu-border)]">-</span>;
@@ -60,7 +66,7 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
   const delimiter = field.listDelimiter ?? ", ";
   if (useInline) {
       return (
-        <span className="leading-6 text-[color:var(--wsu-ink)]">
+        <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
           {field.links.map((link, i) => (
             <span key={`${link.href}-${link.label}`}>
               {i > 0 && <span className="text-[color:var(--wsu-muted)]">{delimiter}</span>}
@@ -80,7 +86,7 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
 
   if (stacked || field.listDisplay === "stacked" || field.links.length > 1) {
     return (
-      <ul className="space-y-1">
+      <ul className={tx(field, "space-y-1")}>
         {field.links.map((link) => (
           <li key={`${link.href}-${link.label}`}>
             <a
@@ -101,7 +107,10 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
   return (
     <a
       href={link.href}
-      className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+      className={tx(
+        field,
+        "text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]",
+      )}
       target={field.renderType === "link" ? "_blank" : undefined}
       rel={field.renderType === "link" ? "noreferrer" : undefined}
     >
@@ -138,7 +147,7 @@ export function FieldValue({
     const listDelimiter = field.listDelimiter ?? ", ";
     if (field.listDisplay === "inline") {
       return (
-        <span className="leading-6 text-[color:var(--wsu-ink)]">
+        <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
           {field.listValue.map((entry, i) => (
             <span key={entry}>
               {i > 0 && <span className="text-[color:var(--wsu-muted)]">{listDelimiter}</span>}
@@ -149,7 +158,7 @@ export function FieldValue({
       );
     }
     return (
-      <ul className="space-y-1">
+      <ul className={tx(field, "space-y-1")}>
         {field.listValue.map((entry) => (
           <li key={entry} className="leading-6 text-[color:var(--wsu-ink)]">
             {entry}
@@ -167,7 +176,10 @@ export function FieldValue({
       if (displayMode === "inline") {
         return (
           <ul
-            className={peopleStyle === "capsule" ? "grid gap-3" : "grid gap-x-6 gap-y-3"}
+            className={tx(
+              field,
+              peopleStyle === "capsule" ? "grid gap-3" : "grid gap-x-6 gap-y-3",
+            )}
             style={{
               gridTemplateColumns:
                 populated.length > 1 ? "repeat(auto-fit, minmax(11rem, 1fr))" : "minmax(0, 1fr)",
@@ -196,7 +208,7 @@ export function FieldValue({
       }
 
       return (
-        <ul className={peopleStyle === "capsule" ? "space-y-3" : "space-y-2"}>
+        <ul className={tx(field, peopleStyle === "capsule" ? "space-y-3" : "space-y-2")}>
           {populated.map((person) => (
             <li
               key={person.slot}
@@ -217,13 +229,13 @@ export function FieldValue({
       );
     }
     if (field.textValue) {
-      return <span className="leading-6 whitespace-pre-line text-[color:var(--wsu-ink)]">{field.textValue}</span>;
+      return <span className={tx(field, "leading-6 whitespace-pre-line text-[color:var(--wsu-ink)]")}>{field.textValue}</span>;
     }
   }
 
   if (field.renderType === "multiline_text") {
     return field.textValue ? (
-      <p className="whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]">{field.textValue}</p>
+      <p className={tx(field, "whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]")}>{field.textValue}</p>
     ) : (
       <EmptyValue />
     );
@@ -232,7 +244,7 @@ export function FieldValue({
   if (field.renderType === "badge") {
     return field.textValue ? (
       <span
-        className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
+        className={tx(field, "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]")}
         style={{
           borderColor: "var(--view-border, var(--wsu-border))",
           backgroundColor: "var(--view-badge-bg, #f3f4f6)",
@@ -251,7 +263,7 @@ export function FieldValue({
     const listDelimiter = field.listDelimiter ?? ", ";
     if (field.listDisplay === "inline") {
       return (
-        <span className="leading-6 text-[color:var(--wsu-ink)]">
+        <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
           {field.listValue.map((entry, i) => (
             <span key={entry}>
               {i > 0 && <span className="text-[color:var(--wsu-muted)]">{listDelimiter}</span>}
@@ -262,7 +274,7 @@ export function FieldValue({
       );
     }
     return (
-      <ul className="space-y-1">
+      <ul className={tx(field, "space-y-1")}>
         {field.listValue.map((entry) => (
           <li key={entry} className="leading-6 text-[color:var(--wsu-ink)]">
             {entry}
@@ -273,7 +285,7 @@ export function FieldValue({
   }
 
   return field.textValue ? (
-    <span className="leading-6 text-[color:var(--wsu-ink)]">{field.textValue}</span>
+    <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>{field.textValue}</span>
   ) : (
     <EmptyValue />
   );

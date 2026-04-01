@@ -335,8 +335,11 @@ export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
     });
   }
 
-  if (cell.columnType === "MULTI_CONTACT_LIST" && cell.objectValue) {
-    return toContactList(cell.objectValue);
+  if (cell.columnType === "MULTI_CONTACT_LIST") {
+    if (cell.objectValue) {
+      return toContactList(cell.objectValue);
+    }
+    return toContactList(cell.value ?? cell.displayValue ?? "");
   }
 
   if (cell.columnType === "MULTI_PICKLIST" && isObjectRecord(cell.objectValue) && Array.isArray(cell.objectValue.values)) {
@@ -555,6 +558,8 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
     isEmpty,
     hideWhenEmpty: field.emptyBehavior === "hide",
     hideLabel: field.hideLabel,
+    textStyle: field.render.textStyle,
+    labelStyle: field.render.labelStyle,
     listDelimiter: field.render.listDelimiter,
     listDisplay: field.render.listDisplay,
     peopleStyle: field.render.peopleStyle,
@@ -620,6 +625,8 @@ export function buildResolvedPeopleGroupField(
     isEmpty,
     hideWhenEmpty: field.emptyBehavior === "hide",
     hideLabel: field.hideLabel,
+    textStyle: field.render.textStyle,
+    labelStyle: field.render.labelStyle,
     listDelimiter: field.render.listDelimiter,
     listDisplay: field.render.listDisplay ?? "inline",
     peopleStyle: field.render.peopleStyle ?? "plain",

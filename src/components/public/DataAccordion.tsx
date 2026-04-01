@@ -3,13 +3,14 @@ import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccen
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { describeResolvedField, getCardLayoutColumnCount, getCardLayoutRows, getFirstFieldFromCells, getRowHeadingField, getRowHeadingText, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import { fieldLabelClassName } from "@/lib/field-typography";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -141,7 +142,7 @@ export function DataAccordion({
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div className="space-y-1">
                     {!heading.hideLabel && (
-                      <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className={fieldLabelClassName(heading)}>{heading.label}</p>
                     )}
                     <FieldValue field={heading} stacked />
                   </div>
@@ -149,7 +150,7 @@ export function DataAccordion({
                 {summary && (
                   <div className="space-y-1">
                     {!summary.hideLabel && (
-                      <p className="view-field-label text-[color:var(--wsu-muted)]">{summary.label}</p>
+                      <p className={fieldLabelClassName(summary)}>{summary.label}</p>
                     )}
                     <FieldValue field={summary} stacked />
                   </div>

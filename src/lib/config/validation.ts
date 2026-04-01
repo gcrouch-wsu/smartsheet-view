@@ -1,10 +1,15 @@
-import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
+import {
+  CARD_LAYOUT_PLACEHOLDER,
+  CARD_LAYOUT_TEXT_PREFIX,
+  FIELD_TEXT_STYLE_VALUES,
+} from "@/lib/config/types";
 import { HEADER_BRAND_TEXT_MAX_LENGTH, validateHeaderLogoPair } from "@/lib/header-logo";
 import { isWritableRoleGroup } from "@/lib/role-groups";
 import type {
   EditableFieldGroup,
   EditableFieldGroupAttribute,
   FieldSourceSelector,
+  FieldTextStyle,
   FilterOperator,
   LayoutType,
   RoleGroupFieldSource,
@@ -395,6 +400,25 @@ function parseFieldConfig(input: unknown, index: number, options?: { knownRoleGr
 
   const hideLabel = input.hideLabel === true || input.hideLabel === "true";
 
+  const rawTextStyle = asTrimmedString(renderInput.textStyle);
+  let textStyle: FieldTextStyle | undefined;
+  if (rawTextStyle) {
+    if ((FIELD_TEXT_STYLE_VALUES as readonly string[]).includes(rawTextStyle)) {
+      textStyle = rawTextStyle as FieldTextStyle;
+    } else {
+      errors.push(`${path}.render.textStyle must be one of: ${FIELD_TEXT_STYLE_VALUES.join(", ")}.`);
+    }
+  }
+  const rawLabelStyle = asTrimmedString(renderInput.labelStyle);
+  let labelStyle: FieldTextStyle | undefined;
+  if (rawLabelStyle) {
+    if ((FIELD_TEXT_STYLE_VALUES as readonly string[]).includes(rawLabelStyle)) {
+      labelStyle = rawLabelStyle as FieldTextStyle;
+    } else {
+      errors.push(`${path}.render.labelStyle must be one of: ${FIELD_TEXT_STYLE_VALUES.join(", ")}.`);
+    }
+  }
+
   return {
     success: errors.length === 0,
     errors,
@@ -417,6 +441,8 @@ function parseFieldConfig(input: unknown, index: number, options?: { knownRoleGr
                 : asOptionalString(renderInput.peopleStyle) === "plain"
                   ? "plain"
                   : undefined,
+            ...(textStyle ? { textStyle } : {}),
+            ...(labelStyle ? { labelStyle } : {}),
           },
           emptyBehavior: emptyBehavior as ViewFieldConfig["emptyBehavior"],
           hideLabel: hideLabel || undefined,
@@ -699,6 +725,15 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "headingFontStyle",
   "fieldLabelLetterSpacing",
   "fieldLabelTextTransform",
+  "displayTextFontSize",
+  "displayTextFontWeight",
+  "displayTextColor",
+  "titleTextFontSize",
+  "titleTextFontWeight",
+  "titleTextColor",
+  "subtitleTextFontSize",
+  "subtitleTextFontWeight",
+  "subtitleTextColor",
   "borderRadius",
   "cardShadow",
   "badgeBg",

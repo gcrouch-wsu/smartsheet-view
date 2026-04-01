@@ -1,8 +1,9 @@
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
 import type { CardLayoutCell } from "@/components/public/layout-utils";
+import { fieldLabelClassName } from "@/lib/field-typography";
 
-const labelClass = "view-field-label text-[color:var(--wsu-muted)]";
+const staticLabelClass = "view-field-label text-[color:var(--wsu-muted)]";
 
 export type CardLayoutCellMode = "full" | "header" | "value";
 
@@ -27,7 +28,7 @@ export function CardLayoutCellRenderer({
     if (mode === "value") return <div key={`text-val-${cell.label}`} className={baseClass} aria-hidden />;
     return (
       <div key={`text-${cell.label}`} className={`${baseClass} space-y-0.5`}>
-        <p className={`${labelClass} leading-tight`}>{cell.label}</p>
+        <p className={`${staticLabelClass} leading-tight`}>{cell.label}</p>
       </div>
     );
   }
@@ -36,7 +37,7 @@ export function CardLayoutCellRenderer({
     return (
       <div key={`${cell.field.key}-h`} className={baseClass}>
         {!cell.field.hideLabel && (
-          <p className={`${labelClass} leading-tight`}>{cell.field.label}</p>
+          <p className={fieldLabelClassName(cell.field, "leading-tight")}>{cell.field.label}</p>
         )}
       </div>
     );

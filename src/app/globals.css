@@ -250,6 +250,58 @@ a {
   font-weight: var(--view-field-label-font-weight, 600);
   letter-spacing: var(--view-field-label-letter-spacing, 0.2em);
   text-transform: var(--view-field-label-text-transform, uppercase);
+  color: var(--wsu-muted);
+}
+
+/* Optional per-field typography (ViewFieldRender.textStyle / labelStyle) */
+.view-text-display,
+.view-label-display {
+  font-family: var(--view-font, inherit);
+  font-size: var(--view-text-display-size, 1.875rem);
+  font-weight: var(--view-text-display-weight, 700);
+  line-height: 1.2;
+  color: var(--view-text-display-color, var(--view-text, var(--wsu-ink)));
+}
+
+.view-text-title,
+.view-label-title {
+  font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-text-title-size, 1.25rem);
+  font-weight: var(--view-text-title-weight, 600);
+  line-height: 1.3;
+  color: var(--view-text-title-color, var(--view-heading-text, var(--view-text, var(--wsu-ink))));
+}
+
+.view-text-subtitle,
+.view-label-subtitle {
+  font-family: var(--view-font, inherit);
+  font-size: var(--view-text-subtitle-size, 1rem);
+  font-weight: var(--view-text-subtitle-weight, 500);
+  line-height: 1.45;
+  color: var(--view-text-subtitle-color, var(--view-muted, var(--wsu-muted)));
+}
+
+.view-text-body,
+.view-label-body {
+  font-size: var(--view-font-size, inherit);
+  font-weight: var(--view-font-weight, inherit);
+  font-style: var(--view-font-style, inherit);
+  color: var(--view-text, var(--wsu-ink));
+}
+
+.view-text-label,
+.view-label-label {
+  font-family: var(--view-heading-font, inherit);
+  font-size: var(--view-field-label-font-size, 0.75rem);
+  font-weight: var(--view-field-label-font-weight, 600);
+  letter-spacing: var(--view-field-label-letter-spacing, 0.2em);
+  text-transform: var(--view-field-label-text-transform, uppercase);
+  color: var(--view-text, var(--wsu-ink));
+}
+
+.view-text-muted,
+.view-label-muted {
+  color: var(--view-muted, var(--wsu-muted));
 }
 
 .view-row-heading {

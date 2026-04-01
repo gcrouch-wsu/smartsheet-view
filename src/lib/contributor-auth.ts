@@ -12,6 +12,12 @@ export const CONTRIBUTOR_RATE_LIMIT_WINDOW_MINUTES = 15;
 export const CONTRIBUTOR_GENERIC_LOGIN_ERROR = "Invalid email or password.";
 export const CONTRIBUTOR_GENERIC_CLAIM_ERROR =
   "Unable to set password. Use sign in if you already have access or contact your coordinator.";
+/** First-time access when this email already has a contributor account — use Sign in instead. */
+export const CONTRIBUTOR_CLAIM_ACCOUNT_EXISTS_ERROR =
+  "An account already exists for this email. Use Sign in instead of First-time access.";
+/** Email not found in configured contact columns for this view (or not a @wsu.edu address). */
+export const CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR =
+  "We could not verify this email in the sheet contact columns for this view. Use the same @wsu.edu address as in the sheet, or contact your coordinator.";
 export const CONTRIBUTOR_TOO_MANY_ATTEMPTS_ERROR = "Too many attempts. Try again later.";
 
 export interface ContributorSessionPayload {

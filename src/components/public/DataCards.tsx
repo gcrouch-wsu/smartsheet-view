@@ -4,12 +4,13 @@ import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
     <div key={`${rowId}-${field.key}`} className="space-y-1">
       {!field.hideLabel && (
-        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
+        <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}
       <FieldValue field={field} stacked />
     </div>
@@ -113,7 +114,7 @@ export function DataCards({
               <div className="border-b border-[color:var(--wsu-border)] pb-4">
                 {!heading.hideLabel ? (
                   <>
-                    <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
+                    <p className={fieldLabelClassName(heading)}>{heading.label}</p>
                     <div className="view-row-heading mt-2">
                       <FieldValue field={heading} />
                     </div>

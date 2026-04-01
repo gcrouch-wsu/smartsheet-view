@@ -26,6 +26,8 @@ export function buildStubResolvedField(view: ResolvedView, key: string): Resolve
     isEmpty: true,
     hideWhenEmpty: false,
     hideLabel: false,
+    textStyle: meta.textStyle,
+    labelStyle: meta.labelStyle,
   };
   if (meta.renderType === "people_group") {
     base.people = [];

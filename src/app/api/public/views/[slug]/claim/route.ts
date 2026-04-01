@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
-  CONTRIBUTOR_GENERIC_CLAIM_ERROR,
+  CONTRIBUTOR_CLAIM_ACCOUNT_EXISTS_ERROR,
+  CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR,
   CONTRIBUTOR_SESSION_COOKIE_NAME,
   CONTRIBUTOR_TOO_MANY_ATTEMPTS_ERROR,
   createContributorSessionToken,
@@ -58,23 +59,28 @@ export async function POST(
     return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
-  const dataset = await loadContributorDataset(context.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
-  const existingUser = email ? await getContributorUserByEmail(email) : null;
-  const isEligible =
-    isWsuEmail(email) &&
-    isContributorStillInSheet(dataset.rows, email, context.activeView.editing.contactColumnIds);
-
-  if (!isEligible || existingUser) {
+  if (!isWsuEmail(email)) {
     await recordContributorFailedAttempt(ip);
-    return NextResponse.json({ error: CONTRIBUTOR_GENERIC_CLAIM_ERROR }, { status: 403 });
+    return NextResponse.json({ error: CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR }, { status: 403 });
+  }
+
+  const dataset = await loadContributorDataset(context.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
+  const existingUser = await getContributorUserByEmail(email);
+  if (existingUser) {
+    return NextResponse.json({ error: CONTRIBUTOR_CLAIM_ACCOUNT_EXISTS_ERROR }, { status: 409 });
+  }
+
+  const isEligible = isContributorStillInSheet(dataset.rows, email, context.activeView.editing.contactColumnIds);
+  if (!isEligible) {
+    await recordContributorFailedAttempt(ip);
+    return NextResponse.json({ error: CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR }, { status: 403 });
   }
 
   try {
     await createContributorUser(email, password);
   } catch (error) {
     if (isUniqueViolation(error)) {
-      await recordContributorFailedAttempt(ip);
-      return NextResponse.json({ error: CONTRIBUTOR_GENERIC_CLAIM_ERROR }, { status: 403 });
+      return NextResponse.json({ error: CONTRIBUTOR_CLAIM_ACCOUNT_EXISTS_ERROR }, { status: 409 });
     }
     throw error;
   }

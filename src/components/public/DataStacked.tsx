@@ -5,6 +5,7 @@ import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
 import type { ResolvedView } from "@/lib/config/types";
+import { fieldLabelClassName } from "@/lib/field-typography";
 
 export function DataStacked({
   view,
@@ -98,7 +99,7 @@ export function DataStacked({
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div>
                     {!heading.hideLabel && (
-                      <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
+                      <p className={fieldLabelClassName(heading)}>{heading.label}</p>
                     )}
                     <div className="view-row-heading mt-2">
                       <FieldValue field={heading} />

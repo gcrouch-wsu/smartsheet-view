@@ -381,6 +381,77 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   </div>
                 </div>
 
+                {/* ── Per-field scale (display / title / subtitle) ── */}
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Per-field typography scale</p>
+                  <p className="mb-3 text-[10px] text-[color:var(--wsu-muted)]">
+                    Used when a field sets value or label style to display, title, or subtitle. Body, label, and muted reuse global tokens above.
+                  </p>
+                  <div className="space-y-3">
+                    {(
+                      [
+                        { label: "Display", size: "displayTextFontSize", weight: "displayTextFontWeight", color: "displayTextColor" },
+                        { label: "Title", size: "titleTextFontSize", weight: "titleTextFontWeight", color: "titleTextColor" },
+                        { label: "Subtitle", size: "subtitleTextFontSize", weight: "subtitleTextFontWeight", color: "subtitleTextColor" },
+                      ] as const
+                    ).map((row) => (
+                      <div key={row.label} className="rounded-xl border border-[color:var(--wsu-border)]/70 bg-white/60 p-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">{row.label}</p>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-medium text-[color:var(--wsu-muted)]">Size</span>
+                            <select
+                              value={getValue(row.size)}
+                              onChange={(e) => updateStyle(row.size, e.target.value)}
+                              className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs"
+                            >
+                              {FONT_SIZE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-medium text-[color:var(--wsu-muted)]">Weight</span>
+                            <select
+                              value={getValue(row.weight) || "400"}
+                              onChange={(e) => updateStyle(row.weight, e.target.value)}
+                              className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs"
+                            >
+                              {FONT_WEIGHT_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-medium text-[color:var(--wsu-muted)]">Color</span>
+                            <div className="flex gap-2">
+                              <div className="relative h-8 w-10 shrink-0 overflow-hidden rounded-lg border border-[color:var(--wsu-border)]">
+                                <input
+                                  type="color"
+                                  value={(getValue(row.color) || "").match(/#[0-9A-Fa-f]{3,6}/)?.[0] ?? "#111111"}
+                                  onChange={(e) => updateStyle(row.color, e.target.value)}
+                                  className="absolute inset-[-4px] h-[calc(100%+8px)] w-[calc(100%+8px)] cursor-pointer"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={getValue(row.color)}
+                                onChange={(e) => updateStyle(row.color, e.target.value)}
+                                placeholder="#111111"
+                                className="min-w-0 flex-1 rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1 text-xs"
+                              />
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* ── Weights ── */}
                 <div>
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Weights</p>
