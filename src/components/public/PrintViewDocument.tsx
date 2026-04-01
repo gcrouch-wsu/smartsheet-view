@@ -1,109 +1,18 @@
+import type { ReactNode } from "react";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getRowHeadingField } from "@/components/public/layout-utils";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+import { buildPrintExportStylesheet, getPrintExportConfig } from "@/lib/print-export";
 import { PrintViewToolbar } from "./PrintViewToolbar";
 
-const PRINT_STYLES = `
-  @page {
-    size: landscape;
-    margin: 0.35in 0.42in;
-  }
-
-  @media print {
-    .no-print { display: none !important; }
-    body {
-      background: white !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .print-root {
-      max-width: none !important;
-      padding: 0 !important;
-      color: #111 !important;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    .print-masthead {
-      border-bottom: 1pt solid #555 !important;
-      padding-bottom: 6pt !important;
-      margin-bottom: 8pt !important;
-    }
-    .print-table-wrap {
-      overflow: visible !important;
-      border-radius: 0 !important;
-      border: none !important;
-      background: transparent !important;
-      padding: 0 !important;
-    }
-    .print-data-table {
-      width: 100%;
-      border-collapse: separate !important;
-      border-spacing: 0;
-      font-size: 9pt;
-      line-height: 1.35;
-      table-layout: auto;
-      border: none !important;
-    }
-    .print-data-table caption {
-      text-align: left;
-      font-size: 8.5pt;
-      font-weight: 600;
-      color: #333 !important;
-      padding: 0 0 6pt 0;
-    }
-    .print-data-table thead {
-      display: table-header-group;
-    }
-    .print-data-table th {
-      text-align: left;
-      font-weight: 700;
-      letter-spacing: 0 !important;
-      text-transform: none !important;
-      font-size: 8.5pt;
-      border: none !important;
-      border-bottom: 1.25pt solid #222 !important;
-      border-right: 0.4pt solid #ddd !important;
-      background: #f0f0f0 !important;
-      padding: 4pt 6pt 4pt 6pt !important;
-      vertical-align: bottom;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    .print-data-table th:last-child {
-      border-right: none !important;
-    }
-    .print-data-table tbody td {
-      border: none !important;
-      border-bottom: 0.85pt solid #bfbfbf !important;
-      border-right: 0.4pt solid #e5e5e5 !important;
-      background: #fff !important;
-      padding: 4pt 6pt !important;
-      vertical-align: top;
-      break-inside: avoid;
-      page-break-inside: avoid;
-      max-width: 11rem;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .print-data-table tbody td:last-child {
-      border-right: none !important;
-    }
-    /* Program / row-heading column: match body size (theme .view-row-heading is larger on screen) */
-    .print-data-table .print-table-program {
-      font-family: inherit !important;
-      font-size: 9pt !important;
-      font-weight: 600 !important;
-      line-height: 1.35 !important;
-      font-style: normal !important;
-      color: #111 !important;
-    }
-    .print-data-table a:link,
-    .print-data-table a:visited {
-      color: inherit !important;
-      text-decoration: underline;
-    }
-  }
-`;
+function PrintCellInner({ primary, children }: { primary?: boolean; children: ReactNode }) {
+  return (
+    <div className={primary ? "print-cell-inner print-cell-inner--primary" : "print-cell-inner"}>
+      {children}
+    </div>
+  );
+}
 
 type PrintableColumn = {
   key: string;
@@ -159,6 +68,9 @@ export function PrintViewDocument({
   fetchedAt: string;
   view: ResolvedView;
 }) {
+  const printConfig = getPrintExportConfig();
+  const printStyles = buildPrintExportStylesheet(printConfig);
+  const preview = printConfig.screenPreview;
   const refreshed = new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -167,37 +79,52 @@ export function PrintViewDocument({
 
   return (
     <ViewStyleWrapper style={view.style} themePresetId={view.themePresetId}>
-      <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
-      <main className="print-root mx-auto max-w-[92rem] px-3 py-6 text-[color:var(--wsu-ink)] sm:px-4 sm:py-8">
+      <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+      <main
+        className="print-export print-root mx-auto px-3 py-6 sm:px-4 sm:py-8"
+        style={{ maxWidth: preview.rootMaxWidth }}
+        lang="en"
+      >
         <PrintViewToolbar slug={slug} viewId={viewId} />
 
-        <header className="print-masthead mb-6 text-[color:var(--wsu-ink)]">
+        <header className="print-masthead mb-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-6">
             <div className="min-w-0">
               <p className="view-header-source-label">{sourceLabel}</p>
               <h1 className="view-header-page-title mt-1 text-balance">{pageTitle}</h1>
             </div>
-            <p className="shrink-0 text-xs text-[color:var(--wsu-muted)]">
-              <span className="font-medium text-[color:var(--wsu-ink)]">Source:</span> {sourceName}
-              <span className="mx-1.5 text-[color:var(--wsu-border)]">|</span>
-              <span className="font-medium text-[color:var(--wsu-ink)]">Printed</span>{" "}
+            <p className="print-masthead-meta shrink-0">
+              <span className="font-medium" style={{ color: "var(--print-ink)" }}>
+                Source:
+              </span>{" "}
+              {sourceName}
+              <span className="mx-1.5 opacity-60">|</span>
+              <span className="font-medium" style={{ color: "var(--print-ink)" }}>
+                Printed
+              </span>{" "}
               <time dateTime={fetchedAt}>{refreshed}</time>
             </p>
           </div>
           {(view.label !== pageTitle || view.description) && (
-            <p className="mt-2 max-w-[70ch] text-xs leading-snug text-[color:var(--wsu-muted)] sm:text-sm">
-              <span className="font-medium text-[color:var(--wsu-ink)]">{view.label}</span>
+            <p className="print-masthead-subtitle mt-2 max-w-[70ch]">
+              <span className="font-medium" style={{ color: "var(--print-ink)" }}>
+                {view.label}
+              </span>
               {view.description ? ` — ${view.description}` : null}
             </p>
           )}
         </header>
 
         {view.rows.length > 0 ? (
-          <div className="print-table-wrap overflow-x-auto rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] sm:rounded-xl">
-            <table className="print-data-table print-table min-w-full border-separate border-spacing-0 text-left text-xs sm:text-sm">
+          <div
+            className="print-table-wrap overflow-x-auto border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]"
+            style={{ borderRadius: preview.tableBorderRadius }}
+          >
+            <table className="print-data-table min-w-full border-separate border-spacing-0 text-left">
               <caption>
                 {pageTitle}
-                {view.label !== pageTitle ? ` · ${view.label}` : ""} ({view.rows.length} row{view.rows.length === 1 ? "" : "s"})
+                {view.label !== pageTitle ? ` · ${view.label}` : ""} ({view.rows.length} row
+                {view.rows.length === 1 ? "" : "s"})
               </caption>
               <thead>
                 <tr>
@@ -215,25 +142,28 @@ export function PrintViewDocument({
                       if (column.heading) {
                         const headingField = row.fieldMap[column.key];
                         return (
-                          <td key={`${row.id}-${column.key}`} className="max-w-[11rem] align-top break-words">
+                          <th key={`${row.id}-${column.key}`} scope="row">
                             {headingField && canPrintField(headingField) ? (
-                              <div className="print-table-program">
+                              <PrintCellInner primary>
                                 <FieldValue field={headingField} />
-                              </div>
+                              </PrintCellInner>
                             ) : (
-                              <span className="text-[color:var(--wsu-muted)]">—</span>
+                              <span className="print-empty-cell">—</span>
                             )}
-                          </td>
+                          </th>
                         );
                       }
 
                       const field = row.fieldMap[column.key];
                       return (
-                        <td
-                          key={`${row.id}-${column.key}`}
-                          className="max-w-[11rem] align-top break-words"
-                        >
-                          {canPrintField(field) ? <FieldValue field={field!} /> : <span className="text-[color:var(--wsu-muted)]">—</span>}
+                        <td key={`${row.id}-${column.key}`}>
+                          {canPrintField(field) ? (
+                            <PrintCellInner>
+                              <FieldValue field={field!} />
+                            </PrintCellInner>
+                          ) : (
+                            <span className="print-empty-cell">—</span>
+                          )}
                         </td>
                       );
                     })}

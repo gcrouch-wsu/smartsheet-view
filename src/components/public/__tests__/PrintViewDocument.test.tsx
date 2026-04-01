@@ -72,5 +72,9 @@ describe("PrintViewDocument", () => {
     expect(html).toContain("Staff Graduate Program Coordinator");
     expect(html).toContain("Athletic Training");
     expect(html).toContain("Lisa Lujan");
+    expect(html).toContain("<caption>");
+    expect(html).toContain('scope="row"');
+    expect(html).toContain("print-cell-inner");
+    expect(html).toContain("print-cell-inner--primary");
   });
 });

@@ -12,7 +12,9 @@ export function PrintViewToolbar({ slug, viewId }: { slug: string; viewId: strin
         Print or save as PDF...
       </button>
       <p className="w-full text-xs text-[color:var(--wsu-muted)]">
-        Opens the browser print dialog. Choose "Save as PDF" to download. This print view defaults to a landscape table layout.
+        Opens the browser print dialog. Choose &quot;Save as PDF&quot; to download. Landscape table layout; print sizes are set in{" "}
+        <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">src/config/print-export-defaults.json</code> (not the page
+        theme).
       </p>
     </div>
   );

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "page": {
+    "size": "landscape",
+    "margin": "0.35in 0.42in"
+  },
+  "masthead": {
+    "sourceLabelFontSize": "7pt",
+    "titleFontSize": "11pt",
+    "titleFontWeight": "700",
+    "titleLineHeight": "1.2",
+    "metaFontSize": "7.5pt",
+    "subtitleFontSize": "8pt",
+    "borderBottom": "1pt solid #555",
+    "paddingBottom": "6pt",
+    "marginBottom": "8pt"
+  },
+  "table": {
+    "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+    "captionFontSize": "8pt",
+    "captionFontWeight": "600",
+    "headerFontSize": "8pt",
+    "headerFontWeight": "700",
+    "headerLetterSpacing": "0",
+    "headerTextTransform": "none",
+    "headerBg": "#f0f0f0",
+    "headerBorderBottom": "1.25pt solid #222",
+    "cellFontSize": "8.5pt",
+    "cellLineHeight": "1.35",
+    "cellFontWeight": "400",
+    "primaryColumnFontWeight": "600",
+    "cellPadding": "4pt 6pt",
+    "maxCellWidth": "9rem",
+    "bodyBorderBottom": "0.85pt solid #bfbfbf",
+    "gridBorderRight": "0.4pt solid #e5e5e5",
+    "textColor": "#111",
+    "mutedTextColor": "#444"
+  },
+  "screenPreview": {
+    "rootMaxWidth": "92rem",
+    "tableBorderRadius": "0.5rem"
+  }
+}
