@@ -66,12 +66,14 @@ export function buildPrintExportStylesheet(config: PrintExportConfig): string {
     font-size: var(--print-masthead-source) !important;
     letter-spacing: 0.08em !important;
     line-height: 1.2 !important;
+    color: var(--print-ink) !important;
   }
   .print-export .print-masthead .view-header-page-title {
     font-size: var(--print-masthead-title) !important;
     font-weight: var(--print-masthead-title-weight) !important;
     line-height: var(--print-masthead-title-lh) !important;
     margin-top: 0.25rem !important;
+    color: var(--print-ink) !important;
   }
   .print-export .print-masthead .print-masthead-meta {
     font-size: var(--print-masthead-meta) !important;
@@ -196,8 +198,9 @@ export function buildPrintExportStylesheet(config: PrintExportConfig): string {
     .no-print { display: none !important; }
     body {
       background: white !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      /* economy: let the browser strip decorative fills; we rely on explicit white overrides below */
+      -webkit-print-color-adjust: economy;
+      print-color-adjust: economy;
     }
     .print-export.print-root {
       max-width: none !important;
@@ -215,6 +218,10 @@ export function buildPrintExportStylesheet(config: PrintExportConfig): string {
     }
     .print-export .print-data-table thead {
       display: table-header-group;
+    }
+    /* No fill on column headers in print: rely solely on the bottom border */
+    .print-export .print-data-table th[scope="col"] {
+      background: white !important;
     }
     .print-export .print-data-table th[scope="col"],
     .print-export .print-data-table th[scope="row"],
