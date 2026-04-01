@@ -10,6 +10,31 @@ function fieldCanRender(field: ResolvedFieldValue) {
   return !(field.hideWhenEmpty && field.isEmpty);
 }
 
+/** Minimal resolved field for contributor edit ordering when a cell is empty or hidden on the public card. */
+export function buildStubResolvedField(view: ResolvedView, key: string): ResolvedFieldValue | null {
+  const meta = view.fields.find((f) => f.key === key);
+  if (!meta) {
+    return null;
+  }
+  const base: ResolvedFieldValue = {
+    key: meta.key,
+    label: meta.label,
+    renderType: meta.renderType,
+    textValue: "",
+    listValue: [],
+    links: [],
+    isEmpty: true,
+    hideWhenEmpty: false,
+    hideLabel: false,
+  };
+  if (meta.renderType === "people_group") {
+    base.people = [];
+    base.listDisplay = "inline";
+    base.peopleStyle = "plain";
+  }
+  return base;
+}
+
 export function describeResolvedField(field: ResolvedFieldValue) {
   if (field.renderType === "people_group" && field.people?.some((p) => !p.isEmpty)) {
     return field.people
@@ -89,11 +114,16 @@ export function getIndexText(view: ResolvedView, row: ResolvedViewRow) {
 }
 
 /** When cardLayout is set, returns cells grouped by row. Each cell is field, placeholder, or static text. Skips rows with no fields. */
-export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): CardLayoutCell[][] {
+export function getCardLayoutRows(
+  view: ResolvedView,
+  row: ResolvedViewRow,
+  options?: { contributorFieldKeys?: Set<string> },
+): CardLayoutCell[][] {
   const layout = view.presentation?.cardLayout;
   if (!layout || layout.length === 0) {
     return [];
   }
+  const contrib = options?.contributorFieldKeys;
 
   return layout
     .map((layoutRow) =>
@@ -105,8 +135,14 @@ export function getCardLayoutRows(view: ResolvedView, row: ResolvedViewRow): Car
           return { type: "text", label: key.slice(CARD_LAYOUT_TEXT_PREFIX.length) };
         }
         const field = row.fieldMap[key];
-        if (field && fieldCanRender(field)) {
+        if (field && (fieldCanRender(field) || (contrib?.has(key) ?? false))) {
           return { type: "field", field };
+        }
+        if (contrib?.has(key)) {
+          const stub = buildStubResolvedField(view, key);
+          if (stub) {
+            return { type: "field", field: stub };
+          }
         }
         // Field absent or hidden: keep a placeholder so column positions stay aligned
         return { type: "placeholder" };
@@ -150,7 +186,7 @@ export function getEditDrawerOrderedFields(
     const seen = new Set(ordered.map((f) => f.key));
     for (const key of contributorFieldKeys) {
       if (seen.has(key)) continue;
-      const field = row.fieldMap[key];
+      const field = row.fieldMap[key] ?? buildStubResolvedField(view, key);
       if (field && shouldShow(field)) {
         ordered.push(field);
         seen.add(key);
@@ -160,11 +196,16 @@ export function getEditDrawerOrderedFields(
   };
 
   if (hasCustomCardLayout(view)) {
-    const rows = getCardLayoutRows(view, row);
+    const rows = getCardLayoutRows(view, row, { contributorFieldKeys });
     const out: ResolvedFieldValue[] = [];
+    const seenKeys = new Set<string>();
     for (const cells of rows) {
       for (const cell of cells) {
         if (cell.type === "field" && shouldShow(cell.field)) {
+          if (seenKeys.has(cell.field.key)) {
+            continue;
+          }
+          seenKeys.add(cell.field.key);
           out.push(cell.field);
         }
       }

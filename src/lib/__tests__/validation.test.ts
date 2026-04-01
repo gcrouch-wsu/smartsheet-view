@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { SourceConfig } from "@/lib/config/types";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
 
@@ -65,6 +65,40 @@ describe("validateViewConfig", () => {
 
     expect(result.success).toBe(false);
     expect(result.errors[0]).toContain("presentation.headingFieldKey");
+  });
+
+  it("rejects duplicate field keys across cardLayout rows", () => {
+    const result = validateViewConfig(
+      {
+        id: "dup-card",
+        slug: "dup-card",
+        sourceId: "grad-programs",
+        label: "Dup Card",
+        layout: "stacked",
+        public: false,
+        presentation: {
+          cardLayout: [{ fieldKeys: ["alpha", "beta"] }, { fieldKeys: ["alpha"] }],
+        },
+        fields: [
+          {
+            key: "alpha",
+            label: "Alpha",
+            source: { columnTitle: "Alpha" },
+            render: { type: "text" },
+          },
+          {
+            key: "beta",
+            label: "Beta",
+            source: { columnTitle: "Beta" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("cardLayout") && e.includes("more than one"))).toBe(true);
   });
 
   it("preserves themePresetId and editing config in validated output", () => {

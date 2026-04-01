@@ -574,6 +574,7 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   }
 
   let cardLayout: ViewPresentationConfig["cardLayout"];
+  const cardLayoutKeyRows = new Map<string, number[]>();
   if (Array.isArray(input.cardLayout)) {
     cardLayout = [];
     for (let i = 0; i < input.cardLayout.length; i++) {
@@ -586,9 +587,20 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
           if (key === CARD_LAYOUT_PLACEHOLDER || key.startsWith(CARD_LAYOUT_TEXT_PREFIX)) continue;
           if (!fieldKeys.has(key)) {
             errors.push(`presentation.cardLayout[${i}] references unknown field key \"${key}\".`);
+          } else {
+            const rows = cardLayoutKeyRows.get(key) ?? [];
+            rows.push(i);
+            cardLayoutKeyRows.set(key, rows);
           }
         }
         cardLayout.push({ fieldKeys: keys });
+      }
+    }
+    for (const [key, rowIndices] of cardLayoutKeyRows) {
+      if (rowIndices.length > 1) {
+        errors.push(
+          `presentation.cardLayout: field key \"${key}\" appears in more than one layout row (${rowIndices.map((j) => j + 1).join(", ")}). Use each field key at most once per view.`,
+        );
       }
     }
   }

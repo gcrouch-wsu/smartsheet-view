@@ -84,6 +84,12 @@ export function validateMultiPersonGroupsForSave(
     const hasEmail = group.attributes.some((a) => a.attribute === "email");
     const byIndex: Record<number, MultiPersonFieldErrors> = {};
     persons.forEach((p, idx) => {
+      // Skip validation for empty rows (unused numbered slots). If the group has only a phone attribute,
+      // a row with only phone filled is not "entirelyUnused" and passes when hasName/hasEmail are false.
+      const entirelyUnused = !p.name.trim() && !p.email.trim() && !p.phone.trim();
+      if (entirelyUnused) {
+        return;
+      }
       const err: MultiPersonFieldErrors = {};
       if (hasName && !p.name.trim()) {
         err.name = "Enter a name to save, or remove this person.";
@@ -104,6 +110,87 @@ export function validateMultiPersonGroupsForSave(
 
 export function hasMultiPersonValidationErrors(errors: Record<string, Record<number, MultiPersonFieldErrors>>): boolean {
   return Object.values(errors).some((perPerson) => Object.keys(perPerson).length > 0);
+}
+
+function isPartialContactObjectValue(ov: unknown): boolean {
+  if (ov == null || typeof ov !== "object") {
+    return false;
+  }
+  const o = ov as Record<string, unknown>;
+  if (o.objectType !== "CONTACT") {
+    return false;
+  }
+  const email = typeof o.email === "string" ? o.email.trim() : "";
+  const name = typeof o.name === "string" ? o.name.trim() : "";
+  return Boolean(email || name) && !(Boolean(email) && Boolean(name));
+}
+
+function existingContactFromSmartsheetCell(cell: SmartsheetCell | undefined): { email?: string; name?: string } | null {
+  if (!cell) {
+    return null;
+  }
+  const ov = cell.objectValue;
+  if (ov && typeof ov === "object") {
+    const o = ov as Record<string, unknown>;
+    if (o.objectType === "CONTACT") {
+      const email = typeof o.email === "string" ? o.email.trim() : "";
+      const name = typeof o.name === "string" ? o.name.trim() : "";
+      if (email || name) {
+        return {
+          ...(email ? { email } : {}),
+          ...(name ? { name } : {}),
+        };
+      }
+      return null;
+    }
+  }
+  const raw =
+    (typeof cell.displayValue === "string" && cell.displayValue.trim()) ||
+    (typeof cell.value === "string" ? cell.value.trim() : "");
+  if (!raw) {
+    return null;
+  }
+  if (raw.includes("@")) {
+    return { email: raw };
+  }
+  return { name: raw };
+}
+
+/**
+ * CONTACT_LIST writes from contact_names (name-only display) send `{ objectType: "CONTACT", name }` without email.
+ * Merge with the sheet row's current cell so the PUT payload retains existing email (same for email-only updates).
+ */
+export function mergeContributorContactPayloadWithExistingRow<
+  T extends { columnId: number; value?: unknown; objectValue?: unknown },
+>(cells: T[], row: SmartsheetRow, columnTypeById: Map<number, string>): T[] {
+  return cells.map((cell) => {
+    const columnType = columnTypeById.get(cell.columnId) ?? "";
+    if (columnType !== "CONTACT_LIST" || cell.objectValue === undefined || cell.objectValue === null) {
+      return cell;
+    }
+    if (!isPartialContactObjectValue(cell.objectValue)) {
+      return cell;
+    }
+    const base = existingContactFromSmartsheetCell(row.cellsById[cell.columnId]);
+    if (!base) {
+      return cell;
+    }
+    const incoming = cell.objectValue as Record<string, unknown>;
+    const inEmail = typeof incoming.email === "string" ? incoming.email.trim() : "";
+    const inName = typeof incoming.name === "string" ? incoming.name.trim() : "";
+    const merged: { objectType: "CONTACT"; email?: string; name?: string } = { objectType: "CONTACT" };
+    if (inEmail) {
+      merged.email = inEmail;
+    } else if (base.email) {
+      merged.email = base.email;
+    }
+    if (inName) {
+      merged.name = inName;
+    } else if (base.name) {
+      merged.name = base.name;
+    }
+    return { ...cell, objectValue: merged };
+  });
 }
 
 const MULTI_PERSON_DELIMITERS = /[,;\r\n]+/;
@@ -145,13 +232,14 @@ export function parseMultiPersonRow(
   if (group.fromRoleGroupViewFieldKey) {
     const people = row.fieldMap[group.fromRoleGroupViewFieldKey]?.people;
     if (!people?.length) {
-      return [];
+      return normalizeFixedSlotPersonsForEdit(group, []);
     }
-    return people.map((p) => ({
+    const mapped = people.map((p) => ({
       name: p.name?.trim() ?? "",
       email: p.email?.trim() ?? "",
       phone: p.phone?.trim() ?? "",
     }));
+    return normalizeFixedSlotPersonsForEdit(group, mapped);
   }
 
   const attrArrays = group.attributes.map((attr) => {
@@ -182,7 +270,7 @@ export function parseMultiPersonRow(
     persons.push(entry);
   }
 
-  return persons;
+  return normalizeFixedSlotPersonsForEdit(group, persons);
 }
 
 const CONTACT_DISPLAY_DELIMITERS = /[,;]+/;
@@ -253,6 +341,47 @@ function slotOrderFromAttributes(attributes: EditableFieldGroup["attributes"]): 
   return order.sort(compareSlotIds);
 }
 
+/**
+ * Ensures numbered-slot contributor groups always expose one editor row per slot,
+ * even when the Smartsheet row or resolved people_group field is blank.
+ */
+export function normalizeFixedSlotPersonsForEdit(
+  group: EditableFieldGroup,
+  persons: MultiPersonEntry[],
+): MultiPersonEntry[] {
+  if (!group.usesFixedSlots) {
+    return persons;
+  }
+  const slotOrder = slotOrderFromAttributes(group.attributes);
+  const n = slotOrder.length;
+  if (n === 0) {
+    return persons;
+  }
+  const empty: MultiPersonEntry = { name: "", email: "", phone: "" };
+  const next = persons.slice(0, n);
+  while (next.length < n) {
+    next.push({ ...empty });
+  }
+  return next;
+}
+
+/** Distinct slot count for a fixed-slot editable group (for UI labels). */
+export function countFixedSlotsInEditableGroup(group: EditableFieldGroup): number {
+  if (!group.usesFixedSlots) {
+    return 0;
+  }
+  return slotOrderFromAttributes(group.attributes).length;
+}
+
+function contactSlotMergeKey(slot: string, columnId: number): string {
+  return `${slot}\0${columnId}`;
+}
+
+/**
+ * Fixed-slot serializer: one PATCH cell per (slot, columnId) for contact columns.
+ * Numbered role groups may map both name and email to the same Smartsheet CONTACT column; emitting
+ * two cells duplicated columnId and the API kept last-write-wins, dropping one attribute.
+ */
 function serializeSlotBasedMultiPersonToCells(
   persons: MultiPersonEntry[],
   group: EditableFieldGroup & { attributes: Array<EditableFieldGroupAttribute & { columnType?: string }> },
@@ -260,6 +389,37 @@ function serializeSlotBasedMultiPersonToCells(
   const slotOrder = slotOrderFromAttributes(group.attributes);
   const result: Array<{ columnId: number; value?: string; objectValue?: unknown }> = [];
   const isContact = (t?: string) => t === "CONTACT_LIST" || t === "MULTI_CONTACT_LIST";
+
+  const mergedContactByKey = new Map<
+    string,
+    { columnId: number; columnType: string; contact: { objectType: "CONTACT"; email?: string; name?: string } }
+  >();
+
+  for (const attr of group.attributes) {
+    if (!attr.slot || !isContact(attr.columnType)) {
+      continue;
+    }
+    const personIdx = slotOrder.indexOf(attr.slot);
+    const p = persons[personIdx] ?? { name: "", email: "", phone: "" };
+    const mk = contactSlotMergeKey(attr.slot, attr.columnId);
+    let entry = mergedContactByKey.get(mk);
+    if (!entry) {
+      entry = {
+        columnId: attr.columnId,
+        columnType: attr.columnType as string,
+        contact: { objectType: "CONTACT" },
+      };
+      mergedContactByKey.set(mk, entry);
+    }
+    if (attr.attribute === "email" && p.email.trim()) {
+      entry.contact.email = p.email.trim();
+    }
+    if (attr.attribute === "name" && p.name.trim()) {
+      entry.contact.name = p.name.trim();
+    }
+  }
+
+  const emittedContact = new Set<string>();
 
   for (const attr of group.attributes) {
     if (!attr.slot) {
@@ -269,22 +429,22 @@ function serializeSlotBasedMultiPersonToCells(
     const p = persons[personIdx] ?? { name: "", email: "", phone: "" };
 
     if (isContact(attr.columnType)) {
-      const c: { objectType: "CONTACT"; email?: string; name?: string } = { objectType: "CONTACT" };
-      if (attr.attribute === "email" && p.email.trim()) {
-        c.email = p.email.trim();
+      const mk = contactSlotMergeKey(attr.slot, attr.columnId);
+      if (emittedContact.has(mk)) {
+        continue;
       }
-      if (attr.attribute === "name" && p.name.trim()) {
-        c.name = p.name.trim();
-      }
+      emittedContact.add(mk);
+      const merged = mergedContactByKey.get(mk)!;
+      const c = merged.contact;
       if (!c.email && !c.name) {
-        result.push({ columnId: attr.columnId, value: "" });
-      } else if (attr.columnType === "MULTI_CONTACT_LIST") {
+        result.push({ columnId: merged.columnId, value: "" });
+      } else if (merged.columnType === "MULTI_CONTACT_LIST") {
         result.push({
-          columnId: attr.columnId,
+          columnId: merged.columnId,
           objectValue: { objectType: "MULTI_CONTACT" as const, values: [c] },
         });
       } else {
-        result.push({ columnId: attr.columnId, objectValue: c });
+        result.push({ columnId: merged.columnId, objectValue: c });
       }
       continue;
     }

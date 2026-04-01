@@ -1,20 +1,10 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
+import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
-import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
-
-function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
-  return (
-    <div key={`${rowId}-${field.key}`} className="space-y-1">
-      {!field.hideLabel && (
-        <p className="view-field-label text-[color:var(--wsu-muted)]">{field.label}</p>
-      )}
-      <FieldValue field={field} stacked />
-    </div>
-  );
-}
+import type { ResolvedView } from "@/lib/config/types";
 
 export function DataStacked({
   view,
@@ -42,7 +32,7 @@ export function DataStacked({
       : "";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {view.rows.map((row) => {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
         const isEditable = editableRowIds?.has(row.id) ?? false;
@@ -52,10 +42,10 @@ export function DataStacked({
             <article
               key={row.id}
               id={`row-${row.id}`}
-              className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+              className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
             >
               {isEditable && (
-                <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                   <ContributorEditableBadge />
                   <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
                 </div>
@@ -63,7 +53,7 @@ export function DataStacked({
               {customRows.map((cells, rowIndex) => {
                 const colCount = getCardLayoutColumnCount(view);
                 const useAlignedGrid = colCount > 1;
-                const gridClass = useAlignedGrid ? "grid gap-4" : "space-y-4";
+                const gridClass = useAlignedGrid ? "grid gap-2 sm:gap-3 md:gap-4" : "space-y-2 sm:space-y-3 md:space-y-4";
                 const gridStyle = useAlignedGrid
                   ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`, gridTemplateRows: "auto auto" }
                   : undefined;
@@ -101,9 +91,9 @@ export function DataStacked({
           <article
             key={row.id}
             id={`row-${row.id}`}
-            className={`scroll-mt-24 rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-5 shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
+            className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
           >
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[color:var(--wsu-border)] pb-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--wsu-border)] pb-3 sm:gap-4 sm:pb-4">
               <div>
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div>
@@ -131,9 +121,11 @@ export function DataStacked({
                 </div>
               )}
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {bodyFields.map((field) => (
-                <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
+                <div key={`${row.id}-${field.key}`}>
+                  <FieldBlock field={field} compact />
+                </div>
               ))}
             </div>
           </article>

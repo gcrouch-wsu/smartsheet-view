@@ -9,6 +9,7 @@ import { useContributorContext } from "@/components/public/ContributorContext";
 import type { EditableFieldGroup, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import {
+  countFixedSlotsInEditableGroup,
   hasMultiPersonValidationErrors,
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
@@ -47,16 +48,15 @@ export function EditRowDrawer({
     [contributor?.editingConfig?.editableFieldGroups],
   );
   const editableFields = useMemo(() => {
-    if (!row || !contributor?.editingConfig) {
+    if (!contributor?.editingConfig) {
       return [];
     }
-
-    return contributor.editingConfig.editableFields.filter((field) => Boolean(row.fieldMap[field.fieldKey]));
-  }, [contributor?.editingConfig, row]);
+    return contributor.editingConfig.editableFields;
+  }, [contributor?.editingConfig]);
 
   const contributorFieldKeys = useMemo(() => {
     const keys = new Set<string>();
-    for (const f of editableFields) {
+    for (const f of contributor?.editingConfig?.editableFields ?? []) {
       keys.add(f.fieldKey);
     }
     for (const g of editableFieldGroups) {
@@ -70,7 +70,7 @@ export function EditRowDrawer({
       }
     }
     return keys;
-  }, [editableFields, editableFieldGroups, view.fields]);
+  }, [contributor?.editingConfig?.editableFields, editableFieldGroups, view.fields]);
 
   const orderedFields = useMemo(
     () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys) : []),
@@ -123,7 +123,8 @@ export function EditRowDrawer({
     }
 
     const nextValues = editableFields.reduce<Record<number, string>>((values, field) => {
-      values[field.columnId] = row.fieldMap[field.fieldKey]?.textValue ?? "";
+      const text = row.fieldMap[field.fieldKey]?.textValue;
+      values[field.columnId] = text ?? "";
       return values;
     }, {});
     setFormValues(nextValues);
@@ -134,7 +135,7 @@ export function EditRowDrawer({
     }
     setGroupValues(nextGroups);
     setError(null);
-  }, [contributor?.editingConfig, editableFields, editableFieldGroups, open, row]);
+  }, [contributor?.editingConfig, editableFieldGroups, editableFields, open, row]);
 
   useEffect(() => {
     if (!open) return;
@@ -377,6 +378,7 @@ export function EditRowDrawer({
                           );
                         }
                         const persons = groupValues[group.id] ?? [];
+                        const fixedSlotCount = countFixedSlotsInEditableGroup(group);
                         const hasName = group.attributes.some((a) => a.attribute === "name");
                         const hasEmail = group.attributes.some((a) => a.attribute === "email");
                         const hasPhone = group.attributes.some((a) => a.attribute === "phone");
@@ -386,8 +388,10 @@ export function EditRowDrawer({
                             <div>
                               <p className={labelClass}>{group.label}</p>
                               <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
-                                One block per coordinator. Change name or email when someone new fills the role. Phone optional until
-                                you have it. Name and email are both required when your sheet has both columns.
+                                {fixedSlotCount > 0
+                                  ? `This role has ${fixedSlotCount} numbered positions in Smartsheet (shown below as 1–${fixedSlotCount}). Fill each row you use; leave unused rows blank or clear values before saving if your workflow allows.`
+                                  : "One block per person. Name and email are both required when your sheet has both columns."}{" "}
+                                Phone is optional until you have it.
                               </p>
                             </div>
                             <div className="space-y-3">
@@ -399,23 +403,29 @@ export function EditRowDrawer({
                               )}
                               {persons.map((person, idx) => {
                                 const rowErr = groupErrors[idx];
+                                const positionLabel =
+                                  fixedSlotCount > 0
+                                    ? `${group.label} — ${idx + 1} of ${fixedSlotCount}`
+                                    : `${group.label} — person ${idx + 1}`;
                                 const preview =
                                   person.name.trim() || person.email.trim()
                                     ? person.name.trim() || person.email.trim()
-                                    : `Person ${idx + 1}`;
+                                    : positionLabel;
                                 return (
                                   <fieldset
                                     key={`${group.id}-person-${idx}`}
                                     className="rounded-xl border border-[color:var(--wsu-border)]/80 bg-white/80 p-3 shadow-sm space-y-2"
                                   >
-                                    <legend className="sr-only">
-                                      {group.label}, {preview}
+                                    <legend className="mb-1 w-full border-b border-[color:var(--wsu-border)]/40 px-0.5 pb-1.5 text-left text-xs font-semibold text-[color:var(--wsu-ink)]">
+                                      {positionLabel}
+                                      {person.name.trim() || person.email.trim() ? (
+                                        <span className="mt-0.5 block text-[11px] font-normal text-[color:var(--wsu-muted)]">
+                                          {preview}
+                                        </span>
+                                      ) : null}
                                     </legend>
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--wsu-muted)]">
-                                        {preview}
-                                      </span>
-                                      {!group.usesFixedSlots ? (
+                                    {!group.usesFixedSlots ? (
+                                      <div className="flex flex-wrap justify-end gap-2">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -428,8 +438,8 @@ export function EditRowDrawer({
                                         >
                                           Remove
                                         </button>
-                                      ) : null}
-                                    </div>
+                                      </div>
+                                    ) : null}
                                     <div className="grid gap-2">
                                       {hasName &&
                                         (() => {

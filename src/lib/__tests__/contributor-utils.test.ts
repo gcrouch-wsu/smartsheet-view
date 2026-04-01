@@ -3,6 +3,7 @@ import {
   buildContributorEditingClientConfig,
   getContributorEditingValidationErrors,
   hasMultiPersonValidationErrors,
+  mergeContributorContactPayloadWithExistingRow,
   parseMultiPersonValue,
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
@@ -11,7 +12,58 @@ import {
   validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
-import type { EditableFieldGroup, ResolvedViewRow, SmartsheetColumn, SourceConfig, ViewConfig } from "@/lib/config/types";
+import type {
+  EditableFieldGroup,
+  ResolvedViewRow,
+  SmartsheetColumn,
+  SmartsheetRow,
+  SourceConfig,
+  ViewConfig,
+} from "@/lib/config/types";
+
+describe("mergeContributorContactPayloadWithExistingRow", () => {
+  it("merges existing email when CONTACT_LIST payload is name-only", () => {
+    const row: SmartsheetRow = {
+      id: 1,
+      cellsById: {
+        10: {
+          columnId: 10,
+          columnTitle: "Lead",
+          columnType: "CONTACT_LIST",
+          value: "",
+          objectValue: { objectType: "CONTACT", name: "Prior", email: "keep@wsu.edu" },
+        },
+      },
+      cellsByTitle: {},
+    };
+    const columnTypeById = new Map<number, string>([[10, "CONTACT_LIST"]]);
+    const cells = [{ columnId: 10, objectValue: { objectType: "CONTACT", name: "Updated" } }];
+    expect(mergeContributorContactPayloadWithExistingRow(cells, row, columnTypeById)).toEqual([
+      { columnId: 10, objectValue: { objectType: "CONTACT", name: "Updated", email: "keep@wsu.edu" } },
+    ]);
+  });
+
+  it("merges existing name when CONTACT_LIST payload is email-only", () => {
+    const row: SmartsheetRow = {
+      id: 1,
+      cellsById: {
+        10: {
+          columnId: 10,
+          columnTitle: "Lead",
+          columnType: "CONTACT_LIST",
+          value: "",
+          objectValue: { objectType: "CONTACT", name: "Pat", email: "old@wsu.edu" },
+        },
+      },
+      cellsByTitle: {},
+    };
+    const columnTypeById = new Map<number, string>([[10, "CONTACT_LIST"]]);
+    const cells = [{ columnId: 10, objectValue: { objectType: "CONTACT", email: "new@wsu.edu" } }];
+    expect(mergeContributorContactPayloadWithExistingRow(cells, row, columnTypeById)).toEqual([
+      { columnId: 10, objectValue: { objectType: "CONTACT", name: "Pat", email: "new@wsu.edu" } },
+    ]);
+  });
+});
 
 describe("serializeContactDisplayToObjectValue", () => {
   it("returns null for empty CONTACT_LIST so callers send value clear", () => {
@@ -109,6 +161,16 @@ describe("validateMultiPersonGroupsForSave", () => {
   it("passes when name and email filled", () => {
     const v = validateMultiPersonGroupsForSave([group], {
       g1: [{ name: "Ada", email: "a@b.com", phone: "" }],
+    });
+    expect(hasMultiPersonValidationErrors(v)).toBe(false);
+  });
+
+  it("ignores wholly empty person rows (unused fixed slots)", () => {
+    const v = validateMultiPersonGroupsForSave([group], {
+      g1: [
+        { name: "Ada", email: "a@b.com", phone: "" },
+        { name: "", email: "", phone: "" },
+      ],
     });
     expect(hasMultiPersonValidationErrors(v)).toBe(false);
   });
@@ -409,6 +471,49 @@ describe("serializeMultiPersonToCells", () => {
             { objectType: "CONTACT", email: "alice@wsu.edu" },
             { objectType: "CONTACT", email: "bob@wsu.edu" },
           ],
+        },
+      },
+    ]);
+  });
+
+  it("merges fixed-slot name and email on the same CONTACT_LIST column into one cell", () => {
+    const group: EditableFieldGroup = {
+      id: "g-slot",
+      label: "Coordinator",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "people",
+      attributes: [
+        { attribute: "name", fieldKey: "people", columnId: 500, columnType: "CONTACT_LIST", slot: "1" },
+        { attribute: "email", fieldKey: "people", columnId: 500, columnType: "CONTACT_LIST", slot: "1" },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [{ name: "Ada Lovelace", email: "ada@example.com", phone: "" }];
+    expect(serializeMultiPersonToCells(persons, group)).toEqual([
+      {
+        columnId: 500,
+        objectValue: { objectType: "CONTACT", name: "Ada Lovelace", email: "ada@example.com" },
+      },
+    ]);
+  });
+
+  it("merges fixed-slot name and email on the same MULTI_CONTACT_LIST column into one cell", () => {
+    const group: EditableFieldGroup = {
+      id: "g-slot",
+      label: "Coordinator",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "people",
+      attributes: [
+        { attribute: "name", fieldKey: "people", columnId: 600, columnType: "MULTI_CONTACT_LIST", slot: "1" },
+        { attribute: "email", fieldKey: "people", columnId: 600, columnType: "MULTI_CONTACT_LIST", slot: "1" },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [{ name: "Bob", email: "bob@example.com", phone: "" }];
+    expect(serializeMultiPersonToCells(persons, group)).toEqual([
+      {
+        columnId: 600,
+        objectValue: {
+          objectType: "MULTI_CONTACT",
+          values: [{ objectType: "CONTACT", name: "Bob", email: "bob@example.com" }],
         },
       },
     ]);

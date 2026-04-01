@@ -78,11 +78,37 @@ describe("parseMultiPersonRow with numbered role groups (fromRoleGroupViewFieldK
       attributes: [
         { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1" },
         { attribute: "email", fieldKey: "staff", columnId: 2, slot: "1" },
+        { attribute: "name", fieldKey: "staff", columnId: 3, slot: "2" },
+        { attribute: "email", fieldKey: "staff", columnId: 4, slot: "2" },
       ],
     };
     const persons = parseMultiPersonRow(row, group);
     expect(persons).toHaveLength(2);
     expect(persons[0]).toMatchObject({ name: "Alice", email: "a@wsu.edu" });
     expect(persons[1]).toMatchObject({ name: "Bob", email: "b@wsu.edu" });
+  });
+
+  it("pads fixed-slot editors when people_group is missing or empty", () => {
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {},
+    };
+    const group: EditableFieldGroup = {
+      id: "x",
+      label: "Coordinators",
+      fromRoleGroupViewFieldKey: "staff",
+      usesFixedSlots: true,
+      attributes: [
+        { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1" },
+        { attribute: "email", fieldKey: "staff", columnId: 2, slot: "1" },
+        { attribute: "name", fieldKey: "staff", columnId: 3, slot: "2" },
+        { attribute: "email", fieldKey: "staff", columnId: 4, slot: "2" },
+      ],
+    };
+    expect(parseMultiPersonRow(row, group)).toEqual([
+      { name: "", email: "", phone: "" },
+      { name: "", email: "", phone: "" },
+    ]);
   });
 });
