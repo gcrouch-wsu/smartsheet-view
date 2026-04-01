@@ -24,9 +24,9 @@ const PRINT_STYLES = `
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
     .print-masthead {
-      border-bottom: 2pt solid #000 !important;
-      padding-bottom: 8pt !important;
-      margin-bottom: 10pt !important;
+      border-bottom: 1pt solid #555 !important;
+      padding-bottom: 6pt !important;
+      margin-bottom: 8pt !important;
     }
     .print-table-wrap {
       overflow: visible !important;
@@ -37,10 +37,12 @@ const PRINT_STYLES = `
     }
     .print-data-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate !important;
+      border-spacing: 0;
       font-size: 9pt;
-      line-height: 1.28;
+      line-height: 1.35;
       table-layout: auto;
+      border: none !important;
     }
     .print-data-table caption {
       text-align: left;
@@ -58,16 +60,24 @@ const PRINT_STYLES = `
       letter-spacing: 0 !important;
       text-transform: none !important;
       font-size: 8.5pt;
-      border: 1pt solid #111 !important;
-      background: #e8e8e8 !important;
-      padding: 5pt 5pt 4pt 5pt !important;
+      border: none !important;
+      border-bottom: 1.25pt solid #222 !important;
+      border-right: 0.4pt solid #ddd !important;
+      background: #f0f0f0 !important;
+      padding: 4pt 6pt 4pt 6pt !important;
       vertical-align: bottom;
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .print-data-table td {
-      border: 1pt solid #bbb !important;
-      padding: 3pt 5pt !important;
+    .print-data-table th:last-child {
+      border-right: none !important;
+    }
+    .print-data-table tbody td {
+      border: none !important;
+      border-bottom: 0.85pt solid #bfbfbf !important;
+      border-right: 0.4pt solid #e5e5e5 !important;
+      background: #fff !important;
+      padding: 4pt 6pt !important;
       vertical-align: top;
       break-inside: avoid;
       page-break-inside: avoid;
@@ -75,12 +85,17 @@ const PRINT_STYLES = `
       overflow-wrap: anywhere;
       word-break: break-word;
     }
-    /* Light horizontal rules between programs (rows) for readability */
-    .print-data-table tbody tr:not(:first-child) td {
-      border-top: 1.25pt solid #e3e3e3 !important;
+    .print-data-table tbody td:last-child {
+      border-right: none !important;
     }
-    .print-data-table tbody tr:nth-child(even) td {
-      background: #f7f7f7 !important;
+    /* Program / row-heading column: match body size (theme .view-row-heading is larger on screen) */
+    .print-data-table .print-table-program {
+      font-family: inherit !important;
+      font-size: 9pt !important;
+      font-weight: 600 !important;
+      line-height: 1.35 !important;
+      font-style: normal !important;
+      color: #111 !important;
     }
     .print-data-table a:link,
     .print-data-table a:visited {
@@ -179,7 +194,7 @@ export function PrintViewDocument({
 
         {view.rows.length > 0 ? (
           <div className="print-table-wrap overflow-x-auto rounded-lg border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] sm:rounded-xl">
-            <table className="print-data-table print-table min-w-full border-collapse text-left text-xs sm:text-sm">
+            <table className="print-data-table print-table min-w-full border-separate border-spacing-0 text-left text-xs sm:text-sm">
               <caption>
                 {pageTitle}
                 {view.label !== pageTitle ? ` · ${view.label}` : ""} ({view.rows.length} row{view.rows.length === 1 ? "" : "s"})
@@ -202,7 +217,7 @@ export function PrintViewDocument({
                         return (
                           <td key={`${row.id}-${column.key}`} className="max-w-[11rem] align-top break-words">
                             {headingField && canPrintField(headingField) ? (
-                              <div className="view-row-heading font-medium text-[color:var(--wsu-ink)]">
+                              <div className="print-table-program">
                                 <FieldValue field={headingField} />
                               </div>
                             ) : (
