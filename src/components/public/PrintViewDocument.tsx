@@ -148,7 +148,10 @@ export function PrintViewDocument({
                                 <FieldValue field={headingField} />
                               </PrintCellInner>
                             ) : (
-                              <span className="print-empty-cell">—</span>
+                              <>
+                                <span className="print-empty-cell" aria-hidden="true">—</span>
+                                <span className="sr-only">Empty</span>
+                              </>
                             )}
                           </th>
                         );
@@ -162,7 +165,10 @@ export function PrintViewDocument({
                               <FieldValue field={field!} />
                             </PrintCellInner>
                           ) : (
-                            <span className="print-empty-cell">—</span>
+                            <>
+                              <span className="print-empty-cell" aria-hidden="true">—</span>
+                              <span className="sr-only">Empty</span>
+                            </>
                           )}
                         </td>
                       );
