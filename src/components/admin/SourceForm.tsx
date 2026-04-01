@@ -126,7 +126,10 @@ function RoleGroupColumnSelect({
     return (
       <div className="space-y-0.5">
         <p className="break-words text-[color:var(--wsu-ink)]">{selectorLabel(value)}</p>
-        <p className="text-[10px] text-[color:var(--wsu-muted)]">Load schema (below) to choose columns.</p>
+        <p className="text-[10px] text-[color:var(--wsu-muted)]">
+          Use <strong className="font-medium text-[color:var(--wsu-ink)]">Test + Fetch Schema</strong> on this page. Then
+          column <strong className="font-medium">dropdowns</strong> replace this note so you can map fields.
+        </p>
       </div>
     );
   }
@@ -716,6 +719,33 @@ export function SourceForm({
 
         {form.roleGroups && form.roleGroups.length > 0 ? (
           <div className="mt-4 space-y-3">
+            {!schemaLoaded ? (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[color:var(--wsu-ink)]">Customize columns after loading the schema</p>
+                    <p className="mt-1 text-xs leading-relaxed text-[color:var(--wsu-muted)]">
+                      <strong className="text-[color:var(--wsu-ink)]">Slot IDs</strong> are editable now.{" "}
+                      <strong className="text-[color:var(--wsu-ink)]">Name / email / phone</strong> use dropdowns only after
+                      the column list is loaded (this page does not read it automatically). Click{" "}
+                      <strong className="text-[color:var(--wsu-ink)]">Fetch schema now</strong> or{" "}
+                      <strong className="text-[color:var(--wsu-ink)]">Test + Fetch Schema</strong> at the top, then map
+                      columns here and <strong className="text-[color:var(--wsu-ink)]">Save source</strong>. Merge only adds
+                      suggested groups from titles — you customize mappings in this table.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => startTransition(() => {
+                      void fetchSchema();
+                    })}
+                    className="shrink-0 rounded-full border border-sky-300 bg-white px-3 py-1.5 text-xs font-medium text-sky-900 hover:bg-sky-100"
+                  >
+                    Fetch schema now
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {form.roleGroups.map((roleGroup) => {
               const attrs = getRoleGroupAttributeKeys(roleGroup);
               const attrSummary = attrs.length > 0 ? attrs.join(", ") : "none";
