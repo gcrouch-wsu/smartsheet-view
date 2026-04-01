@@ -30,7 +30,8 @@ export const FONT_SIZE_OPTIONS: { value: string; label: string }[] = [
 
 export const LETTER_SPACING_OPTIONS: { value: string; label: string }[] = [
   { value: "0", label: "Normal" },
-  { value: "0.04em", label: "Tight" },
+  { value: "-0.025em", label: "Tight (display)" },
+  { value: "0.04em", label: "Slight wide" },
   { value: "0.1em", label: "Wide" },
   { value: "0.16em", label: "Wider" },
   { value: "0.22em", label: "Extra wide" },
@@ -83,7 +84,18 @@ export const SHADOW_OPTIONS: { value: string; label: string }[] = [
   { value: "0 1px 3px rgba(0,0,0,0.08)", label: "Subtle" },
   { value: "0 4px 6px rgba(0,0,0,0.1)", label: "Light" },
   { value: "0 16px 40px rgba(35,31,32,0.06)", label: "Medium (default)" },
+  { value: "0 24px 64px rgba(35,31,32,0.07)", label: "Masthead depth" },
   { value: "0 24px 64px rgba(35,31,32,0.08)", label: "Strong" },
+  { value: "0 24px 64px rgba(0,0,0,0.35)", label: "Strong (dark)" },
+];
+
+/** Top rule above logo / brand text. */
+export const HEADER_TOP_BORDER_WIDTH_OPTIONS: { value: string; label: string }[] = [
+  { value: "0", label: "Hidden" },
+  { value: "2px", label: "Thin (2px)" },
+  { value: "3px", label: "Default (3px)" },
+  { value: "4px", label: "Thick (4px)" },
+  { value: "6px", label: "Heavy (6px)" },
 ];
 
 export const LAYOUT_OPTIONS: LayoutType[] = ["table", "cards", "list", "tabbed", "stacked", "accordion", "list_detail"];

@@ -75,13 +75,9 @@ export default async function ContributorLoginPage({
       <div className="mx-auto max-w-3xl">
         <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-            <section className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-8 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
-              <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                {page.sourceConfig.label}
-              </p>
-              <h1 className="font-view-heading mt-3 text-4xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
-                Contributor access
-              </h1>
+            <section className="view-header-panel p-8">
+              <p className="view-header-source-label">{page.sourceConfig.label}</p>
+              <h1 className="view-header-page-title mt-3">Contributor access</h1>
               <p className="mt-4 text-sm leading-7 text-[color:var(--wsu-muted)]">
                 Sign in to update your assigned rows in <span className="font-medium text-[color:var(--wsu-ink)]">{activeView.label}</span>.
               </p>

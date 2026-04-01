@@ -22,7 +22,7 @@ export function PublicHeaderBrandStrip({
   }
 
   return (
-    <div className="border-t-[3px] border-[color:var(--wsu-crimson)] pt-4">
+    <div className="view-header-brand-strip-top pt-4">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
         {showLogo && <PublicHeaderLogo presentation={presentation} />}
         {showText && (
@@ -33,17 +33,9 @@ export function PublicHeaderBrandStrip({
                 : "min-w-0"
             }
           >
-            {subline ? (
-              <p className="text-sm font-medium text-[color:var(--wsu-muted)]">{subline}</p>
-            ) : null}
+            {subline ? <p className="view-header-brand-subline">{subline}</p> : null}
             {title ? (
-              <p
-                className={`font-view-heading font-bold tracking-tight text-[color:var(--wsu-ink)] ${
-                  subline ? "mt-1" : ""
-                } text-2xl sm:text-3xl`}
-              >
-                {title}
-              </p>
+              <p className={`view-header-brand-title${subline ? " mt-1" : ""}`}>{title}</p>
             ) : null}
           </div>
         )}

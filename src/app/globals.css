@@ -162,6 +162,44 @@ a {
   font-style: var(--view-heading-font-style, inherit);
 }
 
+/* Public masthead card (background, border, radius, shadow) */
+.view-header-panel {
+  background-color: var(--view-header-panel-bg, var(--wsu-paper));
+  border: 1px solid var(--view-header-panel-border, var(--wsu-border));
+  border-radius: var(--view-header-panel-radius, 2rem);
+  box-shadow: var(--view-header-panel-shadow, 0 24px 64px rgba(35, 31, 32, 0.07));
+}
+
+.view-header-brand-strip-top {
+  border-top: var(--view-header-top-border-width, 3px) solid
+    var(--view-header-top-border-color, var(--wsu-crimson));
+}
+
+.view-header-brand-subline {
+  font-family: var(--view-header-brand-subline-font-family, var(--view-font, inherit));
+  font-size: var(--view-header-brand-subline-font-size, 0.875rem);
+  font-weight: var(--view-header-brand-subline-font-weight, 500);
+  color: var(--view-header-brand-subline-color, var(--view-muted, var(--wsu-muted)));
+}
+
+.view-header-brand-title {
+  font-family: var(--view-header-brand-title-font-family, var(--view-heading-font, inherit));
+  font-size: var(--view-header-brand-title-font-size, 1.875rem);
+  font-weight: var(--view-header-brand-title-font-weight, 700);
+  font-style: var(--view-header-brand-title-font-style, normal);
+  letter-spacing: var(--view-header-brand-title-letter-spacing, -0.025em);
+  color: var(--view-header-brand-title-color, var(--view-text, var(--wsu-ink)));
+}
+
+.view-header-source-label {
+  font-family: var(--view-header-source-label-font-family, var(--view-heading-font, inherit));
+  font-size: var(--view-header-source-label-font-size, 0.75rem);
+  font-weight: var(--view-header-source-label-font-weight, 600);
+  letter-spacing: var(--view-header-source-label-letter-spacing, 0.22em);
+  text-transform: var(--view-header-source-label-text-transform, uppercase);
+  color: var(--view-header-source-label-color, var(--view-accent, var(--wsu-crimson)));
+}
+
 /* Page-level title (h1) — separate variable so headingFontSize doesn't override it */
 .view-page-title {
   font-family: var(--view-heading-font, inherit);
@@ -169,6 +207,28 @@ a {
   font-weight: var(--view-heading-font-weight, 600);
   font-style: var(--view-heading-font-style, normal);
   line-height: 1.15;
+}
+
+/** Main page h1 inside the public header (optional header-specific typography). */
+.view-header-page-title {
+  font-family: var(--view-header-page-title-font-family, var(--view-heading-font, inherit));
+  font-size: var(--view-header-page-title-font-size, var(--view-page-title-font-size, 2.25rem));
+  font-weight: var(--view-header-page-title-font-weight, var(--view-heading-font-weight, 600));
+  font-style: var(--view-header-page-title-font-style, var(--view-heading-font-style, normal));
+  letter-spacing: var(--view-header-page-title-letter-spacing, -0.025em);
+  line-height: 1.15;
+  color: var(--view-header-page-title-color, var(--view-text, var(--wsu-ink)));
+}
+
+.view-header-live-blurb {
+  font-size: var(--view-header-live-blurb-font-size, 0.875rem);
+  line-height: 1.75;
+  color: var(--view-header-live-blurb-color, var(--view-muted, var(--wsu-muted)));
+}
+
+.view-header-live-blurb .view-header-live-blurb-strong {
+  font-weight: 500;
+  color: var(--view-header-live-blurb-strong-color, var(--view-text, var(--wsu-ink)));
 }
 
 /* Section-level title (h2 view label below tabs) */

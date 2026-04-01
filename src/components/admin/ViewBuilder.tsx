@@ -1586,7 +1586,7 @@ export function ViewBuilder({
                     <div className="scale-[0.85] origin-top">
                       <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
                         {!view.presentation?.hideHeader && (
-                        <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+                        <header className="view-header-panel px-6 py-6">
                           <div className="flex flex-wrap items-start justify-between gap-6">
                             <div className="min-w-0 flex-1 space-y-3">
                               <PublicHeaderBrandStrip presentation={view.presentation} />
@@ -1597,14 +1597,10 @@ export function ViewBuilder({
                               )}
                               <div>
                                 {!view.presentation?.hideHeaderSourceLabel && (
-                                  <p className="font-view-heading text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                                    {sourceMap.get(view.sourceId) ?? "Source Label"}
-                                  </p>
+                                  <p className="view-header-source-label">{sourceMap.get(view.sourceId) ?? "Source Label"}</p>
                                 )}
                                 {!view.presentation?.hideHeaderPageTitle && (
-                                  <h1 className="font-view-heading mt-1 text-xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
-                                    {view.label || "Page Title"}
-                                  </h1>
+                                  <h1 className="view-header-page-title mt-1">{view.label || "Page Title"}</h1>
                                 )}
                               </div>
                               {view.presentation?.headerCustomText && (
@@ -2163,7 +2159,7 @@ export function ViewBuilder({
                     <div className="scale-[0.85] origin-top">
                       <ViewStyleWrapper style={livePreview.resolvedView.style} themePresetId={livePreview.resolvedView.themePresetId}>
                         {!view.presentation?.hideHeader && (
-                        <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)]">
+                        <header className="view-header-panel px-6 py-6">
                           <div className="flex flex-wrap items-start justify-between gap-6">
                             <div className="min-w-0 flex-1 space-y-3">
                               <PublicHeaderBrandStrip presentation={view.presentation} />
@@ -2174,14 +2170,10 @@ export function ViewBuilder({
                               )}
                               <div>
                                 {!view.presentation?.hideHeaderSourceLabel && (
-                                  <p className="font-view-heading text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                                    {sourceMap.get(view.sourceId) ?? "Source Label"}
-                                  </p>
+                                  <p className="view-header-source-label">{sourceMap.get(view.sourceId) ?? "Source Label"}</p>
                                 )}
                                 {!view.presentation?.hideHeaderPageTitle && (
-                                  <h1 className="font-view-heading mt-1 text-xl font-semibold tracking-tight text-[color:var(--wsu-ink)]">
-                                    {view.label || "Page Title"}
-                                  </h1>
+                                  <h1 className="view-header-page-title mt-1">{view.label || "Page Title"}</h1>
                                 )}
                               </div>
                               {view.presentation?.headerCustomText && (
@@ -2854,7 +2846,7 @@ export function ViewBuilder({
                 <div className="mx-auto max-w-7xl space-y-6 text-left">
                   <ViewStyleWrapper style={previewData.resolvedView.style} themePresetId={previewData.resolvedView.themePresetId}>
                     {!view.presentation?.hideHeader && (
-                    <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
+                    <header className="view-header-panel px-6 py-6 sm:px-8">
                       <div className="flex flex-wrap items-start justify-between gap-6">
                         <div className="min-w-0 flex-1 space-y-3">
                           <PublicHeaderBrandStrip presentation={view.presentation} />
@@ -2865,18 +2857,15 @@ export function ViewBuilder({
                           )}
                           <div>
                             {!view.presentation?.hideHeaderSourceLabel && (
-                              <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                                {sourceMap.get(view.sourceId) ?? "Source Label"}
-                              </p>
+                              <p className="view-header-source-label">{sourceMap.get(view.sourceId) ?? "Source Label"}</p>
                             )}
                             {!view.presentation?.hideHeaderPageTitle && (
-                              <h1 className="font-view-heading mt-2 text-3xl font-semibold tracking-tight text-[color:var(--wsu-ink)] sm:text-4xl">
-                                {view.label || "Page Title"}
-                              </h1>
+                              <h1 className="view-header-page-title mt-2">{view.label || "Page Title"}</h1>
                             )}
                             {!view.presentation?.hideHeaderLiveDataText && (
-                              <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--wsu-muted)]">
-                                Live data from <span className="font-medium text-[color:var(--wsu-ink)]">Smartsheet Asset</span>.
+                              <p className="view-header-live-blurb mt-3 max-w-3xl">
+                                Live data from{" "}
+                                <span className="view-header-live-blurb-strong font-medium">Smartsheet Asset</span>.
                               </p>
                             )}
                           </div>

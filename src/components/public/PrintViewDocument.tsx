@@ -155,8 +155,8 @@ export function PrintViewDocument({
         <header className="print-masthead mb-6 text-[color:var(--wsu-ink)]">
           <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-6">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--wsu-muted)]">{sourceLabel}</p>
-              <h1 className="view-page-title mt-1 text-balance tracking-tight">{pageTitle}</h1>
+              <p className="view-header-source-label">{sourceLabel}</p>
+              <h1 className="view-header-page-title mt-1 text-balance">{pageTitle}</h1>
             </div>
             <p className="shrink-0 text-xs text-[color:var(--wsu-muted)]">
               <span className="font-medium text-[color:var(--wsu-ink)]">Source:</span> {sourceName}

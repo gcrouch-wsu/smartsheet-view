@@ -249,6 +249,52 @@ export interface ViewStyleConfig {
   pageTitleFontSize?: string;
   /** Font size for action link buttons (Contributor sign in, Print/PDF, etc.). */
   actionFontSize?: string;
+
+  // ── Public header / masthead (optional overrides; fallbacks keep prior look) ──
+  /** Top accent rule above the brand strip (e.g. #a60f2d). Empty uses theme accent. */
+  headerTopBorderColor?: string;
+  /** Top border thickness (e.g. 3px, 0). */
+  headerTopBorderWidth?: string;
+  /** Masthead card background. Empty uses card background. */
+  headerPanelBackgroundColor?: string;
+  /** Masthead card border color. Empty uses border color token. */
+  headerPanelBorderColor?: string;
+  /** Masthead corner radius (e.g. 2rem). */
+  headerPanelBorderRadius?: string;
+  /** Masthead box-shadow (CSS value). */
+  headerPanelShadow?: string;
+
+  headerBrandSublineFontFamily?: string;
+  headerBrandSublineFontSize?: string;
+  headerBrandSublineFontWeight?: string;
+  headerBrandSublineColor?: string;
+
+  headerBrandTitleFontFamily?: string;
+  headerBrandTitleFontSize?: string;
+  headerBrandTitleFontWeight?: string;
+  headerBrandTitleFontStyle?: string;
+  headerBrandTitleLetterSpacing?: string;
+  headerBrandTitleColor?: string;
+
+  headerSourceLabelFontFamily?: string;
+  headerSourceLabelFontSize?: string;
+  headerSourceLabelFontWeight?: string;
+  headerSourceLabelLetterSpacing?: string;
+  headerSourceLabelTextTransform?: string;
+  headerSourceLabelColor?: string;
+
+  /** Overrides page h1 size inside the public header only. */
+  headerPageTitleFontFamily?: string;
+  headerPageTitleFontSize?: string;
+  headerPageTitleFontWeight?: string;
+  headerPageTitleFontStyle?: string;
+  headerPageTitleLetterSpacing?: string;
+  headerPageTitleColor?: string;
+
+  headerLiveBlurbFontSize?: string;
+  headerLiveBlurbColor?: string;
+  headerLiveBlurbStrongColor?: string;
+
   /** @deprecated Use accentColor. Kept for backward compatibility. */
   primaryColor?: string;
 }

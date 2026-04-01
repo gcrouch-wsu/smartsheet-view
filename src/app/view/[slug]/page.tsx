@@ -217,7 +217,7 @@ export default async function PublicViewPage({
         <ViewStyleWrapper style={activeView.style} themePresetId={activeView.themePresetId}>
           {!embed && !activeView.presentation?.hideHeader && (
             <div>
-            <header className="rounded-[2rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] px-6 py-6 shadow-[0_24px_64px_rgba(35,31,32,0.07)] sm:px-8">
+            <header className="view-header-panel px-6 py-6 sm:px-8">
               <div className="flex flex-wrap items-start justify-between gap-6">
                 <div className="min-w-0 flex-1 space-y-3">
                   <PublicHeaderBrandStrip presentation={activeView.presentation} />
@@ -240,18 +240,15 @@ export default async function PublicViewPage({
                     ))}
                   <div>
                     {!activeView.presentation?.hideHeaderSourceLabel && (
-                      <p className="font-view-heading text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">
-                        {page.sourceConfig.label}
-                      </p>
+                      <p className="view-header-source-label">{page.sourceConfig.label}</p>
                     )}
                     {!activeView.presentation?.hideHeaderPageTitle && (
-                      <h1 className="view-page-title mt-2 tracking-tight text-[color:var(--wsu-ink)]">
-                        {page.title}
-                      </h1>
+                      <h1 className="view-header-page-title mt-2">{page.title}</h1>
                     )}
                     {!activeView.presentation?.hideHeaderLiveDataText && (
-                      <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--wsu-muted)]">
-                        Live data from <span className="font-medium text-[color:var(--wsu-ink)]">{page.sourceName}</span>.
+                      <p className="view-header-live-blurb mt-3 max-w-3xl">
+                        Live data from{" "}
+                        <span className="view-header-live-blurb-strong font-medium">{page.sourceName}</span>.
                       </p>
                     )}
                   </div>
