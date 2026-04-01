@@ -3,9 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { useToast } from "@/components/admin/Toast";
-import { countDelimitedRoleAttributes, detectNumberedRoleGroupsFromColumns, mergeRoleGroupSuggestions } from "@/lib/role-groups";
+import {
+  countDelimitedRoleAttributes,
+  detectNumberedRoleGroupsFromColumns,
+  mergeRoleGroupSuggestions,
+  parseRoleGroupDelimiterInput,
+  roleGroupDelimitersToInputString,
+} from "@/lib/role-groups";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
-import type { SourceConfig, SourceRoleGroupConfig } from "@/lib/config/types";
+import type { FieldSourceSelector, SmartsheetColumn, SourceConfig, SourceRoleGroupConfig } from "@/lib/config/types";
 
 function buildInitialState(source: SourceConfig | null, connectionKeys: string[]): SourceConfig {
   return (
@@ -36,6 +42,18 @@ function getRoleGroupAttributeKeys(roleGroup: SourceRoleGroupConfig) {
   return ["name", "email", "phone"].filter((attr) => Boolean(roleGroup.delimited?.[attr as "name" | "email" | "phone"]?.source));
 }
 
+function numberedSlotsHaveDuplicateIds(slots: { slot: string }[] | undefined): boolean {
+  const counts = new Map<string, number>();
+  for (const s of slots ?? []) {
+    const id = s.slot.trim();
+    if (!id) {
+      continue;
+    }
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return [...counts.values()].some((n) => n > 1);
+}
+
 function selectorLabel(selector: { columnTitle?: string; columnId?: number } | undefined) {
   if (!selector) {
     return "Unmapped";
@@ -47,6 +65,91 @@ function selectorLabel(selector: { columnTitle?: string; columnId?: number } | u
     return `Column ${selector.columnId}`;
   }
   return "Unmapped";
+}
+
+function selectorToSelectValue(selector: FieldSourceSelector | undefined): string {
+  if (selector && typeof selector.columnId === "number") {
+    return String(selector.columnId);
+  }
+  return "";
+}
+
+function selectorFromColumnPick(
+  columns: SmartsheetColumn[],
+  columnIdStr: string,
+  previous?: FieldSourceSelector | undefined,
+): FieldSourceSelector | undefined {
+  if (!columnIdStr) {
+    return undefined;
+  }
+  const id = Number(columnIdStr);
+  if (!Number.isFinite(id)) {
+    return undefined;
+  }
+  const col = columns.find((c) => c.id === id);
+  if (col) {
+    return { columnId: col.id, columnTitle: col.title, columnType: col.type };
+  }
+  if (previous && previous.columnId === id) {
+    return previous;
+  }
+  return { columnId: id, columnTitle: previous?.columnTitle, columnType: previous?.columnType };
+}
+
+function RoleGroupColumnSelect({
+  htmlId,
+  columns,
+  value,
+  onChange,
+  schemaLoaded,
+  accessibilityLabel,
+}: {
+  htmlId: string;
+  columns: SmartsheetColumn[];
+  value: FieldSourceSelector | undefined;
+  onChange: (next: FieldSourceSelector | undefined) => void;
+  schemaLoaded: boolean;
+  accessibilityLabel: string;
+}) {
+  const sorted = useMemo(
+    () =>
+      [...columns].sort((a, b) =>
+        (a.title ?? "").localeCompare(b.title ?? "", undefined, { sensitivity: "base" }),
+      ),
+    [columns],
+  );
+  const selectValue = selectorToSelectValue(value);
+  const orphanSelected =
+    Boolean(selectValue) && !sorted.some((c) => String(c.id) === selectValue);
+
+  if (!schemaLoaded || sorted.length === 0) {
+    return (
+      <div className="space-y-0.5">
+        <p className="break-words text-[color:var(--wsu-ink)]">{selectorLabel(value)}</p>
+        <p className="text-[10px] text-[color:var(--wsu-muted)]">Load schema (below) to choose columns.</p>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      id={htmlId}
+      aria-label={accessibilityLabel}
+      value={selectValue}
+      onChange={(e) => onChange(selectorFromColumnPick(sorted, e.target.value, value))}
+      className="w-full min-w-[10rem] max-w-[22rem] rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs text-[color:var(--wsu-ink)]"
+    >
+      <option value="">— Unmapped —</option>
+      {orphanSelected ? (
+        <option value={selectValue}>{`${selectorLabel(value)} (not in loaded schema)`}</option>
+      ) : null}
+      {sorted.map((col) => (
+        <option key={col.id} value={String(col.id)}>
+          {col.title} · {col.type}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 export function SourceForm({
@@ -218,6 +321,155 @@ export function SourceForm({
     toast.addToast(`Merged ${detected.length} detected role group(s). Save the source to persist.`, "success");
   }
 
+  const schemaColumns = schema?.columns ?? [];
+  const schemaLoaded = Boolean(schema && schema.columns.length > 0);
+
+  function setNumberedSlotId(roleGroupId: string, slotIndex: number, raw: string) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "numbered_slots") {
+        return rg;
+      }
+      const slots = [...(rg.slots ?? [])];
+      const cur = slots[slotIndex];
+      if (!cur) {
+        return rg;
+      }
+      slots[slotIndex] = { ...cur, slot: raw.trim() };
+      return { ...rg, slots };
+    });
+  }
+
+  function updateNumberedSlotAttr(
+    roleGroupId: string,
+    slotIndex: number,
+    attr: "name" | "email" | "phone",
+    selector: FieldSourceSelector | undefined,
+  ) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "numbered_slots") {
+        return rg;
+      }
+      const slots = [...(rg.slots ?? [])];
+      const cur = slots[slotIndex];
+      if (!cur) {
+        return rg;
+      }
+      const next = { ...cur };
+      if (selector) {
+        next[attr] = selector;
+      } else {
+        delete next[attr];
+      }
+      slots[slotIndex] = next;
+      return { ...rg, slots };
+    });
+  }
+
+  function addNumberedSlot(roleGroupId: string) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "numbered_slots") {
+        return rg;
+      }
+      const slots = [...(rg.slots ?? [])];
+      const used = new Set(slots.map((s) => s.slot));
+      let n = slots.length + 1;
+      let slotId = String(n);
+      while (used.has(slotId)) {
+        n += 1;
+        slotId = String(n);
+      }
+      slots.push({ slot: slotId });
+      return { ...rg, slots };
+    });
+  }
+
+  function removeNumberedSlot(roleGroupId: string, slotIndex: number) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "numbered_slots") {
+        return rg;
+      }
+      const slots = (rg.slots ?? []).filter((_, i) => i !== slotIndex);
+      return { ...rg, slots };
+    });
+  }
+
+  function finalizeDelimited(
+    base: NonNullable<SourceRoleGroupConfig["delimited"]>,
+  ): NonNullable<SourceRoleGroupConfig["delimited"]> {
+    const hasAttr = (["name", "email", "phone"] as const).some((k) => base[k]?.source);
+    if (!hasAttr) {
+      return { pairing: base.pairing ?? "by_position" };
+    }
+    return base;
+  }
+
+  function updateDelimitedAttrSelector(
+    roleGroupId: string,
+    attr: "name" | "email" | "phone",
+    selector: FieldSourceSelector | undefined,
+  ) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "delimited_parallel") {
+        return rg;
+      }
+      const prev = rg.delimited;
+      const pairing = prev?.pairing ?? "by_position";
+      const base: NonNullable<SourceRoleGroupConfig["delimited"]> = {
+        pairing,
+        ...(prev?.trustPairing ? { trustPairing: true as const } : {}),
+      };
+      for (const key of ["name", "email", "phone"] as const) {
+        const oldEntry = prev?.[key];
+        if (key === attr) {
+          if (selector) {
+            base[key] = {
+              source: selector,
+              ...(oldEntry?.delimiters?.length ? { delimiters: oldEntry.delimiters } : {}),
+            };
+          }
+        } else if (oldEntry?.source) {
+          base[key] = oldEntry;
+        }
+      }
+      return { ...rg, delimited: finalizeDelimited(base) };
+    });
+  }
+
+  function updateDelimitedAttrDelimiters(
+    roleGroupId: string,
+    attr: "name" | "email" | "phone",
+    rawDelimiters: string,
+  ) {
+    updateRoleGroup(roleGroupId, (rg) => {
+      if (rg.mode !== "delimited_parallel") {
+        return rg;
+      }
+      const prev = rg.delimited;
+      const entry = prev?.[attr];
+      if (!entry?.source) {
+        return rg;
+      }
+      const delimArr = parseRoleGroupDelimiterInput(rawDelimiters);
+      const pairing = prev?.pairing ?? "by_position";
+      const base: NonNullable<SourceRoleGroupConfig["delimited"]> = {
+        pairing,
+        ...(prev?.trustPairing ? { trustPairing: true as const } : {}),
+      };
+      for (const key of ["name", "email", "phone"] as const) {
+        const old = prev?.[key];
+        if (!old?.source) {
+          continue;
+        }
+        if (key === attr) {
+          base[key] = delimArr.length ? { source: entry.source, delimiters: delimArr } : { source: entry.source };
+        } else {
+          base[key] = old;
+        }
+      }
+      return { ...rg, delimited: finalizeDelimited(base) };
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
@@ -386,9 +638,78 @@ export function SourceForm({
       <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
         <div className="flex items-start justify-between gap-4">
           <div>
+            <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Schema preview</h2>
+            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+              Fetch the schema first. Use it to verify the connection, merge detected role groups, and enable column dropdowns in Role groups below.
+            </p>
+          </div>
+        </div>
+
+        {schemaError && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{schemaError}</p>}
+
+        {schema ? (
+          <div className="mt-4 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 text-sm text-[color:var(--wsu-muted)]">
+                <p>
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Source:</span> {schema.name}
+                </p>
+                <p className="mt-1">
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Columns:</span> {schema.columns.length}
+                </p>
+                <p className="mt-1">
+                  <span className="font-semibold text-[color:var(--wsu-ink)]">Rows returned:</span> {schema.rowCount}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => startTransition(() => mergeDetectedRoleGroupsFromSchema())}
+                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+              >
+                Merge detected role groups
+              </button>
+            </div>
+            {form.roleGroups && form.roleGroups.length > 0 && (
+              <p className="text-xs text-[color:var(--wsu-muted)]">
+                This source has {form.roleGroups.length} role group(s). Merge adds groups from column title patterns; adjust column mappings in{" "}
+                <strong className="font-medium text-[color:var(--wsu-ink)]">Role groups</strong> next.
+              </p>
+            )}
+            <div className="overflow-hidden rounded-2xl border border-[color:var(--wsu-border)] bg-white">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-[color:var(--wsu-stone)]/70 text-[color:var(--wsu-muted)]">
+                    <tr>
+                      <th className="px-4 py-3">Title</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schema.columns.map((column) => (
+                      <tr key={column.id} className="border-t border-[color:var(--wsu-border)]/60">
+                        <td className="px-4 py-3 text-[color:var(--wsu-ink)]">{column.title}</td>
+                        <td className="px-4 py-3">{column.type}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{column.id}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">No schema loaded yet.</p>
+        )}
+      </section>
+
+      <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
             <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Role groups</h2>
             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-              Review grouped contact roles at the source level. Numbered slots are safe by structure. Only trust delimited pairing when those columns stay aligned in Smartsheet.
+              Map each person-slot to Smartsheet columns for name, email, and phone. Slot IDs can be any stable label (numbers are not required). Numbered
+              slots keep contributor edits aligned by position. For delimited groups, only enable trusted pairing when parallel columns stay in lockstep.
             </p>
           </div>
         </div>
@@ -436,44 +757,139 @@ export function SourceForm({
                       <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
                         ID: <span className="font-mono">{roleGroup.id}</span>
                       </p>
-                      <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
-                        Attributes: {attrSummary}
-                      </p>
+                      <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Configured attributes: {attrSummary}</p>
                     </div>
                   </div>
 
                   {roleGroup.mode === "numbered_slots" ? (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-[color:var(--wsu-border)]/70">
-                      <table className="min-w-full text-left text-xs">
-                        <thead className="bg-[color:var(--wsu-stone)]/30 text-[color:var(--wsu-muted)]">
-                          <tr>
-                            <th className="px-3 py-2">Slot</th>
-                            <th className="px-3 py-2">Name</th>
-                            <th className="px-3 py-2">Email</th>
-                            <th className="px-3 py-2">Phone</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(roleGroup.slots ?? []).map((slot) => (
-                            <tr key={slot.slot} className="border-t border-[color:var(--wsu-border)]/60 text-[color:var(--wsu-ink)]">
-                              <td className="px-3 py-2 font-mono">{slot.slot}</td>
-                              <td className="px-3 py-2">{selectorLabel(slot.name)}</td>
-                              <td className="px-3 py-2">{selectorLabel(slot.email)}</td>
-                              <td className="px-3 py-2">{selectorLabel(slot.phone)}</td>
+                    <div className="mt-3 space-y-3">
+                      <div className="overflow-x-auto rounded-xl border border-[color:var(--wsu-border)]/70">
+                        <table className="min-w-full text-left text-xs">
+                          <thead className="bg-[color:var(--wsu-stone)]/30 text-[color:var(--wsu-muted)]">
+                            <tr>
+                              <th className="px-3 py-2 align-bottom">Slot ID</th>
+                              <th className="px-3 py-2 align-bottom">Name column</th>
+                              <th className="px-3 py-2 align-bottom">Email column</th>
+                              <th className="px-3 py-2 align-bottom">Phone column</th>
+                              <th className="w-14 px-2 py-2 align-bottom" aria-label="Remove slot" />
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {(roleGroup.slots ?? []).map((slot, slotIndex) => (
+                              <tr
+                                key={`${roleGroup.id}-slot-row-${slotIndex}`}
+                                className="border-t border-[color:var(--wsu-border)]/60 text-[color:var(--wsu-ink)]"
+                              >
+                                <td className="px-3 py-2 align-top">
+                                  <input
+                                    value={slot.slot}
+                                    onChange={(e) => setNumberedSlotId(roleGroup.id, slotIndex, e.target.value)}
+                                    className="w-[6.5rem] rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 font-mono text-xs"
+                                    aria-label={`Slot ${slotIndex + 1} ID for ${roleGroup.label}`}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 align-top">
+                                  <RoleGroupColumnSelect
+                                    htmlId={`${roleGroup.id}-name-${slotIndex}`}
+                                    columns={schemaColumns}
+                                    value={slot.name}
+                                    schemaLoaded={schemaLoaded}
+                                    accessibilityLabel={`Name column, slot ${slot.slot || String(slotIndex + 1)}, ${roleGroup.label}`}
+                                    onChange={(sel) => updateNumberedSlotAttr(roleGroup.id, slotIndex, "name", sel)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 align-top">
+                                  <RoleGroupColumnSelect
+                                    htmlId={`${roleGroup.id}-email-${slotIndex}`}
+                                    columns={schemaColumns}
+                                    value={slot.email}
+                                    schemaLoaded={schemaLoaded}
+                                    accessibilityLabel={`Email column, slot ${slot.slot || String(slotIndex + 1)}, ${roleGroup.label}`}
+                                    onChange={(sel) => updateNumberedSlotAttr(roleGroup.id, slotIndex, "email", sel)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 align-top">
+                                  <RoleGroupColumnSelect
+                                    htmlId={`${roleGroup.id}-phone-${slotIndex}`}
+                                    columns={schemaColumns}
+                                    value={slot.phone}
+                                    schemaLoaded={schemaLoaded}
+                                    accessibilityLabel={`Phone column, slot ${slot.slot || String(slotIndex + 1)}, ${roleGroup.label}`}
+                                    onChange={(sel) => updateNumberedSlotAttr(roleGroup.id, slotIndex, "phone", sel)}
+                                  />
+                                </td>
+                                <td className="px-2 py-2 align-top">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeNumberedSlot(roleGroup.id, slotIndex)}
+                                    disabled={(roleGroup.slots ?? []).length <= 1}
+                                    title={
+                                      (roleGroup.slots ?? []).length <= 1
+                                        ? "Numbered role groups must keep at least one slot to match Smartsheet and save."
+                                        : undefined
+                                    }
+                                    aria-label={`Remove slot ${slot.slot || String(slotIndex + 1)} from ${roleGroup.label}`}
+                                    className="rounded-full border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-medium text-rose-800 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {numberedSlotsHaveDuplicateIds(roleGroup.slots) ? (
+                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                          Two or more rows use the same slot ID. Use a distinct ID per row so contributors and saves align
+                          with the correct columns.
+                        </p>
+                      ) : null}
+                      {(roleGroup.slots ?? []).length === 0 ? (
+                        <p className="text-xs text-[color:var(--wsu-muted)]">
+                          No slots yet. Add a slot and map columns, or use Merge detected role groups (schema section) from column title patterns.
+                        </p>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => addNumberedSlot(roleGroup.id)}
+                        className="rounded-full border border-dashed border-[color:var(--wsu-border)] bg-white px-3 py-1.5 text-xs font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)]"
+                      >
+                        + Add slot
+                      </button>
                     </div>
                   ) : (
                     <div className="mt-3 space-y-3">
-                      <div className="grid gap-2 text-xs text-[color:var(--wsu-muted)] sm:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-3">
                         {(["name", "email", "phone"] as const).map((attr) => (
-                          <div key={attr} className="rounded-xl border border-[color:var(--wsu-border)]/70 bg-[color:var(--wsu-stone)]/10 px-3 py-2">
+                          <div
+                            key={attr}
+                            className="rounded-xl border border-[color:var(--wsu-border)]/70 bg-[color:var(--wsu-stone)]/10 px-3 py-3 text-xs"
+                          >
                             <p className="font-semibold uppercase tracking-wide text-[color:var(--wsu-ink)]">{attr}</p>
-                            <p className="mt-1 break-words">
-                              {selectorLabel(roleGroup.delimited?.[attr]?.source)}
-                            </p>
+                            <div className="mt-2">
+                              <RoleGroupColumnSelect
+                                htmlId={`${roleGroup.id}-delim-${attr}`}
+                                columns={schemaColumns}
+                                value={roleGroup.delimited?.[attr]?.source}
+                                schemaLoaded={schemaLoaded}
+                                accessibilityLabel={`Delimited ${attr} column, ${roleGroup.label}`}
+                                onChange={(sel) => updateDelimitedAttrSelector(roleGroup.id, attr, sel)}
+                              />
+                            </div>
+                            <label className="mt-2 block text-[10px] font-medium text-[color:var(--wsu-muted)]">
+                              Delimiters (optional). Separate tokens with <span className="font-mono">|</span>. Use{" "}
+                              <span className="font-mono">\n</span> for newline, <span className="font-mono">\|</span> for a literal
+                              pipe.
+                              <input
+                                type="text"
+                                value={roleGroupDelimitersToInputString(roleGroup.delimited?.[attr]?.delimiters)}
+                                onChange={(e) => updateDelimitedAttrDelimiters(roleGroup.id, attr, e.target.value)}
+                                placeholder="e.g. ,| ;| \\n"
+                                disabled={!roleGroup.delimited?.[attr]?.source}
+                                className="mt-1 w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs text-[color:var(--wsu-ink)] disabled:opacity-50"
+                              />
+                            </label>
                           </div>
                         ))}
                       </div>
@@ -491,7 +907,8 @@ export function SourceForm({
                               Trust positional pairing for this delimited role group
                             </span>
                             <span className="mt-1 block text-xs text-[color:var(--wsu-muted)]">
-                              Enable this only when the name, email, and phone columns remain in matching order in Smartsheet. If unchecked, the group stays display-only in contributor editing.
+                              Enable this only when the name, email, and phone columns remain in matching order in Smartsheet. If unchecked, the group stays
+                              display-only in contributor editing.
                             </span>
                           </span>
                         </label>
@@ -508,69 +925,9 @@ export function SourceForm({
           </div>
         ) : (
           <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">
-            No role groups configured yet. Fetch schema and use <strong className="font-medium text-[color:var(--wsu-ink)]">Merge detected role groups</strong> to append numbered-slot groups from column titles.
+            No role groups configured yet. Load schema above and use <strong className="font-medium text-[color:var(--wsu-ink)]">Merge detected role groups</strong>{" "}
+            to append numbered-slot groups from column titles, then refine mappings here.
           </p>
-        )}
-      </section>
-
-      <section className="rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-6 shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Schema preview</h2>
-            <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-              Verify the connection and inspect the current columns before mapping fields.
-            </p>
-          </div>
-        </div>
-
-        {schemaError && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{schemaError}</p>}
-
-        {schema ? (
-          <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 text-sm text-[color:var(--wsu-muted)]">
-                <p><span className="font-semibold text-[color:var(--wsu-ink)]">Source:</span> {schema.name}</p>
-                <p className="mt-1"><span className="font-semibold text-[color:var(--wsu-ink)]">Columns:</span> {schema.columns.length}</p>
-                <p className="mt-1"><span className="font-semibold text-[color:var(--wsu-ink)]">Rows returned:</span> {schema.rowCount}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => startTransition(() => mergeDetectedRoleGroupsFromSchema())}
-                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-              >
-                Merge detected role groups
-              </button>
-            </div>
-            {form.roleGroups && form.roleGroups.length > 0 && (
-              <p className="text-xs text-[color:var(--wsu-muted)]">
-                This source has {form.roleGroups.length} role group(s) in config. Use Merge to append numbered-slot groups from column titles, then review them in the Role groups section above.
-              </p>
-            )}
-            <div className="overflow-hidden rounded-2xl border border-[color:var(--wsu-border)] bg-white">
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-[color:var(--wsu-stone)]/70 text-[color:var(--wsu-muted)]">
-                    <tr>
-                      <th className="px-4 py-3">Title</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schema.columns.map((column) => (
-                      <tr key={column.id} className="border-t border-[color:var(--wsu-border)]/60">
-                        <td className="px-4 py-3 text-[color:var(--wsu-ink)]">{column.title}</td>
-                        <td className="px-4 py-3">{column.type}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{column.id}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">No schema loaded yet.</p>
         )}
       </section>
     </div>

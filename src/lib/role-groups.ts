@@ -177,3 +177,38 @@ export function isWritableRoleGroup(group: SourceRoleGroupConfig): boolean {
   }
   return countDelimitedRoleAttributes(group.delimited) > 0 && !isUnsafeDelimitedRoleGroup(group);
 }
+
+const PIPE_LITERAL_SENTINEL = "\uE000";
+
+/**
+ * Admin UI: separate multiple delimiter tokens with `|` (pipe).
+ * Type `\n` for a newline delimiter. Use `\|` so a literal `|` can be a delimiter (escaped before splitting).
+ */
+export function parseRoleGroupDelimiterInput(raw: string): string[] {
+  const masked = raw.replace(/\\\|/g, PIPE_LITERAL_SENTINEL);
+  return masked
+    .split("|")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((t) => {
+      const u = t.replaceAll(PIPE_LITERAL_SENTINEL, "|");
+      if (u === "\\n") {
+        return "\n";
+      }
+      return u;
+    });
+}
+
+export function roleGroupDelimitersToInputString(delims: string[] | undefined): string {
+  if (!delims?.length) {
+    return "";
+  }
+  return delims
+    .map((d) => {
+      if (d === "\n") {
+        return "\\n";
+      }
+      return d.replace(/\|/g, "\\|");
+    })
+    .join("|");
+}

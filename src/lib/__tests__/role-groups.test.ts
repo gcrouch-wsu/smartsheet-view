@@ -3,6 +3,8 @@ import {
   detectNumberedRoleGroupsFromColumns,
   isUnsafeDelimitedRoleGroup,
   parseNumberedRoleColumnTitle,
+  parseRoleGroupDelimiterInput,
+  roleGroupDelimitersToInputString,
 } from "@/lib/role-groups";
 import type { SmartsheetColumn } from "@/lib/config/types";
 
@@ -85,5 +87,27 @@ describe("isUnsafeDelimitedRoleGroup", () => {
         },
       }),
     ).toBe(false);
+  });
+});
+
+describe("parseRoleGroupDelimiterInput / roleGroupDelimitersToInputString", () => {
+  it("accepts a single comma and pipe-separated lists", () => {
+    expect(parseRoleGroupDelimiterInput(",")).toEqual([","]);
+    expect(parseRoleGroupDelimiterInput(" , | \\n ")).toEqual([",", "\n"]);
+    expect(parseRoleGroupDelimiterInput(",|;|\\n")).toEqual([",", ";", "\n"]);
+  });
+
+  it("maps \\n token to newline and \\| to pipe", () => {
+    expect(parseRoleGroupDelimiterInput("\\n")).toEqual(["\n"]);
+    expect(parseRoleGroupDelimiterInput("\\|")).toEqual(["|"]);
+  });
+
+  it("does not split inside an escaped pipe within a longer token", () => {
+    expect(parseRoleGroupDelimiterInput("a\\|b|,|")).toEqual(["a|b", ","]);
+  });
+
+  it("round-trips through roleGroupDelimitersToInputString", () => {
+    const input = [",", ";", "\n", "|"];
+    expect(parseRoleGroupDelimiterInput(roleGroupDelimitersToInputString(input))).toEqual(input);
   });
 });
