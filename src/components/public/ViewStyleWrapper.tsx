@@ -7,6 +7,7 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   surfaceMutedBackground: "--view-surface-muted-bg",
   accentColor: "--view-accent",
   textColor: "--view-text",
+  headingTextColor: "--view-heading-text",
   mutedColor: "--view-muted",
   borderColor: "--view-border",
   controlBackground: "--view-control-bg",

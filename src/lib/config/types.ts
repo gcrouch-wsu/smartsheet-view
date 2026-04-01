@@ -203,6 +203,8 @@ export interface ViewStyleConfig {
   surfaceMutedBackground?: string;
   accentColor?: string;
   textColor?: string;
+  /** Color for structural headings (card row titles, section h2, font-view-heading). Defaults to primary text when unset. */
+  headingTextColor?: string;
   mutedColor?: string;
   borderColor?: string;
   controlBackground?: string;

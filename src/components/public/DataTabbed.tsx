@@ -102,7 +102,7 @@ export function DataTabbed({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="view-field-label text-[color:var(--wsu-muted)]">Selected record</p>
-              <h3 className="view-row-heading mt-2 text-[color:var(--wsu-ink)]">
+              <h3 className="view-row-heading mt-2">
                 {getRowHeadingText(view, activeRow)}
               </h3>
               {summary && <div className="mt-2 text-sm text-[color:var(--wsu-muted)]"><FieldValue field={summary} /></div>}

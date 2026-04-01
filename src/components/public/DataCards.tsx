@@ -114,12 +114,12 @@ export function DataCards({
                 {!heading.hideLabel ? (
                   <>
                     <p className="view-field-label text-[color:var(--wsu-muted)]">{heading.label}</p>
-                    <div className="view-row-heading mt-2 text-[color:var(--wsu-ink)]">
+                    <div className="view-row-heading mt-2">
                       <FieldValue field={heading} />
                     </div>
                   </>
                 ) : (
-                  <div className="view-row-heading text-[color:var(--wsu-ink)]">
+                  <div className="view-row-heading">
                     <FieldValue field={heading} />
                   </div>
                 )}

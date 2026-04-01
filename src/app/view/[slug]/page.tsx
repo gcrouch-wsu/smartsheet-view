@@ -384,7 +384,7 @@ export default async function PublicViewPage({
                 {!activeView.presentation?.hideViewTitleSection &&
                   (activeView.label !== page.title || activeView.description) && (
                   <>
-                    <h2 className="view-section-title text-[color:var(--wsu-ink)]">{activeView.label}</h2>
+                    <h2 className="view-section-title">{activeView.label}</h2>
                     {activeView.description && (
                       <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{activeView.description}</p>
                     )}

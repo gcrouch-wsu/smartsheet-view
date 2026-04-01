@@ -56,7 +56,7 @@ export function DataAccordion({
             >
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
-                  <p className="view-row-heading text-[color:var(--wsu-ink)]">
+                  <p className="view-row-heading">
                     {firstField ? describeResolvedField(firstField) : getRowHeadingText(view, row)}
                   </p>
                   {summaryField && (
@@ -122,7 +122,7 @@ export function DataAccordion({
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>
-                <p className="view-row-heading text-[color:var(--wsu-ink)]">{getRowHeadingText(view, row)}</p>
+                <p className="view-row-heading">{getRowHeadingText(view, row)}</p>
                 {summary && <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summary) || summary.label}</p>}
               </div>
               <div className="flex items-center gap-2">

@@ -1694,7 +1694,7 @@ export function ViewBuilder({
                                 <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-[10px] text-[color:var(--wsu-muted)] leading-tight">
                                   {!view.presentation?.hideHeaderActiveView && (
                                     <p>
-                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                      <span className="font-view-heading font-semibold">Active view:</span> {view.label}
                                     </p>
                                   )}
                                   {!view.presentation?.hideHeaderRows && (
@@ -1704,7 +1704,7 @@ export function ViewBuilder({
                                   )}
                                   {!view.presentation?.hideHeaderRefreshed && (
                                     <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-1.5" : ""}>
-                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                      <span className="font-view-heading font-semibold">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
                                     </p>
                                   )}
                                 </div>
@@ -1725,7 +1725,7 @@ export function ViewBuilder({
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             {!view.presentation?.hideViewTitleSection && (
                               <div>
-                                <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{view.label}</h2>
+                                <h2 className="font-view-heading text-lg font-semibold">{view.label}</h2>
                                 {view.description && (
                                   <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">{view.description}</p>
                                 )}
@@ -2267,7 +2267,7 @@ export function ViewBuilder({
                                 <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-[10px] text-[color:var(--wsu-muted)] leading-tight">
                                   {!view.presentation?.hideHeaderActiveView && (
                                     <p>
-                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                      <span className="font-view-heading font-semibold">Active view:</span> {view.label}
                                     </p>
                                   )}
                                   {!view.presentation?.hideHeaderRows && (
@@ -2277,7 +2277,7 @@ export function ViewBuilder({
                                   )}
                                   {!view.presentation?.hideHeaderRefreshed && (
                                     <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-1.5" : ""}>
-                                      <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                      <span className="font-view-heading font-semibold">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
                                     </p>
                                   )}
                                 </div>
@@ -2298,7 +2298,7 @@ export function ViewBuilder({
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             {!view.presentation?.hideViewTitleSection && (
                               <div>
-                                <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)]">{view.label}</h2>
+                                <h2 className="font-view-heading text-lg font-semibold">{view.label}</h2>
                                 {view.description && (
                                   <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">{view.description}</p>
                                 )}
@@ -2960,7 +2960,7 @@ export function ViewBuilder({
                             <div className="rounded-[1.5rem] border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
                               {!view.presentation?.hideHeaderActiveView && (
                                 <p>
-                                  <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Active view:</span> {view.label}
+                                  <span className="font-view-heading font-semibold">Active view:</span> {view.label}
                                 </p>
                               )}
                               {!view.presentation?.hideHeaderRows && (
@@ -2970,7 +2970,7 @@ export function ViewBuilder({
                               )}
                               {!view.presentation?.hideHeaderRefreshed && (
                                 <p className={!view.presentation?.hideHeaderActiveView || !view.presentation?.hideHeaderRows ? "mt-2" : ""}>
-                                  <span className="font-view-heading font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
+                                  <span className="font-view-heading font-semibold">Refreshed:</span> {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}
                                 </p>
                               )}
                             </div>
@@ -2992,7 +2992,7 @@ export function ViewBuilder({
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         {!view.presentation?.hideViewTitleSection && (
                           <div>
-                            <h2 className="font-view-heading text-2xl font-semibold text-[color:var(--wsu-ink)]">{view.label}</h2>
+                            <h2 className="font-view-heading text-2xl font-semibold">{view.label}</h2>
                             {view.description && (
                               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{view.description}</p>
                             )}

@@ -674,6 +674,7 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "surfaceMutedBackground",
   "accentColor",
   "textColor",
+  "headingTextColor",
   "mutedColor",
   "borderColor",
   "controlBackground",

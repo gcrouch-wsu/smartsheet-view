@@ -160,6 +160,7 @@ a {
   font-family: var(--view-heading-font, inherit);
   font-weight: var(--view-heading-font-weight, inherit);
   font-style: var(--view-heading-font-style, inherit);
+  color: var(--view-heading-text, var(--view-text, var(--wsu-ink)));
 }
 
 /* Public masthead card (background, border, radius, shadow) */
@@ -207,6 +208,7 @@ a {
   font-weight: var(--view-heading-font-weight, 600);
   font-style: var(--view-heading-font-style, normal);
   line-height: 1.15;
+  color: var(--view-heading-text, var(--view-text, var(--wsu-ink)));
 }
 
 /** Main page h1 inside the public header (optional header-specific typography). */
@@ -217,7 +219,10 @@ a {
   font-style: var(--view-header-page-title-font-style, var(--view-heading-font-style, normal));
   letter-spacing: var(--view-header-page-title-letter-spacing, -0.025em);
   line-height: 1.15;
-  color: var(--view-header-page-title-color, var(--view-text, var(--wsu-ink)));
+  color: var(
+    --view-header-page-title-color,
+    var(--view-heading-text, var(--view-text, var(--wsu-ink)))
+  );
 }
 
 .view-header-live-blurb {
@@ -252,6 +257,7 @@ a {
   font-size: var(--view-row-heading-font-size, 1.125rem);
   font-weight: var(--view-row-heading-font-weight, 600);
   font-style: var(--view-heading-font-style, inherit);
+  color: var(--view-heading-text, var(--view-text, var(--wsu-ink)));
 }
 
 .view-people-name {

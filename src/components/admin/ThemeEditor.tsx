@@ -24,7 +24,8 @@ const COLOR_LABELS: Record<string, string> = {
   cardBackground: "Card/panel background",
   surfaceMutedBackground: "Muted surface background",
   accentColor: "Accent (links, buttons)",
-  textColor: "Primary text",
+  textColor: "Primary text (body & values)",
+  headingTextColor: "Heading text (card titles, section headings)",
   mutedColor: "Secondary/label text",
   borderColor: "Borders",
   controlBackground: "Control background",
@@ -124,8 +125,9 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
   };
 
   const renderContrastIndicator = (token: keyof ViewStyleConfig, value: string) => {
-    if (token !== "accentColor" && token !== "textColor") return null;
-    const bgToken: keyof ViewStyleConfig = token === "accentColor" ? "backgroundColor" : "cardBackground";
+    if (token !== "accentColor" && token !== "textColor" && token !== "headingTextColor") return null;
+    const bgToken: keyof ViewStyleConfig =
+      token === "accentColor" ? "backgroundColor" : "cardBackground";
     const bgColor = getValue(bgToken) || "#ffffff";
     const fgColor = value || "#000000";
     const ratio = getContrastRatio(fgColor, bgColor);
@@ -222,6 +224,7 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   fontFamily: mergedPreview.headingFontFamily,
                   fontSize: mergedPreview.pageTitleFontSize ?? "1.5rem",
                   fontWeight: mergedPreview.headingFontWeight ?? 600,
+                  color: mergedPreview.headingTextColor ?? mergedPreview.textColor ?? "#111",
                 }}
               >
                 Page title preview
