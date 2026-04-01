@@ -189,6 +189,13 @@ export function buildPrintExportStylesheet(config: PrintExportConfig): string {
     color: inherit !important;
     text-decoration: underline;
   }
+  /* Email / phone stay actionable but read like plain text in PDFs */
+  .print-export .print-data-table a[href^="mailto:"]:link,
+  .print-export .print-data-table a[href^="mailto:"]:visited,
+  .print-export .print-data-table a[href^="tel:"]:link,
+  .print-export .print-data-table a[href^="tel:"]:visited {
+    text-decoration: none !important;
+  }
   .print-export .print-empty-cell {
     color: var(--print-muted) !important;
     font-weight: 400 !important;

@@ -1,4 +1,4 @@
-﻿# Admin Instructions
+# Admin Instructions
 
 Use this guide to connect Smartsheet sources, build public views, publish changes, and manage contributor access.
 
@@ -44,11 +44,11 @@ When creating a source, enter:
 - the source type: `sheet` or `report`
 - the numeric Smartsheet ID from the URL
 
-After saving, always use `Test connection`.
+After saving, always use `Test + Fetch Schema`. That checks connectivity and loads the column list into the browser. Column mapping dropdowns on the source page work only after the schema is loaded in that session (or use `Fetch schema now` in the role-groups area).
 
 ### Role groups on sources
 
-After fetching schema, use `Merge detected role groups` to pull in numbered role patterns from Smartsheet column titles.
+Use `Schema preview` first if you want a read-only look at columns. Optional: use `Merge detected role groups` to pull in numbered role patterns from Smartsheet column titles.
 
 Examples:
 
@@ -56,8 +56,10 @@ Examples:
 - `Department Chair or School Director Email 1`
 - `Faculty Graduate Program Coordinator or Designee 1`
 
-Then review the `Role groups` section on the source page:
+Then configure the `Role groups` section on the source page:
 
+- for **numbered slots**, edit slot IDs and pick Smartsheet columns for name, email, and phone per row; add or remove slots as needed; `Save source` when done
+- **delimited parallel** groups use the same section; optional delimiter tokens in admin use a pipe `|` between tokens (see the field hint for line breaks `\n` and a literal pipe `\|`)
 - numbered-slot groups are safe by structure and pair people by shared slot number
 - single-attribute delimited groups are safe because there is no cross-column pairing
 - multi-attribute delimited groups are read-only by default unless you explicitly enable `Trust positional pairing`
@@ -209,11 +211,13 @@ This protects against Smartsheet reordering parallel delimited columns and break
 
 ### Legacy delimiters
 
-The parser treats all of these as separators:
+**Cell values** (when the app parses multi-value text from Smartsheet): the parser treats all of these as separators:
 
 - comma `,`
 - semicolon `;`
 - line breaks
+
+This is separate from the **admin delimiter field** on a delimited source role group, where you configure token boundaries with pipe-separated entries and escapes as described in the source UI.
 
 Important detail:
 

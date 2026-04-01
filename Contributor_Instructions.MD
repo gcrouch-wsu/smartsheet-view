@@ -1,4 +1,4 @@
-﻿# Contributor Instructions
+# Contributor Instructions
 
 Use this guide if you were sent a Smartsheet View page and need to update your own information.
 
@@ -55,7 +55,7 @@ You can edit only the row or rows tied to your email address, and only the field
 1. Sign in.
 2. Find your row.
 3. Click `Edit`.
-4. Update the fields shown.
+4. Update the fields shown. Editable fields appear as **white boxes with a visible border**; read-only text usually has no box.
 5. Click `Save changes`.
 
 ## Grouped Contacts

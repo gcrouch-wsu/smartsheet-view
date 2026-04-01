@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -127,8 +127,27 @@ export function AdminGuideTabs() {
               <li><strong className="text-[color:var(--wsu-ink)]">Smartsheet ID:</strong> the numeric ID from the Smartsheet URL.</li>
             </ul>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              After saving, always run <strong className="text-[color:var(--wsu-ink)]">Test connection</strong>. If this fails, do not keep building the view until the source is fixed.
+              After saving, always run <strong className="text-[color:var(--wsu-ink)]">Test + Fetch Schema</strong>. That verifies the connection and loads the column list into the browser for role-group mapping. If it fails, fix the source before building views.
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Role groups on this source</h3>
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>
+                Open <strong className="text-[color:var(--wsu-ink)]">Schema preview</strong> and run <strong className="text-[color:var(--wsu-ink)]">Merge detected role groups</strong> if you want the app to suggest groups from column title patterns (optional starting point).
+              </li>
+              <li>
+                Scroll to <strong className="text-[color:var(--wsu-ink)]">Role groups</strong>. Run <strong className="text-[color:var(--wsu-ink)]">Fetch schema now</strong> or use <strong className="text-[color:var(--wsu-ink)]">Test + Fetch Schema</strong> first — column mapping uses <strong className="text-[color:var(--wsu-ink)]">dropdowns</strong> only after the schema is loaded in this session.
+              </li>
+              <li>
+                For <strong className="text-[color:var(--wsu-ink)]">numbered slots</strong>, edit slot IDs and pick Smartsheet columns for name, email, and phone per row; add or remove slots as needed. <strong className="text-[color:var(--wsu-ink)]">Save source</strong> when done.
+              </li>
+              <li>
+                For <strong className="text-[color:var(--wsu-ink)]">delimited parallel</strong> groups, map columns in the same section; optional delimiter tokens are separated with <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">|</code> (see the field hint for{" "}
+                <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">\n</code> and <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">\|</code>).
+              </li>
+            </ol>
           </div>
 
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
@@ -310,11 +329,16 @@ export function AdminGuideTabs() {
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Multi-person field groups</h3>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              Use groups when the sheet stores repeated people data across separate columns, such as coordinator names, coordinator emails, and coordinator phone numbers. A group turns that raw Smartsheet data into one card per person with structured fields such as name, email, and phone.
+              <strong className="text-[color:var(--wsu-ink)]">Source role groups</strong> (under Admin → Sources → Role groups) define how numbered or delimited Smartsheet columns tie together. Views use a{" "}
+              <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">people_group</code> field to display that bundle.{" "}
+              <strong className="text-[color:var(--wsu-ink)]">Editing → Multi-person field groups</strong> on the view is a separate tool for comma-separated columns when you are not using a source role group.
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Use view-level groups when the sheet stores repeated people data across separate columns, such as coordinator names, coordinator emails, and coordinator phone numbers. A group turns that raw Smartsheet data into one card per person with structured fields such as name, email, and phone.
             </p>
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>Create a group label that describes the role, such as "Program coordinators".</li>
-              <li>Map the group's name, email, and phone attributes to the appropriate fields.</li>
+              <li>Create a group label that describes the role, such as &quot;Program coordinators&quot;.</li>
+              <li>Map the group&apos;s name, email, and phone attributes to the appropriate view fields.</li>
               <li>Contributors will then get <strong className="text-[color:var(--wsu-ink)]">Add person</strong>, <strong className="text-[color:var(--wsu-ink)]">Remove</strong>, and sometimes <strong className="text-[color:var(--wsu-ink)]">Clear everyone</strong> instead of a single plain-text box.</li>
             </ul>
             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">

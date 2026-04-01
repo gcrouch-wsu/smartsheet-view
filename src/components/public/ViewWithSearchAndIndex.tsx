@@ -146,7 +146,8 @@ export function ViewWithSearchAndIndex({
     setEditingRowId(rowId);
   }
 
-  const showSearchAndIndex = !embed && filteredView.rows.length > 0;
+  /** Base row count — not filtered — so the search box stays visible when a query matches nothing. */
+  const showSearchAndIndex = !embed && view.rows.length > 0;
   const showAlphabetIndex = !contributorRowsFiltered || view.rows.length > 15;
   const contributorContextValue = {
     email: contributorEmail,
