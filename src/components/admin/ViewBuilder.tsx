@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { PublicHeaderBrandStrip } from "@/components/public/PublicHeaderBrandStrip";
@@ -38,6 +38,34 @@ import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
 type ViewBuilderTab = "setup" | "fields" | "filters" | "editing" | "preview";
+
+function SetupAccordion({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group rounded-2xl border border-[color:var(--wsu-border)] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[color:var(--wsu-ink)]">{title}</p>
+          {subtitle ? <p className="mt-0.5 text-xs text-[color:var(--wsu-muted)]">{subtitle}</p> : null}
+        </div>
+        <span
+          className="shrink-0 text-[10px] font-medium text-[color:var(--wsu-muted)] transition-transform duration-200 group-open:rotate-180"
+          aria-hidden
+        >
+          ▼
+        </span>
+      </summary>
+      <div className="border-t border-[color:var(--wsu-border)] px-4 py-4">{children}</div>
+    </details>
+  );
+}
 
 function createEmptyTransform(): TransformConfig {
   return { op: "trim" };
@@ -639,10 +667,9 @@ export function ViewBuilder({
   function applyTemplate(templateId: string) {
     setView((current) => applyViewTemplate(current, templateId));
     setLastAppliedTemplateId(templateId);
-    setActiveTab("fields");
     setErrors([]);
-    setNotice("Layout applied. Select columns above to add them to the view.");
-    toast.addToast("Layout applied. Select columns to add them.", "info");
+    setNotice("Layout applied. Open the Fields tab when you are ready to choose columns.");
+    toast.addToast("Layout applied. Open Fields to add columns.", "info");
   }
 
   async function duplicateView() {
@@ -892,11 +919,11 @@ export function ViewBuilder({
         </nav>
 
         {activeTab === "setup" && (
-          <div id="tabpanel-setup" role="tabpanel" aria-labelledby="tab-setup" className="mt-6 space-y-6">
-            <div>
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Layout presets</h3>
-              <p className="mb-2 text-sm text-[color:var(--wsu-muted)]">Pick a layout (table, cards, accordion, etc.). Then go to the Fields tab and select which columns to include.</p>
-              <p className="mb-4 text-sm text-[color:var(--wsu-muted)]">The Arrange section will show only the columns you select—reorder them there.</p>
+          <div id="tabpanel-setup" role="tabpanel" aria-labelledby="tab-setup" className="mt-6 space-y-3">
+            <SetupAccordion
+              title="Layout presets"
+              subtitle="Templates for table, cards, accordion, and more. Add columns on the Fields tab when ready."
+            >
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {VIEW_TEMPLATES.map((template) => (
                   <button
@@ -914,8 +941,9 @@ export function ViewBuilder({
                   </button>
                 ))}
               </div>
-            </div>
+            </SetupAccordion>
 
+            <SetupAccordion title="Source & page identity" subtitle="Smartsheet source, URL slug, labels, and validation warnings.">
             <div className="grid gap-4 md:grid-cols-2">
           <label className="flex min-h-[72px] flex-col justify-center gap-1 text-sm">
             <span className="font-medium text-[color:var(--wsu-ink)]">Source</span>
@@ -1026,6 +1054,14 @@ export function ViewBuilder({
               )}
             </div>
           )}
+            </div>
+            </SetupAccordion>
+
+            <SetupAccordion
+              title="Layout & row headings"
+              subtitle="Override layout, tab order, and primary/subtitle fields for card-style arrangements."
+            >
+            <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Layout (override)</span>
               <p className="text-xs text-[color:var(--wsu-muted)]">Override the template layout if you want the same fields in a different arrangement (e.g. cards instead of table).</p>
@@ -1084,10 +1120,17 @@ export function ViewBuilder({
             </select>
           </label>
 
+            </div>
+            </SetupAccordion>
+
           {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
-            <div className="space-y-3 md:col-span-2">
+            <SetupAccordion
+              title="Custom card layout"
+              subtitle="Per-card rows of fields, placeholders, and static labels."
+            >
+            <div className="space-y-3">
               <div>
-                <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Custom card layout</span>
+                <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Enable & arrange</span>
                 <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Define rows and which fields appear in each. Multiple fields in a row appear side-by-side.</p>
               </div>
               <label className="flex items-center gap-3 text-sm">
@@ -1301,13 +1344,12 @@ export function ViewBuilder({
                 </div>
               )}
             </div>
+            </SetupAccordion>
           )}
 
-          {/* Layout & cards */}
           {["cards", "list", "stacked", "accordion", "tabbed", "list_detail"].includes(view.layout) && (
-            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 md:col-span-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Layout & cards</h3>
-              <div className="mt-3 space-y-3">
+            <SetupAccordion title="Row dividers & badges" subtitle="Spacing between cards/lists and optional row badges.">
+              <div className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row dividers</label>
                   <select
@@ -1331,15 +1373,14 @@ export function ViewBuilder({
                   <span>Hide row badge</span>
                 </label>
               </div>
-            </div>
+            </SetupAccordion>
           )}
 
-          {/* Page Header & Branding */}
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 md:col-span-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Page Header & Branding</h3>
-            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Customize the top section of your public page.</p>
-            
-            <div className="mt-6 space-y-8">
+          <SetupAccordion
+            title="Page header & branding"
+            subtitle="Logo, custom text, and which lines appear in the public masthead."
+          >
+            <div className="space-y-8">
               <VisibilitySelect
                 label="Page header"
                 value={!view.presentation?.hideHeader}
@@ -1471,14 +1512,13 @@ export function ViewBuilder({
                 </div>
               </div>
             </div>
-          </div>
+          </SetupAccordion>
 
-          {/* Content Area */}
-          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-6 md:col-span-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[color:var(--wsu-muted)]">Content Area (below header)</h3>
-            <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Control the title, tabs, and layout switcher displayed above your data.</p>
-            
-            <div className="mt-6 space-y-6">
+          <SetupAccordion
+            title="Content area (below header)"
+            subtitle="View title, shared slug tabs, and layout switcher above the data."
+          >
+            <div className="space-y-6">
               <VisibilitySelect
                 label="View title section"
                 value={!view.presentation?.hideViewTitleSection}
@@ -1525,13 +1565,15 @@ export function ViewBuilder({
                 />
               </div>
             </div>
-          </div>
+          </SetupAccordion>
 
-            </div>
-
+          <SetupAccordion title="Appearance & theme" subtitle="Choose a preset, then tune colors, type, shapes, and masthead in the tabs below.">
           <ThemeEditor view={view} update={update} />
+          </SetupAccordion>
 
-            <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
+          <SetupAccordion title="Publication & URLs" subtitle="Draft vs published, links, and embed snippet.">
+            <div className="space-y-4">
+            <div className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
               <p><span className="font-semibold text-[color:var(--wsu-ink)]">Publication state:</span> {view.public ? "Published" : "Draft"}</p>
               <p className="mt-2">Publication is controlled only by the Publish button so schema validation always runs before a view goes live.</p>
             </div>
@@ -1574,6 +1616,8 @@ export function ViewBuilder({
                 className="mt-2 w-full rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-3 py-2 font-mono text-xs text-[color:var(--wsu-ink)]"
               />
             </div>
+            </div>
+          </SetupAccordion>
 
             {view.sourceId && view.fields.length > 0 && (
               <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   BORDER_RADIUS_OPTIONS,
   FONT_OPTIONS,
@@ -10,7 +10,7 @@ import {
   SHADOW_OPTIONS,
   TEXT_TRANSFORM_OPTIONS,
 } from "@/lib/config/options";
-import { BUILT_IN_THEMES } from "@/lib/config/themes";
+import { BUILT_IN_THEMES, mergeThemeTokens } from "@/lib/config/themes";
 import type { ViewConfig, ViewStyleConfig } from "@/lib/config/types";
 import { getContrastRatio, getContrastScore } from "@/lib/color-utils";
 
@@ -61,11 +61,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+type DesignTabId = "palette" | "typography" | "effects" | "header";
+
 export function ThemeEditor({ view, update }: ThemeEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [designTab, setDesignTab] = useState<DesignTabId>("palette");
   const currentPresetId = view.themePresetId ?? "wsu_crimson";
   const currentPreset = BUILT_IN_THEMES.find((t) => t.id === currentPresetId) ?? BUILT_IN_THEMES[0];
   const hasOverrides = view.style && Object.keys(view.style).length > 0;
+  const mergedPreview = useMemo(
+    () => mergeThemeTokens(currentPresetId, view.style),
+    [currentPresetId, view.style],
+  );
 
   const handlePresetSelect = (themeId: string) => {
     if (hasOverrides && themeId !== currentPresetId) {
@@ -134,8 +141,10 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
 
   return (
     <div className="space-y-4">
-      <Section title="Theme preset">
-        <div className="grid gap-2 sm:grid-cols-3">
+      <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--wsu-muted)]">Base theme</p>
+        <p className="mt-1 text-sm text-[color:var(--wsu-ink)]">Pick a starting palette and page chrome. Fine-tune in the designer below.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {BUILT_IN_THEMES.map((theme) => {
             const isActive = currentPresetId === theme.id;
             return (
@@ -143,40 +152,116 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 key={theme.id}
                 type="button"
                 onClick={() => handlePresetSelect(theme.id)}
-                className={`flex min-h-[56px] items-center justify-between gap-2 rounded-xl border px-4 py-3 text-left transition ${
+                className={`relative flex min-h-[76px] flex-col rounded-xl border-2 px-4 pb-3 pt-3 text-left transition ${
                   isActive
-                    ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)]/5"
-                    : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]"
+                    ? "border-[color:var(--wsu-crimson)] bg-white shadow-md ring-2 ring-[color:var(--wsu-crimson)]/15"
+                    : "border-[color:var(--wsu-border)] bg-white hover:border-[color:var(--wsu-crimson)]/40"
                 }`}
               >
+                <div
+                  className="mb-3 h-2 w-full shrink-0 rounded-md shadow-inner"
+                  style={{
+                    background: `linear-gradient(90deg, ${theme.tokens.accentColor ?? "#999"} 0%, ${theme.tokens.backgroundColor ?? "#eee"} 45%, ${theme.tokens.cardBackground ?? "#fff"} 100%)`,
+                  }}
+                />
                 <span className="text-sm font-semibold text-[color:var(--wsu-ink)]">{theme.label}</span>
-                <div className="flex -space-x-1">
-                  <div className="h-3 w-3 rounded-full border border-white" style={{ backgroundColor: theme.tokens.accentColor }} />
-                  <div className="h-3 w-3 rounded-full border border-white" style={{ backgroundColor: theme.tokens.backgroundColor }} />
-                </div>
+                <span className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">{isActive ? "Active" : "Apply"}</span>
               </button>
             );
           })}
         </div>
-      </Section>
+      </div>
 
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm font-medium text-[color:var(--wsu-crimson)] hover:underline"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[color:var(--wsu-border)] bg-white px-4 py-3 text-left shadow-sm transition hover:border-[color:var(--wsu-crimson)]"
       >
-        {isExpanded ? "Hide customization" : "Customize look & feel"}
-        {hasOverrides && !isExpanded && (
-          <span className="rounded-full bg-[color:var(--wsu-crimson)] px-1.5 py-0.5 text-[10px] text-white">
-            {Object.keys(view.style || {}).length}
+        <span className="text-sm font-semibold text-[color:var(--wsu-ink)]">
+          {isExpanded ? "Close theme designer" : "Open theme designer"}
+        </span>
+        <span className="flex items-center gap-2">
+          {hasOverrides && (
+            <span className="rounded-full bg-[color:var(--wsu-crimson)] px-2 py-0.5 text-[10px] font-medium text-white">
+              {Object.keys(view.style || {}).length} override{Object.keys(view.style || {}).length === 1 ? "" : "s"}
+            </span>
+          )}
+          <span className="text-[color:var(--wsu-muted)]" aria-hidden>
+            {isExpanded ? "▴" : "▾"}
           </span>
-        )}
+        </span>
       </button>
 
       {isExpanded && (
-        <div className="space-y-6 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-5">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <Section title="Colors">
+        <div className="space-y-5 rounded-2xl border border-[color:var(--wsu-border)] bg-gradient-to-b from-[color:var(--wsu-stone)]/25 to-white p-5 shadow-sm">
+          <div
+            className="overflow-hidden rounded-xl border shadow-sm"
+            style={{
+              borderColor: mergedPreview.borderColor ?? "#e5e7eb",
+              backgroundColor: mergedPreview.backgroundColor ?? "#fff",
+              color: mergedPreview.textColor ?? "#111",
+              fontFamily: mergedPreview.fontFamily,
+            }}
+          >
+            <div
+              className="border-b px-4 py-3"
+              style={{
+                borderColor: mergedPreview.borderColor ?? "#e5e7eb",
+                backgroundColor: mergedPreview.cardBackground ?? "#fff",
+              }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: mergedPreview.accentColor ?? mergedPreview.primaryColor }}
+              >
+                Source label
+              </p>
+              <p
+                className="mt-1 leading-tight"
+                style={{
+                  fontFamily: mergedPreview.headingFontFamily,
+                  fontSize: mergedPreview.pageTitleFontSize ?? "1.5rem",
+                  fontWeight: mergedPreview.headingFontWeight ?? 600,
+                }}
+              >
+                Page title preview
+              </p>
+              <p className="mt-2 max-w-prose text-sm leading-relaxed" style={{ color: mergedPreview.mutedColor, fontSize: mergedPreview.fontSize }}>
+                Body text and grid values follow this style. Links use the accent color.
+              </p>
+              <p className="mt-2 text-sm font-medium underline decoration-2 underline-offset-2" style={{ color: mergedPreview.accentColor ?? mergedPreview.primaryColor }}>
+                Sample accent link
+              </p>
+            </div>
+            <p className="bg-black/[0.03] px-3 py-1.5 text-[10px] text-[color:var(--wsu-muted)]">Merged preview (preset + your overrides)</p>
+          </div>
+
+          <div className="flex flex-wrap gap-1 rounded-xl bg-[color:var(--wsu-border)]/20 p-1">
+            {(
+              [
+                { id: "palette" as const, label: "Palette" },
+                { id: "typography" as const, label: "Typography" },
+                { id: "effects" as const, label: "Cards & radius" },
+                { id: "header" as const, label: "Masthead" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setDesignTab(tab.id)}
+                className={`min-h-[40px] flex-1 rounded-lg px-2 py-2 text-xs font-semibold sm:px-3 sm:text-sm ${
+                  designTab === tab.id
+                    ? "bg-white text-[color:var(--wsu-ink)] shadow-sm"
+                    : "text-[color:var(--wsu-muted)] hover:text-[color:var(--wsu-ink)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {designTab === "palette" && (
+            <Section title="Palette & surfaces">
               <div className="space-y-4">
                 {COLOR_TOKENS.map((token) => (
                   <div key={token}>
@@ -217,7 +302,9 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 ))}
               </div>
             </Section>
+          )}
 
+          {designTab === "typography" && (
             <Section title="Typography">
               <div className="space-y-5">
 
@@ -377,8 +464,10 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
 
               </div>
             </Section>
+          )}
 
-            <Section title="Shape & shadow">
+          {designTab === "effects" && (
+            <Section title="Cards, radius & shadow">
               <div className="space-y-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Corner radius</label>
@@ -406,9 +495,9 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 </div>
               </div>
             </Section>
-          </div>
+          )}
 
-          <div className="mt-8 space-y-6 border-t border-[color:var(--wsu-border)] pt-8">
+          {designTab === "header" && (
             <Section title="Header & masthead">
               <p className="text-xs text-[color:var(--wsu-muted)]">
                 Typography and colors for the public page header (logo row, source label, page title, live-data line) and the masthead card. Uses the same reset-to-preset behavior as above.
@@ -701,7 +790,7 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                 </div>
               </div>
             </Section>
-          </div>
+          )}
 
           <p className="text-xs text-[color:var(--wsu-muted)]">
             Tokens with × are overrides. Click × to reset to the preset default.

@@ -75,6 +75,10 @@ const PRINT_STYLES = `
       overflow-wrap: anywhere;
       word-break: break-word;
     }
+    /* Light horizontal rules between programs (rows) for readability */
+    .print-data-table tbody tr:not(:first-child) td {
+      border-top: 1.25pt solid #e3e3e3 !important;
+    }
     .print-data-table tbody tr:nth-child(even) td {
       background: #f7f7f7 !important;
     }
