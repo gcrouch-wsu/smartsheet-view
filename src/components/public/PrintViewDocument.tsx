@@ -145,7 +145,7 @@ export function PrintViewDocument({
                           <th key={`${row.id}-${column.key}`} scope="row">
                             {headingField && canPrintField(headingField) ? (
                               <PrintCellInner primary>
-                                <FieldValue field={headingField} />
+                                <FieldValue field={headingField} plainValueLinks />
                               </PrintCellInner>
                             ) : (
                               <>
@@ -162,7 +162,7 @@ export function PrintViewDocument({
                         <td key={`${row.id}-${column.key}`}>
                           {canPrintField(field) ? (
                             <PrintCellInner>
-                              <FieldValue field={field!} />
+                              <FieldValue field={field!} plainValueLinks />
                             </PrintCellInner>
                           ) : (
                             <>

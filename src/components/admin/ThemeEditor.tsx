@@ -23,7 +23,8 @@ const COLOR_LABELS: Record<string, string> = {
   backgroundColor: "Page background",
   cardBackground: "Card/panel background",
   surfaceMutedBackground: "Muted surface background",
-  accentColor: "Accent (links, buttons)",
+  accentColor: "Accent (buttons, controls)",
+  valueLinkColor: "Value link color (email, phone, URL)",
   textColor: "Primary text (body & values)",
   headingTextColor: "Heading text (card titles, section headings)",
   mutedColor: "Secondary/label text",
@@ -496,7 +497,25 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                       <select value={getNumericFontWeightValue("peopleDetailFontWeight")} onChange={(e) => updateStyle("peopleDetailFontWeight", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
                         {FONT_WEIGHT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
-                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Email and phone lines in grouped people fields</p>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Email and phone lines in grouped people fields and other value links</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Value link underline</label>
+                      <select
+                        value={getValue("valueLinkDecoration") === "none" ? "none" : "underline"}
+                        onChange={(e) => {
+                          if (e.target.value === "none") {
+                            updateStyle("valueLinkDecoration", "none");
+                          } else {
+                            updateStyle("valueLinkDecoration", "");
+                          }
+                        }}
+                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="underline">Underline</option>
+                        <option value="none">None</option>
+                      </select>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Email, phone, and URL fields on the public view (not print/PDF)</p>
                     </div>
                   </div>
                 </div>

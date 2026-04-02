@@ -47,6 +47,8 @@ const TOKEN_TO_CSS_VAR: Record<keyof ViewStyleConfig, string> = {
   badgeText: "--view-badge-text",
   pageTitleFontSize: "--view-page-title-font-size",
   actionFontSize: "--view-action-font-size",
+  valueLinkColor: "--view-value-link-color",
+  valueLinkDecoration: "--view-value-link-text-decoration",
   headerTopBorderColor: "--view-header-top-border-color",
   headerTopBorderWidth: "--view-header-top-border-width",
   headerPanelBackgroundColor: "--view-header-panel-bg",

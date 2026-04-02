@@ -269,6 +269,12 @@ export interface ViewStyleConfig {
   pageTitleFontSize?: string;
   /** Font size for action link buttons (Contributor sign in, Print/PDF, etc.). */
   actionFontSize?: string;
+  /**
+   * Optional color for value links (mailto, tel, URLs in table/cards). When unset, uses accentColor.
+   */
+  valueLinkColor?: string;
+  /** Underline for value links: "underline" (default) or "none". */
+  valueLinkDecoration?: "underline" | "none";
 
   // ── Public header / masthead (optional overrides; fallbacks keep prior look) ──
   /** Top accent rule above the brand strip (e.g. #a60f2d). Empty uses theme accent. */

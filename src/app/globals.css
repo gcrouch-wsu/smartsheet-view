@@ -320,6 +320,18 @@ a {
   font-weight: var(--view-people-detail-font-weight, 400);
 }
 
+/* Email, phone, and URL values in public data (theme: valueLinkColor, valueLinkDecoration) */
+.view-field-link {
+  color: var(--view-value-link-color, var(--view-accent, var(--wsu-crimson)));
+  text-decoration: var(--view-value-link-text-decoration, underline);
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--view-border, var(--wsu-border));
+}
+
+.view-field-link:hover {
+  opacity: 0.9;
+}
+
 .view-input {
   border: 1px solid var(--view-control-border, var(--wsu-border));
   background: var(--view-control-bg, #ffffff);

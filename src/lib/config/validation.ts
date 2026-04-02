@@ -740,6 +740,8 @@ const STYLE_KEYS: (keyof ViewStyleConfig)[] = [
   "badgeText",
   "pageTitleFontSize",
   "actionFontSize",
+  "valueLinkColor",
+  "valueLinkDecoration",
   "headerTopBorderColor",
   "headerTopBorderWidth",
   "headerPanelBackgroundColor",

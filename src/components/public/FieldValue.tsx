@@ -15,41 +15,47 @@ function PersonSummary({
   email,
   phone,
   compact = false,
+  plainValueLinks = false,
 }: {
   name?: string;
   email?: string;
   phone?: string;
   compact?: boolean;
+  plainValueLinks?: boolean;
 }) {
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
+  const detailClass = "view-people-detail view-field-link";
 
   return (
     <>
       {name ? <span className={`view-people-name ${compact ? "" : "block"}`}>{name}</span> : null}
       {email ? (
-        <a
-          href={`mailto:${email}`}
-          className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-        >
-          {email}
-        </a>
+        plainValueLinks ? (
+          <span className="view-people-detail text-[color:var(--wsu-ink)]">{email}</span>
+        ) : (
+          <a href={`mailto:${email}`} className={detailClass}>
+            {email}
+          </a>
+        )
       ) : null}
       {phone ? (
         compact ? (
-          <a
-            href={telHref}
-            className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-          >
-            {phone}
-          </a>
-        ) : (
-          <span className="mt-0.5 block">
-            <a
-              href={telHref}
-              className="view-people-detail text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-            >
+          plainValueLinks ? (
+            <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
+          ) : (
+            <a href={telHref} className={detailClass}>
               {phone}
             </a>
+          )
+        ) : (
+          <span className="mt-0.5 block">
+            {plainValueLinks ? (
+              <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
+            ) : (
+              <a href={telHref} className={`${detailClass} block`}>
+                {phone}
+              </a>
+            )}
           </span>
         )
       ) : null}
@@ -57,7 +63,7 @@ function PersonSummary({
   );
 }
 
-function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
+function renderLinkList(field: ResolvedFieldValue, stacked: boolean, plainValueLinks: boolean) {
   if (field.links.length === 0) {
     return <EmptyValue />;
   }
@@ -65,23 +71,27 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
   const useInline = field.listDisplay === "inline" && field.links.length > 1;
   const delimiter = field.listDelimiter ?? ", ";
   if (useInline) {
-      return (
-        <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
-          {field.links.map((link, i) => (
-            <span key={`${link.href}-${link.label}`}>
-              {i > 0 && <span className="text-[color:var(--wsu-muted)]">{delimiter}</span>}
+    return (
+      <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
+        {field.links.map((link, i) => (
+          <span key={`${link.href}-${link.label}`}>
+            {i > 0 && <span className="text-[color:var(--wsu-muted)]">{delimiter}</span>}
+            {plainValueLinks ? (
+              <span className="text-[color:var(--wsu-ink)]">{link.label}</span>
+            ) : (
               <a
                 href={link.href}
-                className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                className={`view-field-link ${fieldValueTypographyClass(field)}`}
                 target={/^https?:\/\//i.test(link.href) ? "_blank" : undefined}
                 rel={/^https?:\/\//i.test(link.href) ? "noreferrer" : undefined}
               >
                 {link.label}
               </a>
-            </span>
-          ))}
-        </span>
-      );
+            )}
+          </span>
+        ))}
+      </span>
+    );
   }
 
   if (stacked || field.listDisplay === "stacked" || field.links.length > 1) {
@@ -89,14 +99,18 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
       <ul className={tx(field, "space-y-1")}>
         {field.links.map((link) => (
           <li key={`${link.href}-${link.label}`}>
-            <a
-              href={link.href}
-              className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-              target={/^https?:\/\//i.test(link.href) ? "_blank" : undefined}
-              rel={/^https?:\/\//i.test(link.href) ? "noreferrer" : undefined}
-            >
-              {link.label}
-            </a>
+            {plainValueLinks ? (
+              <span className="text-[color:var(--wsu-ink)]">{link.label}</span>
+            ) : (
+              <a
+                href={link.href}
+                className={`view-field-link ${fieldValueTypographyClass(field)}`}
+                target={/^https?:\/\//i.test(link.href) ? "_blank" : undefined}
+                rel={/^https?:\/\//i.test(link.href) ? "noreferrer" : undefined}
+              >
+                {link.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
@@ -104,13 +118,13 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
   }
 
   const link = field.links[0]!;
+  if (plainValueLinks) {
+    return <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>{link.label}</span>;
+  }
   return (
     <a
       href={link.href}
-      className={tx(
-        field,
-        "text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]",
-      )}
+      className={tx(field, "view-field-link leading-6")}
       target={/^https?:\/\//i.test(link.href) ? "_blank" : undefined}
       rel={/^https?:\/\//i.test(link.href) ? "noreferrer" : undefined}
     >
@@ -122,9 +136,12 @@ function renderLinkList(field: ResolvedFieldValue, stacked: boolean) {
 export function FieldValue({
   field,
   stacked = false,
+  plainValueLinks = false,
 }: {
   field: ResolvedFieldValue;
   stacked?: boolean;
+  /** When true (e.g. print layout), show link labels as plain text — no anchors. */
+  plainValueLinks?: boolean;
 }) {
   if (field.renderType === "hidden") {
     return null;
@@ -137,7 +154,7 @@ export function FieldValue({
   }
 
   if ((field.renderType === "mailto" || field.renderType === "mailto_list" || field.renderType === "phone" || field.renderType === "phone_list" || field.renderType === "link") && field.links.length > 0) {
-    return renderLinkList(field, stacked || field.renderType.endsWith("_list"));
+    return renderLinkList(field, stacked || field.renderType.endsWith("_list"), plainValueLinks);
   }
 
   if ((field.renderType === "text" || field.renderType === "badge") && field.links.length > 0) {
@@ -148,18 +165,22 @@ export function FieldValue({
       return (
         <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
           {showText ? <>{field.textValue} </> : null}
-          <a
-            href={link.href}
-            className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
-            target={newTab ? "_blank" : undefined}
-            rel={newTab ? "noreferrer" : undefined}
-          >
-            {link.label}
-          </a>
+          {plainValueLinks ? (
+            <span>{link.label}</span>
+          ) : (
+            <a
+              href={link.href}
+              className={tx(field, "view-field-link")}
+              target={newTab ? "_blank" : undefined}
+              rel={newTab ? "noreferrer" : undefined}
+            >
+              {link.label}
+            </a>
+          )}
         </span>
       );
     }
-    return renderLinkList({ ...field, renderType: "link" }, stacked);
+    return renderLinkList({ ...field, renderType: "link" }, stacked, plainValueLinks);
   }
 
   if (field.renderType === "list") {
@@ -221,7 +242,7 @@ export function FieldValue({
                 }
               >
                 <div className="min-w-0">
-                  <PersonSummary name={person.name} email={person.email} phone={person.phone} />
+                  <PersonSummary name={person.name} email={person.email} phone={person.phone} plainValueLinks={plainValueLinks} />
                 </div>
               </li>
             ))}
@@ -244,7 +265,7 @@ export function FieldValue({
                   : undefined
               }
             >
-              <PersonSummary name={person.name} email={person.email} phone={person.phone} />
+              <PersonSummary name={person.name} email={person.email} phone={person.phone} plainValueLinks={plainValueLinks} />
             </li>
           ))}
         </ul>
@@ -265,11 +286,15 @@ export function FieldValue({
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {field.links.map((link) => {
               const newTab = /^https?:\/\//i.test(link.href);
-              return (
+              return plainValueLinks ? (
+                <span key={`${link.href}-${link.label}`} className="text-[color:var(--wsu-ink)]">
+                  {link.label}
+                </span>
+              ) : (
                 <a
                   key={`${link.href}-${link.label}`}
                   href={link.href}
-                  className="text-[color:var(--wsu-crimson)] underline decoration-[color:var(--wsu-border)] underline-offset-4 hover:text-[color:var(--wsu-crimson-dark)]"
+                  className={tx(field, "view-field-link")}
                   target={newTab ? "_blank" : undefined}
                   rel={newTab ? "noreferrer" : undefined}
                 >

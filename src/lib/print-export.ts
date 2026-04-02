@@ -184,17 +184,13 @@ export function buildPrintExportStylesheet(config: PrintExportConfig): string {
   .print-export .print-data-table li {
     margin: 0 !important;
   }
+  /* PDF / print: data cells are reference-only, not interactive links */
   .print-export .print-data-table a:link,
   .print-export .print-data-table a:visited {
     color: inherit !important;
-    text-decoration: underline;
-  }
-  /* Email / phone stay actionable but read like plain text in PDFs */
-  .print-export .print-data-table a[href^="mailto:"]:link,
-  .print-export .print-data-table a[href^="mailto:"]:visited,
-  .print-export .print-data-table a[href^="tel:"]:link,
-  .print-export .print-data-table a[href^="tel:"]:visited {
     text-decoration: none !important;
+    pointer-events: none;
+    cursor: default;
   }
   .print-export .print-empty-cell {
     color: var(--print-muted) !important;
