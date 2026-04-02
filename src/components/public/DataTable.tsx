@@ -1,17 +1,21 @@
 import { ContributorEditButton, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
+import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { ResolvedView } from "@/lib/config/types";
 
 export function DataTable({
   view,
+  programGroups: _programGroups,
   editableRowIds,
   onEditRow,
 }: {
   view: ResolvedView;
+  programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
+  void _programGroups;
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }

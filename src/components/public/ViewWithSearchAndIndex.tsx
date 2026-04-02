@@ -10,6 +10,7 @@ import { EditRowDrawer } from "@/components/public/EditRowDrawer";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
 import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
 import { describeResolvedField, getIndexText } from "@/components/public/layout-utils";
+import { groupResolvedRows, isCampusGroupingActive } from "@/lib/campus-grouping";
 import type { LayoutType, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import type { ContributorEditingClientConfig } from "@/lib/contributor-utils";
 
@@ -79,14 +80,27 @@ export function ViewWithSearchAndIndex({
   const [editingRowId, setEditingRowId] = useState<number | null>(null);
   const editReturnFocusRef = useRef<HTMLElement | null>(null);
 
-  const filteredView = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      return view;
+      return view.rows;
     }
-    const filtered = view.rows.filter((row) => getSearchableText(view, row).includes(q));
-    return { ...view, rows: filtered, rowCount: filtered.length };
+    return view.rows.filter((row) => getSearchableText(view, row).includes(q));
   }, [view, searchQuery]);
+
+  const filteredView = useMemo(
+    () => ({ ...view, rows: filteredRows, rowCount: filteredRows.length }),
+    [view, filteredRows],
+  );
+
+  /** Populated only when `presentation` enables campus grouping; layouts use this in Step D. Search respects same filtered rows. */
+  const programGroups = useMemo(() => {
+    const p = view.presentation;
+    if (!isCampusGroupingActive(p) || !p?.programGroupFieldKey || !p?.campusFieldKey) {
+      return undefined;
+    }
+    return groupResolvedRows(filteredRows, p.programGroupFieldKey, p.campusFieldKey);
+  }, [view.presentation, filteredRows]);
 
   const letterToRowId = useMemo(() => {
     const map = new Map<string, number>();
@@ -245,6 +259,7 @@ export function ViewWithSearchAndIndex({
             <PublicViewRenderer
               layout={layout}
               view={filteredView}
+              programGroups={programGroups}
               editableRowIds={editableRowIdSet}
               onEditRow={canOpenContributorEditor(embed, contributorEmail, editingConfig) ? handleEditRow : undefined}
             />

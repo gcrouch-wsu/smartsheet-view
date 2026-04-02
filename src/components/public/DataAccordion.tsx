@@ -16,6 +16,7 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import { fieldLabelClassName } from "@/lib/field-typography";
+import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -31,13 +32,16 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
 
 export function DataAccordion({
   view,
+  programGroups: _programGroups,
   editableRowIds,
   onEditRow,
 }: {
   view: ResolvedView;
+  programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
+  void _programGroups;
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }

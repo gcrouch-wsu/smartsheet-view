@@ -8,6 +8,7 @@ import { DataStacked } from "@/components/public/DataStacked";
 import { DataTabbed } from "@/components/public/DataTabbed";
 import { DataTable } from "@/components/public/DataTable";
 import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
+import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { LayoutType, ResolvedView } from "@/lib/config/types";
 
 export interface PublicRowEditingProps {
@@ -25,11 +26,14 @@ export function formatLayoutLabel(layout: LayoutType) {
 export function PublicViewRenderer({
   layout,
   view,
+  programGroups,
   editableRowIds,
   onEditRow,
 }: {
   layout: LayoutType;
   view: ResolvedView;
+  /** Present when campus/program grouping is active; layouts consume in Step D. */
+  programGroups?: ProgramGroup[];
 } & PublicRowEditingProps) {
   const linkCtx = {
     linkEmailsInView: view.linkEmailsInView,
@@ -38,19 +42,19 @@ export function PublicViewRenderer({
 
   const body =
     layout === "cards" ? (
-      <DataCards view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataCards view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : layout === "list" ? (
-      <DataList view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataList view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : layout === "stacked" ? (
-      <DataStacked view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataStacked view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : layout === "accordion" ? (
-      <DataAccordion view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataAccordion view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : layout === "tabbed" ? (
-      <DataTabbed view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataTabbed view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : layout === "list_detail" ? (
-      <DataListDetail view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataListDetail view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     ) : (
-      <DataTable view={view} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataTable view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     );
 
   return <ViewValueLinkProvider value={linkCtx}>{body}</ViewValueLinkProvider>;

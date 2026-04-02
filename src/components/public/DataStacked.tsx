@@ -13,18 +13,23 @@ import {
   getVisibleRowFields,
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
+import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 export function DataStacked({
   view,
+  programGroups: _programGroups,
   editableRowIds,
   onEditRow,
 }: {
   view: ResolvedView;
+  /** Reserved for campus grouping UI (Step D). */
+  programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
+  void _programGroups;
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }

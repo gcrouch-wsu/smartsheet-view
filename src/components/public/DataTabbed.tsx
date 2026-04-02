@@ -17,6 +17,7 @@ import {
   getVisibleRowFields,
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
+import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
@@ -37,13 +38,16 @@ function findSelectedRow(view: ResolvedView, rowId: number | null) {
 
 export function DataTabbed({
   view,
+  programGroups: _programGroups,
   editableRowIds,
   onEditRow,
 }: {
   view: ResolvedView;
+  programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
+  void _programGroups;
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
 
   if (view.rows.length === 0) {
