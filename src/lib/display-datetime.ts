@@ -37,6 +37,33 @@ export function labelForDisplayTimeZone(iana: string): string {
 }
 
 /**
+ * Milliseconds since epoch for a Smartsheet / ISO-style value, or null if not parseable.
+ *
+ * - `YYYY-MM-DD` → UTC noon on that calendar day (stable across zones for date-only cells).
+ * - `YYYY-MM-DDTHH:mm:ss` **without** offset → treated as **UTC** (Smartsheet docs: values are UTC).
+ *   JS would otherwise parse offset-less strings as *local* wall time, which differs between
+ *   Node on Vercel (often TZ=UTC) and browsers (user zone), breaking public pages vs live preview.
+ */
+export function instantMillisFromSmartsheetDateString(trimmed: string): number | null {
+  const isoDateOnly = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateOnly) {
+    const [, y, m, d] = isoDateOnly;
+    return Date.UTC(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+  }
+
+  if (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?$/.test(trimmed) &&
+    !/[zZ]$|[+-]\d{2}:?\d{2}$/.test(trimmed)
+  ) {
+    const d = new Date(`${trimmed}Z`);
+    return Number.isNaN(d.getTime()) ? null : d.getTime();
+  }
+
+  const d = new Date(trimmed);
+  return Number.isNaN(d.getTime()) ? null : d.getTime();
+}
+
+/**
  * Format a Smartsheet / ISO date string for display in a chosen IANA time zone.
  * Date-only `YYYY-MM-DD` is treated as a calendar date (no daylight shift of the day).
  */
@@ -56,15 +83,8 @@ export function formatDateInDisplayTimeZone(
     return "";
   }
 
-  const isoDateOnly = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoDateOnly) {
-    const [, y, m, d] = isoDateOnly;
-    const utcNoon = Date.UTC(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
-    return new Intl.DateTimeFormat(locale, { dateStyle, timeZone }).format(utcNoon);
-  }
-
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) {
+  const ms = instantMillisFromSmartsheetDateString(trimmed);
+  if (ms === null) {
     return raw;
   }
 
@@ -78,5 +98,5 @@ export function formatDateInDisplayTimeZone(
     dateStyle,
     timeStyle: options?.timeStyle ?? (looksLikeDateTime ? "short" : undefined),
     timeZone,
-  }).format(parsed);
+  }).format(ms);
 }

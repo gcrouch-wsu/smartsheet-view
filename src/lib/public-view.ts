@@ -528,7 +528,10 @@ export async function getPublicPageSummaries(): Promise<PublicPageSummary[]> {
   return listPublicPageSummaries();
 }
 
-export async function loadPublicPage(slug: string, options?: { includePrivate?: boolean }): Promise<ResolvedPublicPage | null> {
+export async function loadPublicPage(
+  slug: string,
+  options?: { includePrivate?: boolean; datasetOptions?: FetchBehaviorOptions },
+): Promise<ResolvedPublicPage | null> {
   const state = await loadPublicPageState(slug, options);
   if (!state) {
     return null;

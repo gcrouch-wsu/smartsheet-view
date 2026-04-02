@@ -9,6 +9,7 @@ import type {
   ViewFieldConfig,
   ViewPresentationConfig,
 } from "@/lib/config/types";
+import { instantMillisFromSmartsheetDateString } from "@/lib/display-datetime";
 
 const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const EMAIL_TOKEN_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
@@ -261,19 +262,12 @@ function formatDate(value: unknown, config?: TransformConfig) {
     return "";
   }
 
-  let parsed: Date;
-  const isoDateMatch = typeof dateCandidate === "string" ? dateCandidate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
-
-  if (isoDateMatch) {
-    const [, year, month, day] = isoDateMatch;
-    parsed = new Date(Number(year), Number(month) - 1, Number(day));
-  } else {
-    parsed = new Date(dateCandidate);
-  }
-
-  if (Number.isNaN(parsed.getTime())) {
+  const trimmed = dateCandidate.trim();
+  const ms = instantMillisFromSmartsheetDateString(trimmed);
+  if (ms === null) {
     return dateCandidate;
   }
+  const parsed = new Date(ms);
 
   return new Intl.DateTimeFormat(config?.locale || "en-US", {
     dateStyle: config?.dateStyle || "medium",
@@ -334,6 +328,13 @@ export function extractDateSourceRawForDisplay(value: unknown): string | undefin
   if (/^\d{4}-\d{2}-\d{2}$/.test(t)) {
     return t;
   }
+  if (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t) &&
+    !/[zZ]$|[+-]\d{2}:?\d{2}$/.test(t)
+  ) {
+    const d = new Date(`${t}Z`);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
   const parsed = new Date(t);
   if (Number.isNaN(parsed.getTime())) {
     return undefined;
@@ -350,11 +351,11 @@ function sortKeyForDateRaw(rawDateStr: string): string | undefined {
     const [, y, m, d] = isoDateMatch;
     return `${y}-${m}-${d}`;
   }
-  const parsed = new Date(rawDateStr);
-  if (Number.isNaN(parsed.getTime())) {
+  const ms = instantMillisFromSmartsheetDateString(rawDateStr.trim());
+  if (ms === null) {
     return rawDateStr;
   }
-  return parsed.toISOString();
+  return new Date(ms).toISOString();
 }
 
 export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
@@ -384,6 +385,21 @@ export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
 
   if (cell.columnType === "MULTI_PICKLIST" && isObjectRecord(cell.objectValue) && Array.isArray(cell.objectValue.values)) {
     return cell.objectValue.values;
+  }
+
+  /** DATE / datetimes: use API `value` first — generic objectValue is for predecessors/contacts, not calendar cells. */
+  if (
+    cell.columnType === "DATE" ||
+    cell.columnType === "DATETIME" ||
+    cell.columnType === "ABSTRACT_DATETIME"
+  ) {
+    if (cell.value !== undefined && cell.value !== null && cell.value !== "") {
+      return cell.value;
+    }
+    if (typeof cell.displayValue === "string" && cell.displayValue.trim()) {
+      return cell.displayValue;
+    }
+    return null;
   }
 
   if (cell.objectValue) {

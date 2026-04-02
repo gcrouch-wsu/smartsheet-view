@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { slug } = await params;
   // Public JSON must match the HTML page: only published (`public: true`) views and their data.
-  const page = await loadPublicPage(slug);
+  const page = await loadPublicPage(slug, { datasetOptions: { fresh: true } });
 
   if (!page) {
     return NextResponse.json({ error: `View slug \"${slug}\" was not found.` }, { status: 404 });

@@ -32,7 +32,7 @@ export default async function ContributorLoginPage({
   const requestedView = firstValue(resolvedSearchParams.view);
   const configurationError = getContributorConfigurationError();
 
-  const page = await loadPublicPageState(slug);
+  const page = await loadPublicPageState(slug, { datasetOptions: { fresh: true } });
   if (!page) {
     redirect("/");
   }

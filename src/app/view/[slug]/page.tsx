@@ -91,7 +91,7 @@ export default async function PublicViewPage({
 
   let page;
   try {
-    page = await loadPublicPageState(slug);
+    page = await loadPublicPageState(slug, { datasetOptions: { fresh: true } });
   } catch (error) {
     console.error(`[smartsheets_view] Failed to load public page "${slug}":`, error);
     return (
