@@ -530,7 +530,12 @@ function parseSortConfig(input: unknown, index: number): ValidationResult<ViewSo
   };
 }
 
-function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): ValidationResult<ViewPresentationConfig | undefined> {
+function parsePresentationConfig(
+  input: unknown,
+  fieldKeys: Set<string>,
+  /** Keys of fields that are not `render.type === "hidden"` (print layout never resolves hidden fields). */
+  nonHiddenFieldKeys: Set<string>,
+): ValidationResult<ViewPresentationConfig | undefined> {
   if (input === undefined || input === null || input === "") {
     return { success: true, errors: [], data: undefined };
   }
@@ -562,6 +567,11 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   const hideViewTabCount = asBoolean(input.hideViewTabCount, false);
   const viewTabLabel = asOptionalString(input.viewTabLabel);
   const hideHeaderLogo = asBoolean(input.hideHeaderLogo, false);
+  const linkEmailsInView =
+    input.linkEmailsInView === undefined ? undefined : asBoolean(input.linkEmailsInView, true);
+  const linkPhonesInView =
+    input.linkPhonesInView === undefined ? undefined : asBoolean(input.linkPhonesInView, false);
+  const printGroupByFieldKey = asOptionalString(input.printGroupByFieldKey);
 
   const rawLogoUrl =
     typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
@@ -597,6 +607,13 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
   }
   if (indexFieldKey && !fieldKeys.has(indexFieldKey)) {
     errors.push(`presentation.indexFieldKey \"${indexFieldKey}\" does not match any field key.`);
+  }
+  if (printGroupByFieldKey && !fieldKeys.has(printGroupByFieldKey)) {
+    errors.push(`presentation.printGroupByFieldKey \"${printGroupByFieldKey}\" does not match any field key.`);
+  } else if (printGroupByFieldKey && !nonHiddenFieldKeys.has(printGroupByFieldKey)) {
+    errors.push(
+      `presentation.printGroupByFieldKey \"${printGroupByFieldKey}\" must reference a non-hidden field (print cannot group by hidden columns).`,
+    );
   }
 
   let cardLayout: ViewPresentationConfig["cardLayout"];
@@ -655,7 +672,10 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
       Boolean(headerLogoDataUrl && headerLogoAlt) ||
       hideHeaderLogo ||
       headerBrandSubline ||
-      headerBrandTitle
+      headerBrandTitle ||
+      linkEmailsInView !== undefined ||
+      linkPhonesInView !== undefined ||
+      Boolean(printGroupByFieldKey)
   );
 
   return {
@@ -690,6 +710,9 @@ function parsePresentationConfig(input: unknown, fieldKeys: Set<string>): Valida
             hideHeaderLogo,
             headerBrandSubline,
             headerBrandTitle,
+            ...(linkEmailsInView !== undefined ? { linkEmailsInView } : {}),
+            ...(linkPhonesInView !== undefined ? { linkPhonesInView } : {}),
+            ...(printGroupByFieldKey ? { printGroupByFieldKey } : {}),
           },
   };
 }
@@ -1074,7 +1097,10 @@ export function validateViewConfig(
   }
 
   const fieldKeys = new Set(fields.map((field) => field.key));
-  const presentationResult = parsePresentationConfig(input.presentation, fieldKeys);
+  const nonHiddenFieldKeys = new Set(
+    fields.filter((field) => field.render.type !== "hidden").map((field) => field.key),
+  );
+  const presentationResult = parsePresentationConfig(input.presentation, fieldKeys, nonHiddenFieldKeys);
   const styleResult = parseStyleConfig(input.style);
   const editingResult = parseEditingConfig(input.editing);
   errors.push(...presentationResult.errors, ...styleResult.errors, ...editingResult.errors);

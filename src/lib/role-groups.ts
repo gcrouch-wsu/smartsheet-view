@@ -2,13 +2,11 @@ import type {
   FieldSourceSelector,
   RoleGroupFieldSource,
   SmartsheetColumn,
-  SmartsheetRow,
   SourceRoleGroupConfig,
   SourceRoleGroupSlotConfig,
   ViewFieldSourceConfig,
 } from "@/lib/config/types";
 import { slugify } from "@/lib/utils";
-import { normalizeColumnKey } from "@/lib/smartsheet";
 
 export function isRoleGroupFieldSource(source: ViewFieldSourceConfig): source is RoleGroupFieldSource {
   return typeof source === "object" && source !== null && "kind" in source && (source as RoleGroupFieldSource).kind === "role_group";

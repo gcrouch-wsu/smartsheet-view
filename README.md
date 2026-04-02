@@ -2,13 +2,13 @@
 
 **Smartsheet is the source of truth. This app is the public window into it.**
 
-Staff manage data in Smartsheet as they always haveâ€”no changes to their workflow. This Next.js app connects to Smartsheet and makes selected data available as clean, branded, and accessible public webpages without exposing the raw spreadsheet.
+Staff manage data in Smartsheet as they always have - no changes to their workflow. This Next.js app connects to Smartsheet and makes selected data available as clean, branded, and accessible public webpages without exposing the raw spreadsheet.
 
 ## Key Features
 
 - **Visual Admin Builder**: Configure sources and public views with a five-section builder (**Setup**, **Fields**, **Filters & Sort**, **Editing**, **Preview**).
 - **Custom Header WYSIWYG**: Rich text editor for page headers with headings, bold, italic, underline, alignment, bullet lists, text color, highlighting, and links. Use `{{PUBLIC_URL}}` to insert a live, clickable link to the current view.
-- **Flexible Layouts**: Tables, Cards, Lists, Stacked, Accordions, Tabbed panels, and Listâ€“Detail.
+- **Flexible Layouts**: Tables, Cards, Lists, Stacked, Accordions, Tabbed panels, and List / Detail.
 - **Advanced Theme System**: Expanded design tokens for surfaces, controls, typography, row headings, field labels, grouped people names, and grouped people email/phone weight, with live WCAG AA contrast validation.
 - **Smart Transforms**: Auto-suggest render types (e.g., Email -> mailto, Picklist -> badge) and data transformations (Split, Date Format).
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
@@ -17,25 +17,35 @@ Staff manage data in Smartsheet as they always haveâ€”no changes to their w
 - **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and grouped role fields). Numbered-slot role groups are deterministic by structure; legacy multi-attribute delimited role groups stay read-only unless explicitly trusted at the source level. Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
 - **Print / PDF Phase 1**: Public views include a print-friendly route that defaults to a landscape-friendly semantic table for browser print or save-as-PDF.
 - **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
-- **Header branding (admin)**: In **Setup â†’ Page header & branding**, optional PNG/JPEG logo (â‰¤256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical ruleâ€”stored in view config. Shown at the top of the public header when visible.
-- **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) â€” static, accessible guides that deploy with the app on Vercel.
+- **Header branding (admin)**: In **Setup** > **Page header & branding**, optional PNG/JPEG logo (at most 256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical rule - stored in view config. Shown at the top of the public header when visible.
+- **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) - static, accessible guides that deploy with the app.
 
-**Vercel pitfalls & env checklist:** See **`VERCEL_DEPLOYMENT.md`** in this repository.
+## Documentation
 
-**Optional local docs (often not committed):** e.g. `PROJECT_SPEC.md`, `future_build_view.md` beside the repo for internal specs.
+| What | Where |
+|------|--------|
+| Install, env, Vercel deployment, go-live checklist | **This file (`README.md`)** — intended to be self-contained. |
+| Admin narrative (markdown) | **`Admin_Instruction.md`** (tracked). |
+| In-app admin + contributor guides | **`/instructions/admin`**, **`/instructions/contributor`** (ship with the app). |
+| Smartsheet API / Vercel edge cases | **`VERCEL_DEPLOYMENT.md`** when your clone tracks it (see `.gitignore` exceptions). |
+| Personal roadmap / “what shipped when” | **`PROJECT_SPEC.md`** — **gitignored**; keep locally if you want a private history; not required for the team. |
 
 ## Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Environment Configuration
+
 ```bash
 cp .env.example .env
 ```
+
 Edit `.env` with your Smartsheet and Admin credentials:
+
 - `SMARTSHEET_API_TOKEN`: Your Smartsheet API token.
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`: Initial admin username.
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`: Initial admin password.
@@ -43,26 +53,30 @@ Edit `.env` with your Smartsheet and Admin credentials:
 - `CONTRIBUTOR_SESSION_SECRET` (Required for contributor editing): Secret used to sign contributor session cookies.
 
 Postgres requirement:
+
 - The app expects **PostgreSQL 13 or newer**.
 - The schema uses `gen_random_uuid()` without installing `pgcrypto` at app startup.
 - This is compatible with Vercel Postgres / Neon style hosted Postgres, but older Postgres versions are not supported.
 - If you host on Supabase, any new backend-owned table created in `public` must ship with RLS enabled in the same code change. Update `sql/enable-public-rls.sql` for existing databases and rerun Security Advisor after deploy.
 
 ### 3. Run Development Server
+
 ```bash
 npm run dev
 ```
 
+(`next dev` should use `--webpack` in this repo; see **Vercel deployment** below.)
+
 ### 4. Admin: Creating a Source
 
-Go to **Admin â†’ Sources** and click **Create source**. Youâ€™ll configure:
+Go to **Admin** > **Sources** and click **Create source**. You will configure:
 
 | Field | Purpose |
 |-------|---------|
 | **Source ID** | Internal identifier for this app. Must be unique, URL-safe (no spaces or special characters). Used in URLs and when linking views. Set once at creation and cannot be changed. Example: `grad-programs` |
 | **Label** | Display name shown in the admin UI. Can include spaces and punctuation. Can be changed anytime. Example: `Graduate Programs` |
 | **Source type** | Choose **Sheet** or **Report** to match your Smartsheet asset. |
-| **Smartsheet ID** | The numeric ID from Smartsheet. Find it in the sheet/report URL: `https://app.smartsheet.com/sheets/XXXXXXXXXXXXXXX` or `.../reports/XXXXXXXXXXXXXXX` â€” the long number is the ID. |
+| **Smartsheet ID** | The numeric ID from Smartsheet. Find it in the sheet/report URL: `https://app.smartsheet.com/sheets/XXXXXXXXXXXXXXX` or `.../reports/XXXXXXXXXXXXXXX` - the long number is the ID. |
 
 After saving, use **Test connection** to verify the Smartsheet API can reach the sheet or report. Then create **Views** that select columns and define how data is displayed.
 
@@ -84,25 +98,75 @@ Views can then add a grouped role field as one public header instead of mapping 
 
 Grouped role display defaults to a compact plain inline layout so multiple people use horizontal space better in cards, stacked rows, tables, and print views. Admins can switch each grouped role field between horizontal and vertical layouts and choose either plain or capsule styling in the view builder.
 
-## Vercel Deployment
+## Vercel deployment
 
-For **build/runtime pitfalls**, **Node/Webpack**, **Postgres**, **admin vs contributor secrets**, and a full **env checklist**, read **`VERCEL_DEPLOYMENT.md`**.
+Use this section for production hosting on Vercel (similar constraints apply to other serverless Node hosts).
 
-1. Push to GitHub and connect the repository in Vercel.
-2. Configure environment variables in the Vercel project settings.
-3. Deploy. The build uses `npm ci` and `npm run build` as defined in `vercel.json` (**production builds use `next build --webpack`**â€”keep that flag unless you re-validate TipTap and `pg` bundles).
+### Source control and builds
 
-**Note:** For Vercel deployments, set `DATABASE_URL` to persist admin users and enable full config management (create, edit, delete sources and views). Without it, the filesystem is read-only and config changes will not persist.
+- Vercel deploys from your Git remote, not from uncommitted local changes. Commit and push to ship new code.
+- **Webpack vs Turbopack:** Next.js 16 defaults to Turbopack for `next build`. This repo uses **`next dev --webpack`** and **`next build --webpack`** because `pg` and TipTap / ProseMirror are not reliable here under the default bundler. Keep `--webpack` unless you re-validate a full production build.
+- **`vercel.json`** uses **`npm ci`** for reproducible installs.
+- **`next build` runs TypeScript checking.** Fix errors locally with `npx tsc --noEmit` or `npm run build` before pushing; Vercel will fail on the same errors.
+- Pin the Vercel project to an LTS Node version (e.g. 22.x) if you want parity with local builds.
 
-**Contributor editing:** Requires `DATABASE_URL`, **`CONTRIBUTOR_SESSION_SECRET`**, and **PostgreSQL 13+** (`gen_random_uuid()` on contributor tables). Contributor API routes use **`export const runtime = "nodejs"`** (Node-only APIs).
+### Environment variables (production checklist)
 
-**Rich text (custom header):** Sanitized server-side with **`sanitize-html`** onlyâ€”avoid introducing **`jsdom`** on the server bundle for Vercel.
+Set these in the Vercel project (Production and Preview as appropriate):
+
+| Variable | Purpose |
+|----------|---------|
+| `SMARTSHEET_API_TOKEN` | Smartsheet API access |
+| `SMARTSHEETS_VIEW_ADMIN_USERNAME` | Bootstrap admin username |
+| `SMARTSHEETS_VIEW_ADMIN_PASSWORD` | Bootstrap admin password |
+| `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` | Signs admin session cookies (strong secret; never empty) |
+| `DATABASE_URL` | Postgres for durable sources, views, admin users, contributors, and login rate-limit data on serverless |
+| `CONTRIBUTOR_SESSION_SECRET` | Signs contributor cookies (required if contributor editing is enabled) |
+| `SMARTSHEET_CONNECTIONS_JSON` | Optional multi-connection Smartsheet config |
+| `SMARTSHEET_API_BASE_URL` | Optional Smartsheet API base URL override |
+| `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` | Optional. Set to `true` only if Postgres TLS verification fails in production and you accept relaxed certificate verification after a security review. Prefer fixing `DATABASE_URL` or provider certificates. |
+
+Without **`DATABASE_URL`** on Vercel, the filesystem is effectively read-only for config: sources and views cannot be persisted reliably, and managed admin users / contributor accounts will not work as intended.
+
+### Postgres and TLS
+
+- Use **PostgreSQL 13+** (`gen_random_uuid()` on contributor-related tables).
+- Use a **small** serverless-friendly pool (large pools exhaust provider connection limits).
+- By default the app uses your **`DATABASE_URL`** for TLS and **strips `sslmode=no-verify`** from the URL unless **`SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL=true`**. Use that flag only as an escape hatch if the provider’s certificate chain cannot be verified after review.
+
+### Supabase and RLS
+
+If Postgres is Supabase, Security Advisor expects Row Level Security on `public` tables. This app enables RLS on backend-owned tables at bootstrap. For databases that already existed before a change, run **`sql/enable-public-rls.sql`** once, and add new tables to that script when you add them in code.
+
+### Runtime, caching, and Smartsheet errors
+
+- Routes that use **`pg`**, password hashing, **`fs`**, or similar must keep **`export const runtime = "nodejs"`** so they are not assumed Edge-safe.
+- **`revalidatePath`** only behaves like production outside `next dev`; contributor saves may need a manual refresh locally.
+- After Smartsheet writes, the app invalidates relevant paths; treat cache refresh as part of the write contract.
+- When debugging Smartsheet failures, use Smartsheet HTTP status, **`errorCode`**, and the payload - not only the HTTP status returned to the browser. Smartsheet rate limits often appear as **429** / error **4003**.
+
+### Custom header HTML
+
+Sanitize server-side with **`sanitize-html`** only. Avoid adding **`jsdom`** to the server bundle on Vercel.
+
+### Deploy steps
+
+1. Push the repository to your Git host and connect it in Vercel.
+2. Configure the environment variables above.
+3. Deploy. The production build command must remain **`next build --webpack`** unless you have re-tested TipTap and `pg` without it.
+
+### Production go-live (first launch)
+
+- Create separate **filtered views per audience** (e.g. campus) if you need one audience per slice without duplicate rows - use existing view filters.
+- Confirm **Production** env vars match your checklist (tokens, secrets, `DATABASE_URL`, `CONTRIBUTOR_SESSION_SECRET`).
+- Confirm **contact columns** used for contributor eligibility contain real emails where policy requires it.
+- Smoke test: contributor sign-in, row edit only where allowed, multi-person group save, public page refresh, quick pass on a phone.
 
 ## Project Structure
 
-- `src/app/` â€“ Next.js App Router (Public views and Admin API)
-- `src/components/` â€“ UI components (Public layouts and Admin Builder)
-- `src/lib/` â€“ Business logic (Smartsheet client, transforms, filters)
-- `config/sources/` â€“ Source configuration files (JSON, fallback when DB not used)
-- `config/views/` â€“ View configuration files (JSON, fallback when DB not used)
-- `config/themes/` â€“ Custom theme preset files (JSON)
+- `src/app/` - Next.js App Router (public views and admin API)
+- `src/components/` - UI components (public layouts and admin builder)
+- `src/lib/` - Business logic (Smartsheet client, transforms, filters)
+- `config/sources/` - Source configuration files (JSON fallback when DB is not used)
+- `config/views/` - View configuration files (JSON fallback when DB is not used)
+- `config/themes/` - Custom theme preset files (JSON)

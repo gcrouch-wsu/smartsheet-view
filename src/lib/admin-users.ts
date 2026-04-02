@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { Pool } from "pg";
 import { cookies } from "next/headers";
+import { buildPgPoolOptions } from "@/lib/pg-connection";
 import { NextResponse } from "next/server";
 import {
   ADMIN_PASSWORD_ENV_VAR,
@@ -25,6 +26,73 @@ const USERNAME_PATTERN = /^[a-z0-9._@-]+$/;
 const globalForDb = globalThis as typeof globalThis & {
   __smartsheetsViewAdminPool?: Pool;
 };
+
+/** Same window as contributor login rate limit. */
+export const ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
+export const ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES = 15;
+export const ADMIN_LOGIN_TOO_MANY_ATTEMPTS_ERROR = "Too many sign-in attempts. Try again later.";
+
+const adminLoginAttemptsMemory = new Map<string, number[]>();
+
+/** Throttle old-row cleanup so rate-limit checks stay mostly read-only. */
+const ADMIN_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS = 5 * 60 * 1000;
+let lastAdminLoginAttemptsDbPruneAt = 0;
+
+function pruneAdminAttemptsMemory(now: number) {
+  const windowMs = ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
+  for (const [ip, times] of adminLoginAttemptsMemory) {
+    const next = times.filter((t) => now - t < windowMs);
+    if (next.length === 0) {
+      adminLoginAttemptsMemory.delete(ip);
+    } else {
+      adminLoginAttemptsMemory.set(ip, next);
+    }
+  }
+}
+
+export async function recordAdminFailedLoginAttempt(ip: string): Promise<void> {
+  if (!getDatabaseUrl()) {
+    const now = Date.now();
+    pruneAdminAttemptsMemory(now);
+    const times = adminLoginAttemptsMemory.get(ip) ?? [];
+    times.push(now);
+    adminLoginAttemptsMemory.set(ip, times);
+    return;
+  }
+
+  await ensureManagedAdminsTable();
+  await query(
+    `INSERT INTO admin_login_attempts (ip, attempted_at) VALUES ($1, now())`,
+    [ip],
+  );
+  const now = Date.now();
+  if (now - lastAdminLoginAttemptsDbPruneAt >= ADMIN_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS) {
+    lastAdminLoginAttemptsDbPruneAt = now;
+    await query(`DELETE FROM admin_login_attempts WHERE attempted_at < now() - interval '1 day'`);
+  }
+}
+
+export async function isAdminLoginRateLimited(ip: string): Promise<boolean> {
+  // In-memory attempts are per serverless instance / process; without DATABASE_URL, limits reset on cold start.
+  if (!getDatabaseUrl()) {
+    const now = Date.now();
+    pruneAdminAttemptsMemory(now);
+    const times = adminLoginAttemptsMemory.get(ip) ?? [];
+    const windowMs = ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
+    const recent = times.filter((t) => now - t < windowMs);
+    return recent.length >= ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS;
+  }
+
+  await ensureManagedAdminsTable();
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count
+     FROM admin_login_attempts
+     WHERE ip = $1
+       AND attempted_at > now() - make_interval(mins => $2)`,
+    [ip, ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES],
+  );
+  return Number(rows[0]?.count ?? 0) >= ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS;
+}
 
 let ensureManagedAdminsTablePromise: Promise<void> | null = null;
 
@@ -162,19 +230,18 @@ export function getManagedAdminStorageMode(): ManagedAdminStorageMode {
 }
 
 function getDatabasePool() {
-  let connectionString = getDatabaseUrl();
-  if (!connectionString) {
+  const rawUrl = getDatabaseUrl();
+  if (!rawUrl) {
     throw new Error(`${DATABASE_URL_ENV_VAR} is not set.`);
   }
 
   if (!globalForDb.__smartsheetsViewAdminPool) {
-    const withoutSslmode = connectionString.replace(/([?&])sslmode=[^&]*/g, (_, p) => (p === "?" ? "?" : "")).replace(/\?$/, "");
-    connectionString = withoutSslmode + (withoutSslmode.includes("?") ? "&" : "?") + "sslmode=no-verify";
+    const { connectionString, ssl } = buildPgPoolOptions(rawUrl);
     globalForDb.__smartsheetsViewAdminPool = new Pool({
       connectionString,
       max: 2,
       connectionTimeoutMillis: 10_000,
-      ssl: { rejectUnauthorized: false },
+      ...(ssl ? { ssl } : {}),
     });
   }
 
@@ -302,7 +369,18 @@ async function ensureManagedAdminsTable() {
           is_active BOOLEAN NOT NULL DEFAULT true
         )
       `);
+      await query(`
+        CREATE TABLE IF NOT EXISTS admin_login_attempts (
+          ip TEXT NOT NULL,
+          attempted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await query(`
+        CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_ip_at
+        ON admin_login_attempts(ip, attempted_at)
+      `);
       await query(`ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY`);
+      await query(`ALTER TABLE admin_login_attempts ENABLE ROW LEVEL SECURITY`);
       await migrateFileManagedAdminsToDatabaseIfNeeded();
     })().catch((error) => {
       ensureManagedAdminsTablePromise = null;

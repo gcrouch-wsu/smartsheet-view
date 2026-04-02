@@ -259,5 +259,5 @@ export function customCardGridScrollWrapClassName(useAlignedGrid: boolean): stri
   if (!useAlignedGrid) {
     return undefined;
   }
-  return "min-w-0 -mx-1 max-w-full overflow-x-auto overscroll-x-contain px-1 [scrollbar-gutter:stable]";
+  return "min-w-0 -mx-1 max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-1 [scrollbar-gutter:stable]";
 }

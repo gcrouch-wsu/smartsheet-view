@@ -26,6 +26,7 @@ Required environment values:
 - `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`
 - `DATABASE_URL`
 - `CONTRIBUTOR_SESSION_SECRET` if contributor editing is enabled
+- `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` — optional; set to `true` only if Postgres TLS verification fails and you accept relaxed SSL after review (see `README.md`)
 
 If you use Supabase for Postgres:
 
@@ -119,6 +120,13 @@ Below the main header, you can control the supporting context shown above the da
 - custom tab label text
 - the layout switcher
 
+### Print / PDF grouping and live column links
+
+Optional Setup controls:
+
+- **Print / PDF grouping** — pick a **non-hidden** field so the print route (`/view/.../print`) can show **one table per group** when values differ (for example program name).
+- **Link email addresses** / **Link phone numbers** — turn `mailto:` / `tel:` on for the **interactive** public page; print / save-as-PDF output stays **plain text**.
+
 ### Theme preset and Customize look & feel
 
 Use `Theme preset` first. A preset gives you a complete baseline palette so the page feels coherent before you start fine-tuning tokens.
@@ -179,6 +187,13 @@ Use Filters & Sort to narrow the rows and control the order users see.
 - default sort controls the order within the current view
 
 If the page looks wrong but field mapping is correct, check filters and sort next.
+
+## Exports
+
+In **View Builder** (editing an existing view), use the toolbar links:
+
+- **Export JSON** — full JSON backup of the view configuration path supported by the admin API.
+- **Slim export** — smaller JSON with rows and display-oriented cell values (`?format=slim`); same admin session and permissions as full export.
 
 ## Editing And Groups
 
@@ -265,6 +280,8 @@ Public views now include a print-friendly route. Use it when someone wants a pri
 
 This is semantic HTML designed for browser print. It is not the same as a guaranteed tagged PDF / PDF-UA workflow.
 
+Optional **Print / PDF grouping** (Setup) splits the print page into multiple tables when you choose a non-hidden grouping field.
+
 ## Release Checklist
 
 1. Confirm environment values and database connectivity.
@@ -281,9 +298,8 @@ This is semantic HTML designed for browser print. It is not the same as a guaran
    - trusted pairing behavior if any source role group uses legacy delimited columns
 5. Commit and push changes before expecting Vercel to deploy them.
 
-## Reference Docs
+## Reference docs
 
-- `README.md`
-- `VERCEL_DEPLOYMENT.md`
-- `/instructions/contributor`
-- `/instructions/admin`
+- `README.md` — primary reference for environment variables, Vercel, Postgres TLS, and go-live steps.
+- `VERCEL_DEPLOYMENT.md` — optional extra detail (Smartsheet/CORS/Vercel pitfalls) when your clone includes it.
+- `/instructions/contributor` and `/instructions/admin` — guides that deploy with the app.

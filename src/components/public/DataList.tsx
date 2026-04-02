@@ -77,15 +77,15 @@ export function DataList({
                         {useAlignedGrid ? (
                           <>
                             {paddedCells.map((cell, i) => (
-                              <CardLayoutCellRenderer key={`h-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="header" />
+                              <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
                             ))}
                             {paddedCells.map((cell, i) => (
-                              <CardLayoutCellRenderer key={`v-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="value" />
+                              <CardLayoutCellRenderer key={`v-${i}`} cell={cell} flexClass="min-w-0" mode="value" />
                             ))}
                           </>
                         ) : (
                           paddedCells.map((cell, i) => (
-                            <CardLayoutCellRenderer key={i} rowId={row.id} cell={cell} flexClass="w-full" />
+                            <CardLayoutCellRenderer key={i} cell={cell} flexClass="w-full" />
                           ))
                         )}
                       </div>

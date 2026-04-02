@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/admin-api";
+import { buildSlimViewExportPayload } from "@/lib/export-slim";
 import { loadAdminViewPreview } from "@/lib/public-view";
 
 export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireAdminApiAccess();
   if (auth.response) {
@@ -18,11 +19,16 @@ export async function GET(
     return NextResponse.json({ error: `View "${id}" was not found.` }, { status: 404 });
   }
 
-  return new NextResponse(`${JSON.stringify(preview, null, 2)}\n`, {
+  const url = new URL(request.url);
+  const slim = url.searchParams.get("format") === "slim";
+  const body = slim ? buildSlimViewExportPayload(preview) : preview;
+  const filename = slim ? `${id}-export-slim.json` : `${id}-export.json`;
+
+  return new NextResponse(`${JSON.stringify(body, null, 2)}\n`, {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${id}-export.json"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
     },
   });

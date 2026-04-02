@@ -67,6 +67,96 @@ describe("validateViewConfig", () => {
     expect(result.errors[0]).toContain("presentation.headingFieldKey");
   });
 
+  it("rejects printGroupByFieldKey that does not match a field key", () => {
+    const result = validateViewConfig(
+      {
+        id: "print-bad",
+        slug: "print-bad",
+        sourceId: "grad-programs",
+        label: "Print bad",
+        layout: "table",
+        public: false,
+        presentation: {
+          printGroupByFieldKey: "missing",
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("printGroupByFieldKey"))).toBe(true);
+  });
+
+  it("accepts printGroupByFieldKey that matches a field key", () => {
+    const result = validateViewConfig(
+      {
+        id: "print-ok",
+        slug: "print-ok",
+        sourceId: "grad-programs",
+        label: "Print ok",
+        layout: "table",
+        public: false,
+        presentation: {
+          printGroupByFieldKey: "name",
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.printGroupByFieldKey).toBe("name");
+  });
+
+  it("rejects printGroupByFieldKey when the field is hidden", () => {
+    const result = validateViewConfig(
+      {
+        id: "print-hidden",
+        slug: "print-hidden",
+        sourceId: "grad-programs",
+        label: "Print hidden",
+        layout: "table",
+        public: false,
+        presentation: {
+          printGroupByFieldKey: "secret",
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+          {
+            key: "secret",
+            label: "Secret",
+            source: { columnTitle: "Secret" },
+            render: { type: "hidden" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("non-hidden field"))).toBe(true);
+  });
+
   it("rejects duplicate field keys across cardLayout rows", () => {
     const result = validateViewConfig(
       {

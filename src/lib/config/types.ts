@@ -203,6 +203,21 @@ export interface ViewPresentationConfig {
   headerBrandSubline?: string;
   /** Larger bold line next to logo (e.g. school or unit). Plain text. */
   headerBrandTitle?: string;
+  /**
+   * When not `false` (default), mailto and contact emails render as hyperlinks on the public view.
+   * Set to `false` to show plain text only.
+   */
+  linkEmailsInView?: boolean;
+  /**
+   * When `true`, tel: links are shown for phone fields and people_group phone lines.
+   * Default is off so numbers display as plain text unless explicitly enabled.
+   */
+  linkPhonesInView?: boolean;
+  /**
+   * Print/PDF: group source rows by this field's displayed value and render one table per group
+   * (useful when many rows share the same program name and differ only by campus).
+   */
+  printGroupByFieldKey?: string;
 }
 
 export interface ViewStyleConfig {
@@ -510,6 +525,9 @@ export interface ResolvedView {
   style?: ViewStyleConfig;
   themePresetId?: string;
   fixedLayout?: boolean;
+  /** Effective flags from presentation (defaults: email linked, phone not). */
+  linkEmailsInView: boolean;
+  linkPhonesInView: boolean;
   rowCount: number;
   fields: ResolvedViewField[];
   rows: ResolvedViewRow[];

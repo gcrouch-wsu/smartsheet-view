@@ -1,8 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent, Node, mergeAttributes, Extension } from "@tiptap/react";
-import { BubbleMenu as BubbleMenuComponent } from "@tiptap/react/menus";
-import { BubbleMenu as BubbleMenuExtension } from "@tiptap/extension-bubble-menu";
+import { useEditor, EditorContent, Extension } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";

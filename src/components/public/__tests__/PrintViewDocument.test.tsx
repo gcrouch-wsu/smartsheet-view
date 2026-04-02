@@ -7,6 +7,8 @@ const view: ResolvedView = {
   id: "graduate-program-contact-list",
   label: "Graduate Program Contact List",
   layout: "stacked",
+  linkEmailsInView: true,
+  linkPhonesInView: false,
   rowCount: 1,
   fields: [
     { key: "program_name", label: "Program Name", renderType: "text" },

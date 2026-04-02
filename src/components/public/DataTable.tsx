@@ -18,7 +18,7 @@ export function DataTable({
 
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
-      <div className="overflow-x-auto">
+      <div className="touch-pan-x overflow-x-auto overscroll-x-contain">
         <table className="min-w-full border-collapse text-left text-sm">
           <caption className="sr-only">
             {view.label}: {view.rowCount} row{view.rowCount === 1 ? "" : "s"}

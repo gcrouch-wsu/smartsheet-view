@@ -160,5 +160,6 @@ export async function PATCH(
   }
 
   revalidatePath(`/view/${slug}`);
+  revalidatePath(`/view/${slug}/print`);
   return NextResponse.json({ ok: true });
 }

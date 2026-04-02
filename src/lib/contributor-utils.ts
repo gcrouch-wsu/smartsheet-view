@@ -33,9 +33,6 @@ const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>([
   "mailto_list",
 ]);
 
-/** Transforms that are safe for contact columns: display value can be reversed to objectValue. */
-const CONTACT_SAFE_TRANSFORMS = new Set(["contact_emails", "contact_names"]);
-
 export type ContactDisplayMode = "email" | "name";
 
 export interface ContributorEditableFieldDefinition {

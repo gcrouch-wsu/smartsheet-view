@@ -16,11 +16,13 @@ interface MockDbUser {
 }
 
 const mockDbUsers: MockDbUser[] = [];
+const mockAdminLoginAttempts: { ip: string }[] = [];
 const mockInsertConflictUsernames = new Set<string>();
 const mockInsertConflictIds = new Set<string>();
 
 function resetMockDb() {
   mockDbUsers.length = 0;
+  mockAdminLoginAttempts.length = 0;
   mockInsertConflictUsernames.clear();
   mockInsertConflictIds.clear();
 }
@@ -42,7 +44,19 @@ async function runMockQuery(text: string, params: unknown[] = []) {
     return { rows: [], rowCount: 0 };
   }
 
+  if (sql.startsWith("CREATE TABLE IF NOT EXISTS admin_login_attempts")) {
+    return { rows: [], rowCount: 0 };
+  }
+
+  if (sql.startsWith("CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_ip_at")) {
+    return { rows: [], rowCount: 0 };
+  }
+
   if (sql === "ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY") {
+    return { rows: [], rowCount: 0 };
+  }
+
+  if (sql === "ALTER TABLE admin_login_attempts ENABLE ROW LEVEL SECURITY") {
     return { rows: [], rowCount: 0 };
   }
 
@@ -155,6 +169,21 @@ async function runMockQuery(text: string, params: unknown[] = []) {
     const next = mockDbUsers.filter((entry) => entry.id !== params[0]);
     mockDbUsers.splice(0, mockDbUsers.length, ...next);
     return { rows: [], rowCount: before - next.length };
+  }
+
+  if (sql.startsWith("INSERT INTO admin_login_attempts")) {
+    mockAdminLoginAttempts.push({ ip: String(params[0]) });
+    return { rows: [], rowCount: 1 };
+  }
+
+  if (sql.startsWith("DELETE FROM admin_login_attempts WHERE attempted_at")) {
+    return { rows: [], rowCount: 0 };
+  }
+
+  if (sql.includes("FROM admin_login_attempts") && sql.includes("COUNT") && sql.includes("ip = $1")) {
+    const ip = String(params[0]);
+    const count = mockAdminLoginAttempts.filter((row) => row.ip === ip).length;
+    return { rows: [{ count: String(count) }], rowCount: 1 };
   }
 
   throw new Error(`Unhandled mock SQL: ${sql}`);
@@ -386,6 +415,32 @@ describe("managed admin users", () => {
     expect(created.id).toBe("race-at-example-com-2");
     expect(mockDbUsers.some((entry) => entry.id === "race-at-example-com")).toBe(true);
     expect(mockDbUsers.some((entry) => entry.id === "race-at-example-com-2")).toBe(true);
+  });
+
+  it("rate limits failed admin logins in memory when DATABASE_URL is unset", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    const users = await import("@/lib/admin-users");
+    const ip = "203.0.113.50";
+    for (let i = 0; i < users.ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS - 1; i++) {
+      expect(await users.isAdminLoginRateLimited(ip)).toBe(false);
+      await users.recordAdminFailedLoginAttempt(ip);
+    }
+    expect(await users.isAdminLoginRateLimited(ip)).toBe(false);
+    await users.recordAdminFailedLoginAttempt(ip);
+    expect(await users.isAdminLoginRateLimited(ip)).toBe(true);
+  });
+
+  it("rate limits failed admin logins against the database when DATABASE_URL is set", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://example:example@example.com:5432/smartsheets_view");
+    const users = await import("@/lib/admin-users");
+    const ip = "198.51.100.9";
+    for (let i = 0; i < users.ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS - 1; i++) {
+      expect(await users.isAdminLoginRateLimited(ip)).toBe(false);
+      await users.recordAdminFailedLoginAttempt(ip);
+    }
+    expect(await users.isAdminLoginRateLimited(ip)).toBe(false);
+    await users.recordAdminFailedLoginAttempt(ip);
+    expect(await users.isAdminLoginRateLimited(ip)).toBe(true);
   });
 
   it("returns AdminUserActionError on database unique violation for username", async () => {

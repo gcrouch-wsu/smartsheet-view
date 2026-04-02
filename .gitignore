@@ -50,8 +50,12 @@ config/admin-users/
 Admin_instructions.md
 contributor_instructions.md
 !README.md
+!VERCEL_DEPLOYMENT.md
 !Contributor_Instructions.MD
 !Admin_Instruction.md
+
+# Local product history / archaeology (optional copy; not part of shared repo docs)
+PROJECT_SPEC.md
 
 # Local / scratch (keep out of repo)
 .claude/

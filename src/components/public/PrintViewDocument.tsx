@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getRowHeadingField } from "@/components/public/layout-utils";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
-import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { buildPrintExportStylesheet, getPrintExportConfig } from "@/lib/print-export";
 import { PrintViewToolbar } from "./PrintViewToolbar";
 
@@ -51,6 +51,111 @@ function getPrintableColumns(view: ResolvedView): PrintableColumn[] {
   return columns;
 }
 
+function bucketPrintRowGroups(view: ResolvedView, groupByKey: string | undefined): ResolvedViewRow[][] {
+  if (!groupByKey || !view.fields.some((f) => f.key === groupByKey)) {
+    return [view.rows];
+  }
+  const map = new Map<string, ResolvedViewRow[]>();
+  for (const row of view.rows) {
+    const f = row.fieldMap[groupByKey];
+    const label =
+      f?.textValue?.trim() ||
+      (f?.listValue && f.listValue.length > 0 ? f.listValue.join("; ") : "") ||
+      "—";
+    const k = label.toLowerCase();
+    if (!map.has(k)) {
+      map.set(k, []);
+    }
+    map.get(k)!.push(row);
+  }
+  const groups = [...map.values()];
+  const sortLabel = (row: ResolvedViewRow) => {
+    const ff = row.fieldMap[groupByKey];
+    return (
+      ff?.textValue?.trim() ||
+      (ff?.listValue && ff.listValue.length > 0 ? ff.listValue.join("; ") : "") ||
+      ""
+    );
+  };
+  groups.sort((a, b) => sortLabel(a[0]!).localeCompare(sortLabel(b[0]!), undefined, { sensitivity: "base" }));
+  return groups;
+}
+
+function PrintDataTableSection({
+  columns,
+  groupRows,
+  caption,
+  tableBorderRadius,
+}: {
+  columns: PrintableColumn[];
+  groupRows: ResolvedViewRow[];
+  caption: string;
+  tableBorderRadius: string;
+}) {
+  return (
+    <div
+      className="print-table-wrap overflow-x-auto border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]"
+      style={{ borderRadius: tableBorderRadius }}
+    >
+      <table className="print-data-table min-w-full border-separate border-spacing-0 text-left">
+        <caption>
+          {caption}
+        </caption>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column.key} scope="col" className="whitespace-normal">
+                {column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {groupRows.map((row) => (
+            <tr key={row.id} className="align-top">
+              {columns.map((column) => {
+                if (column.heading) {
+                  const headingField = row.fieldMap[column.key];
+                  return (
+                    <th key={`${row.id}-${column.key}`} scope="row">
+                      {headingField && canPrintField(headingField) ? (
+                        <PrintCellInner primary>
+                          <FieldValue field={headingField} plainValueLinks />
+                        </PrintCellInner>
+                      ) : (
+                        <>
+                          <span className="print-empty-cell" aria-hidden="true">—</span>
+                          <span className="sr-only">Empty</span>
+                        </>
+                      )}
+                    </th>
+                  );
+                }
+
+                const field = row.fieldMap[column.key];
+                return (
+                  <td key={`${row.id}-${column.key}`}>
+                    {canPrintField(field) ? (
+                      <PrintCellInner>
+                        <FieldValue field={field!} plainValueLinks />
+                      </PrintCellInner>
+                    ) : (
+                      <>
+                        <span className="print-empty-cell" aria-hidden="true">—</span>
+                        <span className="sr-only">Empty</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function PrintViewDocument({
   slug,
   viewId,
@@ -76,6 +181,11 @@ export function PrintViewDocument({
     timeStyle: "short",
   }).format(new Date(fetchedAt));
   const columns = getPrintableColumns(view);
+  const groupByKey = view.presentation?.printGroupByFieldKey;
+  const rowGroups = bucketPrintRowGroups(view, groupByKey);
+  const groupFieldLabel = groupByKey
+    ? view.fields.find((f) => f.key === groupByKey)?.label ?? groupByKey
+    : null;
 
   return (
     <ViewStyleWrapper style={view.style} themePresetId={view.themePresetId}>
@@ -116,67 +226,43 @@ export function PrintViewDocument({
         </header>
 
         {view.rows.length > 0 ? (
-          <div
-            className="print-table-wrap overflow-x-auto border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)]"
-            style={{ borderRadius: preview.tableBorderRadius }}
-          >
-            <table className="print-data-table min-w-full border-separate border-spacing-0 text-left">
-              <caption>
-                {pageTitle}
-                {view.label !== pageTitle ? ` · ${view.label}` : ""} ({view.rows.length} row
-                {view.rows.length === 1 ? "" : "s"})
-              </caption>
-              <thead>
-                <tr>
-                  {columns.map((column) => (
-                    <th key={column.key} scope="col" className="whitespace-normal">
-                      {column.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {view.rows.map((row) => (
-                  <tr key={row.id} className="align-top">
-                    {columns.map((column) => {
-                      if (column.heading) {
-                        const headingField = row.fieldMap[column.key];
-                        return (
-                          <th key={`${row.id}-${column.key}`} scope="row">
-                            {headingField && canPrintField(headingField) ? (
-                              <PrintCellInner primary>
-                                <FieldValue field={headingField} plainValueLinks />
-                              </PrintCellInner>
-                            ) : (
-                              <>
-                                <span className="print-empty-cell" aria-hidden="true">—</span>
-                                <span className="sr-only">Empty</span>
-                              </>
-                            )}
-                          </th>
-                        );
-                      }
+          <div className="space-y-10">
+            {rowGroups.map((groupRows, gi) => {
+              const groupTitle =
+                groupByKey && groupRows[0]?.fieldMap[groupByKey]
+                  ? groupRows[0]!.fieldMap[groupByKey]!.textValue?.trim() ||
+                    (groupRows[0]!.fieldMap[groupByKey]!.listValue?.length
+                      ? groupRows[0]!.fieldMap[groupByKey]!.listValue.join("; ")
+                      : "—")
+                  : null;
+              const baseCaption = `${pageTitle}${view.label !== pageTitle ? ` · ${view.label}` : ""} (${view.rows.length} row${view.rows.length === 1 ? "" : "s"} total)`;
+              const caption =
+                rowGroups.length > 1
+                  ? `${baseCaption} — ${groupFieldLabel ?? "Group"}: ${groupTitle ?? gi + 1} (${groupRows.length} row${groupRows.length === 1 ? "" : "s"})`
+                  : baseCaption;
 
-                      const field = row.fieldMap[column.key];
-                      return (
-                        <td key={`${row.id}-${column.key}`}>
-                          {canPrintField(field) ? (
-                            <PrintCellInner>
-                              <FieldValue field={field!} plainValueLinks />
-                            </PrintCellInner>
-                          ) : (
-                            <>
-                              <span className="print-empty-cell" aria-hidden="true">—</span>
-                              <span className="sr-only">Empty</span>
-                            </>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              return (
+                <section key={gi} className="print-group">
+                  {rowGroups.length > 1 && groupFieldLabel && groupTitle != null ? (
+                    <h2
+                      className="mb-3 text-base font-semibold tracking-tight sm:text-lg"
+                      style={{ color: "var(--print-ink)" }}
+                    >
+                      {groupFieldLabel}: {groupTitle}{" "}
+                      <span style={{ color: "var(--print-muted)", fontWeight: 400 }}>
+                        ({groupRows.length} row{groupRows.length === 1 ? "" : "s"})
+                      </span>
+                    </h2>
+                  ) : null}
+                  <PrintDataTableSection
+                    columns={columns}
+                    groupRows={groupRows}
+                    caption={caption}
+                    tableBorderRadius={preview.tableBorderRadius}
+                  />
+                </section>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-[color:var(--wsu-muted)]">No rows to display for this view.</p>

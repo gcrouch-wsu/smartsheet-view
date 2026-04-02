@@ -297,11 +297,7 @@ export function EditRowDrawer({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-[rgba(35,31,32,0.28)]"
-      role="presentation"
-      aria-hidden
-    >
+    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(35,31,32,0.28)]" role="presentation">
       <aside
         ref={drawerSurfaceRef}
         role="dialog"

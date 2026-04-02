@@ -220,6 +220,21 @@ export function AdminGuideTabs() {
             </div>
           </div>
 
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Print / PDF grouping and live links</h3>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Print / PDF grouping</strong> lets you group rows on the{" "}
+                <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">/view/…/print</code> route by one{" "}
+                <strong className="text-[color:var(--wsu-ink)]">non-hidden</strong> field (for example one table per program).
+              </li>
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Link email addresses</strong> and{" "}
+                <strong className="text-[color:var(--wsu-ink)]">Link phone numbers</strong> apply to the interactive public page only; print / PDF output stays plain text.
+              </li>
+            </ul>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Theme preset</h3>
@@ -312,7 +327,11 @@ export function AdminGuideTabs() {
               <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
                 <li>Turn on <strong className="text-[color:var(--wsu-ink)]">Enable contributor editing</strong>.</li>
                 <li>Select one or more <strong className="text-[color:var(--wsu-ink)]">Contact Columns</strong>.</li>
-                <li>If a contributor's <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">@wsu.edu</code> email appears in one of those columns on a row, they can claim access to that row.</li>
+                <li>
+                  If a contributor&apos;s{" "}
+                  <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">@wsu.edu</code> email
+                  appears in one of those columns on a row, they can claim access to that row.
+                </li>
               </ul>
             </div>
 
@@ -389,6 +408,14 @@ export function AdminGuideTabs() {
           </div>
 
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Exports</h3>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              On the View Builder toolbar for an existing view, use <strong className="text-[color:var(--wsu-ink)]">Export JSON</strong> for a full config backup or{" "}
+              <strong className="text-[color:var(--wsu-ink)]">Slim export</strong> for a smaller file with rows and display-oriented values. Both require an admin session.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Schema drift and refreshes</h3>
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>If a Smartsheet column is renamed or removed, publishing may block until mappings are corrected.</li>
@@ -406,6 +433,27 @@ export function AdminGuideTabs() {
               <li>If contributor editing is enabled, test first-time access, sign-in, row eligibility, save to Smartsheet, and password reset.</li>
               <li>Commit and push before expecting Vercel to deploy changes.</li>
             </ol>
+          </div>
+
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Contributor accounts</h3>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              When <strong className="text-[color:var(--wsu-ink)]">DATABASE_URL</strong> and contributor editing are enabled, open{" "}
+              <Link href="/admin/contributors" className="font-medium text-[color:var(--wsu-crimson)] underline-offset-2 hover:underline">
+                Admin → Contributors
+              </Link>{" "}
+              to manage accounts without touching the database directly.
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>
+                Generate a <strong className="text-[color:var(--wsu-ink)]">single-use reset link</strong> (24-hour TTL), copy it, and send it to
+                the contributor manually. The link is invalidated after a successful password change.
+              </li>
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Remove account</strong> when someone should no longer sign in; if their email
+                still appears in a contact column, they can go through first-time access again later.
+              </li>
+            </ul>
           </div>
 
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">

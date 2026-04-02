@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { validateAdminPassword } from "@/lib/admin-auth";
-import { ensureConfigTables, queryConfigDb, useConfigDatabase } from "@/lib/config/config-db";
+import { ensureConfigTables, isDatabaseConfigEnabled, queryConfigDb } from "@/lib/config/config-db";
+import { getTrustedClientIp } from "@/lib/request-ip";
 import { isWsuEmail, normalizeContributorEmail } from "@/lib/contributor-utils";
 
 export const CONTRIBUTOR_SESSION_COOKIE_NAME = "smartsheets_view_contributor_session";
@@ -24,6 +25,8 @@ export interface ContributorSessionPayload {
   email: string;
   issuedAt: number;
   expiresAt: number;
+  /** Same as `ContributorUserRecord.updatedAt` when the token was issued; revokes cookie after password reset. */
+  credentialsVersion: string;
 }
 
 export interface ContributorSessionReadResult {
@@ -62,7 +65,7 @@ export function getContributorSessionTtlSeconds() {
 }
 
 export function getContributorConfigurationError() {
-  if (!useConfigDatabase()) {
+  if (!isDatabaseConfigEnabled()) {
     return "Contributor editing requires DATABASE_URL.";
   }
 
@@ -121,10 +124,16 @@ export async function createContributorSessionToken(
     throw new Error(configurationError);
   }
 
+  const user = await getContributorUserByEmail(email);
+  if (!user) {
+    throw new Error("Contributor account not found.");
+  }
+
   const payload = encodePayload({
     email: normalizeContributorEmail(email),
     issuedAt: Date.now(),
     expiresAt,
+    credentialsVersion: user.updatedAt,
   });
 
   return `${payload}.${signPayload(payload)}`;
@@ -177,7 +186,8 @@ export async function readContributorSessionToken(
     if (
       typeof decoded.email !== "string" ||
       typeof decoded.issuedAt !== "number" ||
-      typeof decoded.expiresAt !== "number"
+      typeof decoded.expiresAt !== "number" ||
+      typeof decoded.credentialsVersion !== "string"
     ) {
       return {
         ok: false,
@@ -194,12 +204,23 @@ export async function readContributorSessionToken(
       };
     }
 
+    const normalizedEmail = normalizeContributorEmail(decoded.email);
+    const user = await getContributorUserByEmail(normalizedEmail);
+    if (!user || user.updatedAt !== decoded.credentialsVersion) {
+      return {
+        ok: false,
+        status: 401,
+        message: "Sign in to edit.",
+      };
+    }
+
     return {
       ok: true,
       payload: {
-        email: normalizeContributorEmail(decoded.email),
+        email: normalizedEmail,
         issuedAt: decoded.issuedAt,
         expiresAt: decoded.expiresAt,
+        credentialsVersion: decoded.credentialsVersion,
       },
     };
   } catch {
@@ -271,6 +292,10 @@ export async function createContributorUser(email: string, password: string) {
   return toContributorUserRecord(rows[0]!);
 }
 
+/** Throttle old-row cleanup so rate-limit checks stay mostly read-only. */
+const CONTRIBUTOR_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS = 5 * 60 * 1000;
+let lastContributorLoginAttemptsDbPruneAt = 0;
+
 export async function recordContributorFailedAttempt(ip: string) {
   await ensureContributorAuthStorage();
   await queryConfigDb(
@@ -278,6 +303,14 @@ export async function recordContributorFailedAttempt(ip: string) {
      VALUES ($1, now())`,
     [ip],
   );
+  const now = Date.now();
+  if (now - lastContributorLoginAttemptsDbPruneAt >= CONTRIBUTOR_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS) {
+    lastContributorLoginAttemptsDbPruneAt = now;
+    await queryConfigDb(
+      `DELETE FROM contributor_login_attempts
+       WHERE attempted_at < now() - interval '1 day'`,
+    );
+  }
 }
 
 export async function pruneContributorFailedAttempts() {
@@ -290,7 +323,6 @@ export async function pruneContributorFailedAttempts() {
 
 export async function getContributorRecentFailedAttemptCount(ip: string) {
   await ensureContributorAuthStorage();
-  await pruneContributorFailedAttempts();
   const { rows } = await queryConfigDb<{ count: string }>(
     `SELECT COUNT(*)::text AS count
      FROM contributor_login_attempts
@@ -306,12 +338,7 @@ export async function isContributorRateLimited(ip: string) {
 }
 
 export function getContributorClientIp(requestHeaders: Headers) {
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() || "unknown";
-  }
-
-  return requestHeaders.get("x-real-ip")?.trim() || "unknown";
+  return getTrustedClientIp(requestHeaders);
 }
 
 export const CONTRIBUTOR_RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;

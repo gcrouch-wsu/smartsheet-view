@@ -349,14 +349,18 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                       <select value={getValue("pageTitleFontSize")} onChange={(e) => updateStyle("pageTitleFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
                         {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
-                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">Main page h1 (e.g. "Graduate Program Contact List")</p>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">
+                        Main page h1 (e.g.&nbsp;&ldquo;Graduate Program Contact List&rdquo;)
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Section title size</label>
                       <select value={getValue("headingFontSize")} onChange={(e) => updateStyle("headingFontSize", e.target.value)} className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm">
                         {FONT_SIZE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
-                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">View label h2 below tabs (e.g. "Faculty")</p>
+                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">
+                        View label h2 below tabs (e.g.&nbsp;&ldquo;Faculty&rdquo;)
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Row heading size</label>

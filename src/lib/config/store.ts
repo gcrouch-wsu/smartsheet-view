@@ -3,7 +3,7 @@ import * as configDb from "@/lib/config/config-db";
 import * as fileStore from "@/lib/config/file-store";
 
 function getStore(): ConfigStore {
-  return configDb.useConfigDatabase() ? configDb : fileStore;
+  return configDb.isDatabaseConfigEnabled() ? configDb : fileStore;
 }
 
 export const listSourceConfigs = () => getStore().listSourceConfigs();

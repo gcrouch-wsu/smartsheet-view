@@ -1,5 +1,8 @@
+"use client";
+
 import type { ResolvedFieldValue } from "@/lib/config/types";
 import { fieldValueTypographyClass } from "@/lib/field-typography";
+import { useViewValueLinkFlags } from "@/components/public/ViewValueLinkContext";
 
 function tx(field: ResolvedFieldValue, ...classes: string[]) {
   const t = fieldValueTypographyClass(field);
@@ -23,6 +26,9 @@ function PersonSummary({
   compact?: boolean;
   plainValueLinks?: boolean;
 }) {
+  const { linkEmailsInView, linkPhonesInView } = useViewValueLinkFlags();
+  const linkEmail = !plainValueLinks && linkEmailsInView;
+  const linkPhone = !plainValueLinks && linkPhonesInView;
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
   const detailClass = "view-people-detail view-field-link";
 
@@ -30,31 +36,31 @@ function PersonSummary({
     <>
       {name ? <span className={`view-people-name ${compact ? "" : "block"}`}>{name}</span> : null}
       {email ? (
-        plainValueLinks ? (
-          <span className="view-people-detail text-[color:var(--wsu-ink)]">{email}</span>
-        ) : (
+        linkEmail ? (
           <a href={`mailto:${email}`} className={detailClass}>
             {email}
           </a>
+        ) : (
+          <span className="view-people-detail text-[color:var(--wsu-ink)]">{email}</span>
         )
       ) : null}
       {phone ? (
         compact ? (
-          plainValueLinks ? (
-            <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
-          ) : (
+          linkPhone ? (
             <a href={telHref} className={detailClass}>
               {phone}
             </a>
+          ) : (
+            <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
           )
         ) : (
           <span className="mt-0.5 block">
-            {plainValueLinks ? (
-              <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
-            ) : (
+            {linkPhone ? (
               <a href={telHref} className={`${detailClass} block`}>
                 {phone}
               </a>
+            ) : (
+              <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
             )}
           </span>
         )

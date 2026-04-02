@@ -15,6 +15,8 @@ export function PublicHeaderLogo({
 
   return (
     <div className={`shrink-0 ${className}`.trim()}>
+      {/* Data URL from admin config; Next/Image remote patterns do not cover inline data. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- dynamic base64/URL from view config */}
       <img
         src={presentation.headerLogoDataUrl}
         alt={presentation.headerLogoAlt}

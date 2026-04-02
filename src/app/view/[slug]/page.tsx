@@ -200,7 +200,6 @@ export default async function PublicViewPage({
     const rows = activeView.rows.filter((row) => editableSet.has(row.id));
     viewForDisplay = { ...activeView, rows, rowCount: rows.length };
   }
-  const contributorRowsFiltered = Boolean(contributorEmail && editableRowIds.length > 0);
 
   return (
     <main className={mainClassName} style={mainStyle}>

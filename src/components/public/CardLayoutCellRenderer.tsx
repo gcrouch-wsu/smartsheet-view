@@ -8,12 +8,10 @@ const staticLabelClass = "view-field-label text-[color:var(--wsu-muted)]";
 export type CardLayoutCellMode = "full" | "header" | "value";
 
 export function CardLayoutCellRenderer({
-  rowId,
   cell,
   flexClass,
   mode = "full",
 }: {
-  rowId: number;
   cell: CardLayoutCell;
   flexClass?: string;
   mode?: CardLayoutCellMode;

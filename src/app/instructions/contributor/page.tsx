@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -103,6 +103,9 @@ export default function ContributorInstructionsPage() {
               <li>Select <strong className="text-[color:var(--wsu-ink)]">Sign in</strong>.</li>
               <li>Enter your WSU email address and contributor password.</li>
             </ol>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              If you see a message about <strong className="text-[color:var(--wsu-ink)]">too many sign-in attempts</strong>, wait about fifteen minutes before trying again, or contact the administrator who manages the page.
+            </p>
           </section>
 
           <section aria-labelledby="s-edit">

@@ -4,7 +4,7 @@ import {
   saveViewConfig,
   updateViewPublication,
 } from "@/lib/config/admin-store";
-import { useConfigDatabase } from "@/lib/config/config-db";
+import { isDatabaseConfigEnabled } from "@/lib/config/config-db";
 import { getSourceConfigById, getViewConfigById, listViewConfigs } from "@/lib/config/store";
 
 function ensureUniqueSlug(existingSlugs: Set<string>, baseSlug: string): string {
@@ -58,7 +58,7 @@ async function validateContributorEditing(view: ViewConfig) {
     return;
   }
 
-  if (!useConfigDatabase()) {
+  if (!isDatabaseConfigEnabled()) {
     throw new AdminActionError({
       status: 400,
       message: "Contributor editing requires DATABASE_URL-backed storage.",

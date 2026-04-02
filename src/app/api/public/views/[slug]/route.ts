@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { loadPublicPage } from "@/lib/public-view";
 
 export async function GET(
@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const page = await loadPublicPage(slug, { includePrivate: true });
+  // Public JSON must match the HTML page: only published (`public: true`) views and their data.
+  const page = await loadPublicPage(slug);
 
   if (!page) {
     return NextResponse.json({ error: `View slug \"${slug}\" was not found.` }, { status: 404 });

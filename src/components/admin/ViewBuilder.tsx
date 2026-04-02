@@ -9,7 +9,6 @@ import { formatLayoutLabel } from "@/components/public/ViewRenderer";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
 import { ViewWithSearchAndIndex } from "@/components/public/ViewWithSearchAndIndex";
 import { FILTER_OPERATOR_OPTIONS, LAYOUT_OPTIONS, PEOPLE_STYLE_OPTIONS, RENDER_TYPE_OPTIONS, TRANSFORM_OPTIONS } from "@/lib/config/options";
-import { BUILT_IN_THEMES } from "@/lib/config/themes";
 import { getEligibleEditableFieldDefinitions, getFieldsForMultiPersonGroup } from "@/lib/contributor-utils";
 import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { HeaderLogoBrandingSection } from "./HeaderLogoBrandingSection";
@@ -18,6 +17,7 @@ import { isRoleGroupFieldSource } from "@/lib/role-groups";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX, FIELD_TEXT_STYLE_VALUES } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { slugify } from "@/lib/utils";
+import { effectiveValueLinkFlags } from "@/lib/transforms";
 import type {
   FieldTextStyle,
   FieldSourceSelector,
@@ -68,10 +68,6 @@ function SetupAccordion({
   );
 }
 
-function createEmptyTransform(): TransformConfig {
-  return { op: "trim" };
-}
-
 function VisibilitySelect({ 
   label, 
   value, 
@@ -99,16 +95,6 @@ function VisibilitySelect({
       {description && <p className="text-[10px] text-[color:var(--wsu-muted)]">{description}</p>}
     </div>
   );
-}
-
-function createEmptyField(): ViewFieldConfig {
-  return {
-    key: "",
-    label: "",
-    source: { columnTitle: "" },
-    transforms: [],
-    render: { type: "text" },
-  };
 }
 
 function createEmptyFilter(): ViewFilterConfig {
@@ -752,6 +738,7 @@ export function ViewBuilder({
         style: view.style,
         themePresetId: view.themePresetId,
         fixedLayout: view.fixedLayout,
+        ...effectiveValueLinkFlags(view.presentation),
         rowCount: payload.rowCount ?? payload.rows.length,
         fields: payload.fields,
         rows: payload.rows,
@@ -803,6 +790,7 @@ export function ViewBuilder({
                 style: view.style,
                 themePresetId: view.themePresetId,
                 fixedLayout: view.fixedLayout,
+                ...effectiveValueLinkFlags(view.presentation),
                 rowCount: payload.rowCount ?? payload.rows.length,
                 fields: payload.fields,
                 rows: payload.rows,
@@ -855,12 +843,21 @@ export function ViewBuilder({
               </Link>
             )}
             {!isNew && view.id && (
-              <a
-                href={`/api/admin/views/${view.id}/export`}
-                className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-              >
-                Export JSON
-              </a>
+              <span className="flex flex-wrap gap-2">
+                <a
+                  href={`/api/admin/views/${view.id}/export`}
+                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                >
+                  Export JSON
+                </a>
+                <a
+                  href={`/api/admin/views/${view.id}/export?format=slim`}
+                  title="Rows and display values only — smaller than full config backup"
+                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                >
+                  Slim export
+                </a>
+              </span>
             )}
             {!isNew && (
               <button
@@ -1376,6 +1373,81 @@ export function ViewBuilder({
               </div>
             </SetupAccordion>
           )}
+
+          <SetupAccordion
+            title="Email & phone links (public view)"
+            subtitle="Whether contact emails and phone numbers from Smartsheet are clickable on the live page. Print/PDF always stays plain text."
+          >
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.linkEmailsInView !== false}
+                  onChange={(e) =>
+                    update("presentation", {
+                      ...view.presentation,
+                      linkEmailsInView: e.target.checked ? true : false,
+                    })
+                  }
+                  className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                />
+                <span>
+                  <span className="font-medium text-[color:var(--wsu-ink)]">Link email addresses</span>
+                  <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">Default: on (mailto links).</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.linkPhonesInView === true}
+                  onChange={(e) =>
+                    update("presentation", {
+                      ...view.presentation,
+                      linkPhonesInView: e.target.checked,
+                    })
+                  }
+                  className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                />
+                <span>
+                  <span className="font-medium text-[color:var(--wsu-ink)]">Link phone numbers</span>
+                  <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">Default: off (plain text).</span>
+                </span>
+              </label>
+            </div>
+          </SetupAccordion>
+
+          <SetupAccordion
+            title="Print / PDF grouping"
+            subtitle="Optional: group rows on the print route by one field (e.g. program name) so each group gets its own table—helpful when many Smartsheet rows share the same program."
+          >
+            <div className="space-y-2">
+              <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Group print tables by field</label>
+              <select
+                value={view.presentation?.printGroupByFieldKey ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  update("presentation", {
+                    ...view.presentation,
+                    printGroupByFieldKey: v || undefined,
+                  });
+                }}
+                className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+              >
+                <option value="">None (single table)</option>
+                {view.fields
+                  .filter((f) => f.render.type !== "hidden")
+                  .map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.label || f.key}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-xs text-[color:var(--wsu-muted)]">
+                Applies only to <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">/view/…/print</code>. The interactive
+                layouts are unchanged.
+              </p>
+            </div>
+          </SetupAccordion>
 
           <SetupAccordion
             title="Page header & branding"

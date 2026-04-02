@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMultiPersonRow, type MultiPersonEntry } from "@/lib/contributor-utils";
+import { parseMultiPersonRow } from "@/lib/contributor-utils";
 import type { EditableFieldGroup, ResolvedViewRow } from "@/lib/config/types";
 
 describe("legacy multi-person delimiter parsing (known limitations)", () => {

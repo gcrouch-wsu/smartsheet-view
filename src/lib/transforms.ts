@@ -7,6 +7,7 @@ import type {
   SmartsheetRow,
   TransformConfig,
   ViewFieldConfig,
+  ViewPresentationConfig,
 } from "@/lib/config/types";
 
 const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
@@ -17,6 +18,20 @@ const URL_REGEX = /https?:\/\/[^\s,;]+/gi;
 interface TransformContext {
   row: SmartsheetRow;
   sourceCell: SmartsheetCell | null;
+}
+
+/** How mailto / tel values render on the public view (not print). */
+export type ValueLinkDisplayOptions = {
+  linkEmailsInView: boolean;
+  linkPhonesInView: boolean;
+};
+
+/** Defaults: hyperlink emails, plain phone numbers. */
+export function effectiveValueLinkFlags(presentation?: ViewPresentationConfig | null | undefined): ValueLinkDisplayOptions {
+  return {
+    linkEmailsInView: presentation?.linkEmailsInView !== false,
+    linkPhonesInView: presentation?.linkPhonesInView === true,
+  };
 }
 
 function uniqueStrings(values: string[]) {
@@ -250,7 +265,7 @@ function formatDate(value: unknown, config?: TransformConfig) {
   const isoDateMatch = typeof dateCandidate === "string" ? dateCandidate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
 
   if (isoDateMatch) {
-    const [_, year, month, day] = isoDateMatch;
+    const [, year, month, day] = isoDateMatch;
     parsed = new Date(Number(year), Number(month) - 1, Number(day));
   } else {
     parsed = new Date(dateCandidate);
@@ -353,7 +368,8 @@ export function normalizeSourceValue(cell: SmartsheetCell | null): unknown {
   return cell.value ?? cell.displayValue ?? null;
 }
 
-export function applyTransforms(value: unknown, transforms: TransformConfig[] | undefined, _context: TransformContext) {
+export function applyTransforms(value: unknown, transforms: TransformConfig[] | undefined, context: TransformContext) {
+  void context;
   let current = value;
 
   for (const transform of transforms ?? []) {
@@ -480,27 +496,37 @@ function buildTextList(value: unknown) {
   return uniqueStrings(normalizeToStringList(value).map((entry) => entry.trim()).filter(Boolean));
 }
 
-export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown): ResolvedFieldValue {
+export function buildResolvedFieldValue(
+  field: ViewFieldConfig,
+  value: unknown,
+  linkDisplay?: ValueLinkDisplayOptions,
+): ResolvedFieldValue {
   const renderType = field.render.type;
   const emptyLabel = field.render.emptyLabel ?? "";
   let textValue = "";
   let sortValue: string | undefined;
   let listValue: string[] = [];
   let links: PublicLink[] = [];
+  const wantEmailLinks = linkDisplay?.linkEmailsInView !== false;
+  const wantPhoneLinks = linkDisplay?.linkPhonesInView === true;
 
   switch (renderType) {
     case "mailto":
-    case "mailto_list":
-      links = toEmailLinks(value);
-      listValue = links.map((entry) => entry.label);
+    case "mailto_list": {
+      const emailLinks = toEmailLinks(value);
+      links = wantEmailLinks ? emailLinks : [];
+      listValue = emailLinks.map((entry) => entry.label);
       textValue = listValue.join(", ");
       break;
+    }
     case "phone":
-    case "phone_list":
-      links = toPhoneLinks(value);
-      listValue = links.map((entry) => entry.label);
+    case "phone_list": {
+      const phoneLinks = toPhoneLinks(value);
+      links = wantPhoneLinks ? phoneLinks : [];
+      listValue = phoneLinks.map((entry) => entry.label);
       textValue = listValue.join(", ");
       break;
+    }
     case "link":
       links = toUrlLinks(value);
       listValue = links.map((entry) => entry.label);
@@ -585,9 +611,18 @@ export function publicLinkFromSmartsheetCell(cell: SmartsheetCell | null): Publi
 export function applySmartsheetHyperlinkToResolvedField(
   field: ResolvedFieldValue,
   cell: SmartsheetCell | null,
+  linkDisplay?: ValueLinkDisplayOptions,
 ): ResolvedFieldValue {
   const sheetLink = publicLinkFromSmartsheetCell(cell);
   if (!sheetLink || field.links.length > 0) {
+    return field;
+  }
+  const hrefLower = sheetLink.href.trim().toLowerCase();
+  const flags = linkDisplay ?? effectiveValueLinkFlags(undefined);
+  if (hrefLower.startsWith("mailto:") && !flags.linkEmailsInView) {
+    return field;
+  }
+  if (hrefLower.startsWith("tel:") && !flags.linkPhonesInView) {
     return field;
   }
   const canAttach =
@@ -612,7 +647,10 @@ export function applySmartsheetHyperlinkToResolvedField(
   };
 }
 
-function personEntryToSummaryLines(entry: ResolvedPersonRoleEntry): { textLines: string[]; links: PublicLink[] } {
+function personEntryToSummaryLines(
+  entry: ResolvedPersonRoleEntry,
+  linkDisplay: ValueLinkDisplayOptions,
+): { textLines: string[]; links: PublicLink[] } {
   const textLines: string[] = [];
   const links: PublicLink[] = [];
   const name = entry.name?.trim();
@@ -623,11 +661,15 @@ function personEntryToSummaryLines(entry: ResolvedPersonRoleEntry): { textLines:
   }
   if (email) {
     textLines.push(email);
-    links.push({ label: email, href: `mailto:${email}` });
+    if (linkDisplay.linkEmailsInView) {
+      links.push({ label: email, href: `mailto:${email}` });
+    }
   }
   if (phone) {
     textLines.push(phone);
-    links.push({ label: phone, href: `tel:${phone.replace(/[^\d+]/g, "")}` });
+    if (linkDisplay.linkPhonesInView) {
+      links.push({ label: phone, href: `tel:${phone.replace(/[^\d+]/g, "")}` });
+    }
   }
   return { textLines, links };
 }
@@ -635,7 +677,7 @@ function personEntryToSummaryLines(entry: ResolvedPersonRoleEntry): { textLines:
 export function buildResolvedPeopleGroupField(
   field: ViewFieldConfig,
   people: ResolvedPersonRoleEntry[],
-  options?: { roleGroupReadOnly?: boolean },
+  options?: { roleGroupReadOnly?: boolean; linkDisplay?: ValueLinkDisplayOptions },
 ): ResolvedFieldValue {
   const renderType = field.render.type;
   const emptyLabel = field.render.emptyLabel ?? "";
@@ -643,9 +685,10 @@ export function buildResolvedPeopleGroupField(
   const textSegments: string[] = [];
   const listValue: string[] = [];
   const links: PublicLink[] = [];
+  const linkDisplay = options?.linkDisplay ?? effectiveValueLinkFlags(undefined);
 
   for (const entry of populated) {
-    const { textLines, links: entryLinks } = personEntryToSummaryLines(entry);
+    const { textLines, links: entryLinks } = personEntryToSummaryLines(entry, linkDisplay);
     if (textLines.length > 0) {
       const block = textLines.join("\n");
       textSegments.push(block);

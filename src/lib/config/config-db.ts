@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import type { PublicPageSummary, SourceConfig, ViewConfig } from "@/lib/config/types";
 import { humanizeSlug } from "@/lib/utils";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
+import { buildPgPoolOptions } from "@/lib/pg-connection";
 
 const DATABASE_URL_ENV_VAR = "DATABASE_URL";
 
@@ -17,15 +18,12 @@ function getPool(): Pool {
     throw new Error(`${DATABASE_URL_ENV_VAR} is required for database config storage.`);
   }
   if (!globalForDb.__smartsheetsViewConfigPool) {
-    const connectionString =
-      url.replace(/([?&])sslmode=[^&]*/g, (_, p) => (p === "?" ? "?" : "")).replace(/\?$/, "") +
-      (url.includes("?") ? "&" : "?") +
-      "sslmode=no-verify";
+    const { connectionString, ssl } = buildPgPoolOptions(url);
     globalForDb.__smartsheetsViewConfigPool = new Pool({
       connectionString,
       max: 2,
       connectionTimeoutMillis: 10_000,
-      ssl: { rejectUnauthorized: false },
+      ...(ssl ? { ssl } : {}),
     });
   }
   return globalForDb.__smartsheetsViewConfigPool;
@@ -225,6 +223,7 @@ export async function updateViewPublication(viewId: string, isPublic: boolean): 
   return updated;
 }
 
-export function useConfigDatabase(): boolean {
+/** True when `DATABASE_URL` is set (Postgres-backed config and contributor auth). */
+export function isDatabaseConfigEnabled(): boolean {
   return !!getDatabaseUrl();
 }

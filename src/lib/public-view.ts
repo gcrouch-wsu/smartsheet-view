@@ -28,9 +28,9 @@ import {
   applyTransforms,
   buildResolvedFieldValue,
   buildResolvedPeopleGroupField,
+  effectiveValueLinkFlags,
   normalizeSourceValue,
   normalizedValueToRoleAttributeText,
-  normalizedValueToPlainText,
 } from "@/lib/transforms";
 import { humanizeSlug } from "@/lib/utils";
 
@@ -133,15 +133,6 @@ function getRoleGroupConfig(sourceConfig: SourceConfig | undefined, roleGroupId:
   return groups.find((g) => g.id === roleGroupId) ?? null;
 }
 
-function resolveCellPlainText(row: SmartsheetRow, selector: FieldSourceSelector | undefined): string {
-  if (!selector) {
-    return "";
-  }
-  const cell = resolveSelector(row, selector);
-  const normalized = normalizeSourceValue(cell);
-  return normalizedValueToPlainText(normalized).trim();
-}
-
 function resolveCellRoleAttributeText(
   row: SmartsheetRow,
   selector: FieldSourceSelector | undefined,
@@ -226,7 +217,13 @@ function resolveDelimitedParallelRoleGroup(row: SmartsheetRow, group: SourceRole
   return people;
 }
 
-function resolveRoleGroupField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConfig, sourceConfig: SourceConfig) {
+function resolveRoleGroupField(
+  row: SmartsheetRow,
+  view: ViewConfig,
+  field: ViewFieldConfig,
+  sourceConfig: SourceConfig,
+  linkFlags: ReturnType<typeof effectiveValueLinkFlags>,
+) {
   if (!isRoleGroupFieldSource(field.source)) {
     return buildEmptyResolvedField(field);
   }
@@ -239,12 +236,14 @@ function resolveRoleGroupField(row: SmartsheetRow, view: ViewConfig, field: View
       const people = resolveNumberedRoleGroupPeople(row, rg);
       return buildResolvedPeopleGroupField(field, people, {
         roleGroupReadOnly: false,
+        linkDisplay: linkFlags,
       });
     }
     const unsafe = isUnsafeDelimitedRoleGroup(rg);
     const people = resolveDelimitedParallelRoleGroup(row, rg);
     return buildResolvedPeopleGroupField(field, people, {
       roleGroupReadOnly: unsafe,
+      linkDisplay: linkFlags,
     });
   } catch (error) {
     console.error(
@@ -257,9 +256,10 @@ function resolveRoleGroupField(row: SmartsheetRow, view: ViewConfig, field: View
 }
 
 function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConfig, sourceConfig: SourceConfig) {
+  const linkFlags = effectiveValueLinkFlags(view.presentation);
   try {
     if (isRoleGroupFieldSource(field.source)) {
-      return resolveRoleGroupField(row, view, field, sourceConfig);
+      return resolveRoleGroupField(row, view, field, sourceConfig, linkFlags);
     }
     const sourceCell = resolveSourceCell(row, field.source);
     const normalizedSourceValue = normalizeSourceValue(sourceCell);
@@ -268,8 +268,8 @@ function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConf
       sourceCell,
     });
 
-    const resolved = buildResolvedFieldValue(field, transformedValue);
-    return applySmartsheetHyperlinkToResolvedField(resolved, sourceCell);
+    const resolved = buildResolvedFieldValue(field, transformedValue, linkFlags);
+    return applySmartsheetHyperlinkToResolvedField(resolved, sourceCell, linkFlags);
   } catch (error) {
     console.error(
       `[smartsheets_view] Failed to resolve field "${field.key}" for view "${view.id}" row "${row.id}": ${
@@ -405,6 +405,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     .map((row) => resolveRow(row, view, sourceConfig))
     .filter((row) => row.fields.some((field) => !field.isEmpty || field.textValue));
   const sortedRows = sortResolvedRows(resolvedRows, view.defaultSort);
+  const linkFlags = effectiveValueLinkFlags(view.presentation);
 
   return {
     id: view.id,
@@ -415,6 +416,8 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     style: view.style,
     themePresetId: view.themePresetId,
     fixedLayout: view.fixedLayout,
+    linkEmailsInView: linkFlags.linkEmailsInView,
+    linkPhonesInView: linkFlags.linkPhonesInView,
     rowCount: sortedRows.length,
     fields: view.fields
       .filter((field) => field.render.type !== "hidden")

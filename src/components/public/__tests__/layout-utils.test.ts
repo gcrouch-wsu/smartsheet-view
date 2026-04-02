@@ -31,6 +31,8 @@ describe("getEditDrawerOrderedFields", () => {
       id: "v1",
       label: "View",
       layout: "stacked",
+      linkEmailsInView: true,
+      linkPhonesInView: false,
       rowCount: 1,
       fields: [
         { key: "program_name", label: "Program", renderType: "text" },

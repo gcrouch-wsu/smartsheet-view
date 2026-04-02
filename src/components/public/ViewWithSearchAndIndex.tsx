@@ -7,6 +7,7 @@ import { useToast } from "@/components/admin/Toast";
 import { ContributorProvider } from "@/components/public/ContributorContext";
 import { EditRowDrawer } from "@/components/public/EditRowDrawer";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
+import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
 import { describeResolvedField, getIndexText } from "@/components/public/layout-utils";
 import type { LayoutType, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import type { ContributorEditingClientConfig } from "@/lib/contributor-utils";
@@ -159,6 +160,12 @@ export function ViewWithSearchAndIndex({
 
   return (
     <ContributorProvider value={contributorContextValue}>
+      <ViewValueLinkProvider
+        value={{
+          linkEmailsInView: filteredView.linkEmailsInView,
+          linkPhonesInView: filteredView.linkPhonesInView,
+        }}
+      >
       <div className="relative">
         {!embed && contributorEmail && (
           <div className="view-surface-muted mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
@@ -284,6 +291,7 @@ export function ViewWithSearchAndIndex({
           returnFocusRef={editReturnFocusRef}
         />
       </div>
+      </ViewValueLinkProvider>
     </ContributorProvider>
   );
 }

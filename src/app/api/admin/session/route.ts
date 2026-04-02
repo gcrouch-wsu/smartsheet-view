@@ -4,9 +4,13 @@ import {
   getAdminSessionCookieSettings,
 } from "@/lib/admin-auth";
 import {
+  ADMIN_LOGIN_TOO_MANY_ATTEMPTS_ERROR,
   authenticateAdminCredentials,
   createAdminSessionForPrincipal,
+  isAdminLoginRateLimited,
+  recordAdminFailedLoginAttempt,
 } from "@/lib/admin-users";
+import { getTrustedClientIp } from "@/lib/request-ip";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -28,15 +32,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
   }
 
+  const ip = getTrustedClientIp(request.headers);
+  if (await isAdminLoginRateLimited(ip)) {
+    return NextResponse.json({ message: ADMIN_LOGIN_TOO_MANY_ATTEMPTS_ERROR }, { status: 429 });
+  }
+
   const authorization = await authenticateAdminCredentials(username, password);
   if (!authorization.ok || !authorization.principal) {
+    const status = authorization.status ?? 401;
+    // Do not count configuration/outage responses as password-guessing attempts (avoids locking admins out during incidents).
+    if (status === 401) {
+      await recordAdminFailedLoginAttempt(ip);
+    }
     return NextResponse.json(
       {
         message: authorization.message ?? "Authentication failed.",
       },
-      {
-        status: authorization.status ?? 401,
-      },
+      { status },
     );
   }
 
