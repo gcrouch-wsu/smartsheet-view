@@ -229,7 +229,7 @@ function parseViewConfigFromBackupJson(raw: unknown): { ok: true; config: ViewCo
   if (!Array.isArray(c.fields)) {
     return { ok: false, error: "Backup is missing a fields array." };
   }
-  return { ok: true, config: c as ViewConfig };
+  return { ok: true, config: c as unknown as ViewConfig };
 }
 
 type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId">;
