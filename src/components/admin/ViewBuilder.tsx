@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { PublicHeaderBrandStrip } from "@/components/public/PublicHeaderBrandStrip";
@@ -197,6 +197,41 @@ function toggleNumberSelection(values: number[], id: number, checked: boolean) {
 }
 
 const FETCH_CREDENTIALS: RequestCredentials = "include";
+
+/** Accepts full admin export (`viewConfig`), GET view payload (`view`), or a raw `ViewConfig` object. */
+function parseViewConfigFromBackupJson(raw: unknown): { ok: true; config: ViewConfig } | { ok: false; error: string } {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "File must contain a JSON object (not an array)." };
+  }
+  const root = raw as Record<string, unknown>;
+  if (root.format === "slim") {
+    return {
+      ok: false,
+      error: "Slim exports only include row snapshots. Use “Export JSON” for a restorable backup.",
+    };
+  }
+  let candidate: unknown = raw;
+  if (root.viewConfig && typeof root.viewConfig === "object" && !Array.isArray(root.viewConfig)) {
+    candidate = root.viewConfig;
+  } else if (root.view && typeof root.view === "object" && !Array.isArray(root.view)) {
+    candidate = root.view;
+  }
+  if (candidate === null || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return { ok: false, error: "Could not find viewConfig or view in this file." };
+  }
+  const c = candidate as Record<string, unknown>;
+  if (typeof c.id !== "string" || !c.id.trim()) {
+    return { ok: false, error: "Backup is missing a non-empty view id." };
+  }
+  if (typeof c.sourceId !== "string" || !c.sourceId.trim()) {
+    return { ok: false, error: "Backup is missing sourceId." };
+  }
+  if (!Array.isArray(c.fields)) {
+    return { ok: false, error: "Backup is missing a fields array." };
+  }
+  return { ok: true, config: c as ViewConfig };
+}
+
 type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId">;
 type RoleGroupOverlapWarning = {
   roleFieldKey: string;
@@ -269,7 +304,9 @@ export function ViewBuilder({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [view, setView] = useState<ViewConfig>(() => buildInitialView(initialView, sources));
@@ -567,6 +604,95 @@ export function ViewBuilder({
     }
   }
 
+  async function onRestoreJsonFileSelected(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) {
+      return;
+    }
+
+    setErrors([]);
+    setNotice("");
+    setIsImporting(true);
+
+    try {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text()) as unknown;
+      } catch {
+        toast.addToast("Invalid JSON file.", "error");
+        return;
+      }
+
+      const parsedConfig = parseViewConfigFromBackupJson(parsed);
+      if (!parsedConfig.ok) {
+        setErrors([parsedConfig.error]);
+        toast.addToast(parsedConfig.error, "error");
+        return;
+      }
+
+      const editorViewId = initialView?.id ?? view.id;
+      if (!isNew && editorViewId && parsedConfig.config.id !== editorViewId) {
+        const msg = `This backup is for view "${parsedConfig.config.id}". Open that view in the editor, or use a backup for "${editorViewId}".`;
+        setErrors([msg]);
+        toast.addToast(msg, "error");
+        return;
+      }
+
+      let config = parsedConfig.config;
+      if (!isNew && editorViewId) {
+        config = { ...config, id: editorViewId, public: view.public };
+      }
+
+      const saveNow = window.confirm(
+        "Save this backup to the server now?\n\nOK = restore and save (replaces the saved view).\nCancel = load into the editor only — review the tabs, then click Save yourself.",
+      );
+
+      if (saveNow) {
+        const endpoint = isNew ? "/api/admin/views" : `/api/admin/views/${editorViewId}`;
+        const method = isNew ? "POST" : "PUT";
+        const response = await fetch(endpoint, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          credentials: FETCH_CREDENTIALS,
+          body: JSON.stringify(config),
+        });
+        const payload = (await response.json()) as {
+          errors?: string[];
+          error?: string;
+          warnings?: string[];
+          view?: ViewConfig;
+        };
+
+        if (!response.ok) {
+          const errs = payload.errors ?? payload.warnings ?? [payload.error ?? "Unable to save imported view."];
+          setErrors(errs);
+          toast.addToast(errs[0] ?? "Restore failed.", "error");
+          return;
+        }
+
+        const saved = payload.view ?? config;
+        setView(saved);
+        setNotice("View restored from JSON and saved.");
+        toast.addToast("View restored from backup.", "success");
+        router.replace(`/admin/views/${saved.id}`);
+        router.refresh();
+        return;
+      }
+
+      setView(config);
+      setNotice("Backup loaded into the editor. Click Save when you are ready.");
+      toast.addToast("Backup loaded — review the form, then Save.", "info");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed.";
+      setErrors([msg]);
+      toast.addToast(msg, "error");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   async function deleteView() {
     const viewId = initialView?.id ?? view.id;
     if (!viewId) {
@@ -845,23 +971,45 @@ export function ViewBuilder({
                 Preview
               </Link>
             )}
-            {!isNew && view.id && (
-              <span className="flex flex-wrap gap-2">
-                <a
-                  href={`/api/admin/views/${view.id}/export`}
-                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+            {(!isNew && view.id) || isNew ? (
+              <span className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={importFileInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="sr-only"
+                  aria-label="Restore view from JSON backup file"
+                  onChange={(e) => void onRestoreJsonFileSelected(e)}
+                  disabled={isImporting || isSaving}
+                />
+                <button
+                  type="button"
+                  disabled={isImporting || isSaving}
+                  title="Load a backup from Export JSON, or a raw view object from GET /api/admin/views/{id}"
+                  onClick={() => importFileInputRef.current?.click()}
+                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)] disabled:opacity-50"
                 >
-                  Export JSON
-                </a>
-                <a
-                  href={`/api/admin/views/${view.id}/export?format=slim`}
-                  title="Rows and display values only — smaller than full config backup"
-                  className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-                >
-                  Slim export
-                </a>
+                  {isImporting ? "Reading…" : "Restore from JSON…"}
+                </button>
+                {!isNew && view.id ? (
+                  <>
+                    <a
+                      href={`/api/admin/views/${view.id}/export`}
+                      className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                    >
+                      Export JSON
+                    </a>
+                    <a
+                      href={`/api/admin/views/${view.id}/export?format=slim`}
+                      title="Rows and display values only — smaller than full config backup"
+                      className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+                    >
+                      Slim export
+                    </a>
+                  </>
+                ) : null}
               </span>
-            )}
+            ) : null}
             {!isNew && (
               <button
                 type="button"

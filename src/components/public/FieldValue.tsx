@@ -163,10 +163,8 @@ export function FieldValue({
     return null;
   }
 
-  const zoned =
-    !plainValueLinks && field.dateSourceRaw
-      ? formatDateInDisplayTimeZone(field.dateSourceRaw, timeZone)
-      : "";
+  /** Zoned dates match public/print; plainValueLinks only strips anchors (mailto/url/tel), not date formatting. */
+  const zoned = field.dateSourceRaw ? formatDateInDisplayTimeZone(field.dateSourceRaw, timeZone) : "";
   const primaryText = zoned.length > 0 ? zoned : field.textValue;
 
   if ((field.renderType === "mailto" || field.renderType === "mailto_list" || field.renderType === "phone" || field.renderType === "phone_list" || field.renderType === "link") && field.links.length > 0) {

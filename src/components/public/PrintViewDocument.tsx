@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getRowHeadingField } from "@/components/public/layout-utils";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
+import { formatFetchedAtInViewTimeZone } from "@/lib/display-datetime";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { buildPrintExportStylesheet, getPrintExportConfig } from "@/lib/print-export";
 import { PrintViewToolbar } from "./PrintViewToolbar";
@@ -176,10 +177,7 @@ export function PrintViewDocument({
   const printConfig = getPrintExportConfig();
   const printStyles = buildPrintExportStylesheet(printConfig);
   const preview = printConfig.screenPreview;
-  const refreshed = new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(fetchedAt));
+  const refreshedPrinted = formatFetchedAtInViewTimeZone(fetchedAt, view.displayTimeZone);
   const columns = getPrintableColumns(view);
   const groupByKey = view.presentation?.printGroupByFieldKey;
   const rowGroups = bucketPrintRowGroups(view, groupByKey);
@@ -212,7 +210,9 @@ export function PrintViewDocument({
               <span className="font-medium" style={{ color: "var(--print-ink)" }}>
                 Printed
               </span>{" "}
-              <time dateTime={fetchedAt}>{refreshed}</time>
+              <time dateTime={fetchedAt} className="tabular-nums">
+                {refreshedPrinted}
+              </time>
             </p>
           </div>
           {(view.label !== pageTitle || view.description) && (

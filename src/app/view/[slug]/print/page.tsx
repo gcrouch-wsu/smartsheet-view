@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DisplayTimezoneProvider } from "@/components/public/DisplayTimezoneContext";
 import { PrintViewDocument } from "@/components/public/PrintViewDocument";
 import {
   loadPublicPageState,
@@ -90,15 +91,17 @@ export default async function PrintExportPage({
 
   return (
     <div className="min-h-screen bg-[color:var(--wsu-stone)] px-4 py-6 sm:px-6">
-      <PrintViewDocument
-        slug={slug}
-        viewId={activeView.id}
-        pageTitle={page.title}
-        sourceLabel={page.sourceConfig.label}
-        sourceName={page.sourceName}
-        fetchedAt={page.fetchedAt}
-        view={activeView}
-      />
+      <DisplayTimezoneProvider timeZone={activeView.displayTimeZone}>
+        <PrintViewDocument
+          slug={slug}
+          viewId={activeView.id}
+          pageTitle={page.title}
+          sourceLabel={page.sourceConfig.label}
+          sourceName={page.sourceName}
+          fetchedAt={page.fetchedAt}
+          view={activeView}
+        />
+      </DisplayTimezoneProvider>
     </div>
   );
 }

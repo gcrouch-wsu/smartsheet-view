@@ -410,8 +410,9 @@ export function AdminGuideTabs() {
           <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Exports</h3>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              On the View Builder toolbar for an existing view, use <strong className="text-[color:var(--wsu-ink)]">Export JSON</strong> for a full config backup or{" "}
-              <strong className="text-[color:var(--wsu-ink)]">Slim export</strong> for a smaller file with rows and display-oriented values. Both require an admin session.
+              On the View Builder toolbar, use <strong className="text-[color:var(--wsu-ink)]">Export JSON</strong> for a full config backup or{" "}
+              <strong className="text-[color:var(--wsu-ink)]">Slim export</strong> for a smaller file with rows and display-oriented values. Use{" "}
+              <strong className="text-[color:var(--wsu-ink)]">Restore from JSON…</strong> to reload a backup (full export or <code className="text-xs">view</code> from the admin API); slim-only files cannot restore settings. All require an admin session.
             </p>
           </div>
 
