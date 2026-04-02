@@ -1,4 +1,7 @@
-/** IANA zones offered in the public view time zone control (labels are US-centric where common). */
+/** Default when a view omits `displayTimeZone` or stores an invalid IANA name. */
+export const VIEW_DISPLAY_TIMEZONE_DEFAULT = "America/Los_Angeles";
+
+/** IANA zones offered in the admin time zone control (labels are US-centric where common). */
 export const DISPLAY_TIMEZONE_OPTIONS: { value: string; label: string }[] = [
   { value: "America/Los_Angeles", label: "Pacific (Los Angeles)" },
   { value: "America/Denver", label: "Mountain (Denver)" },
@@ -9,6 +12,29 @@ export const DISPLAY_TIMEZONE_OPTIONS: { value: string; label: string }[] = [
   { value: "Europe/London", label: "London" },
   { value: "UTC", label: "UTC" },
 ];
+
+export function isValidIanaTimeZone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Effective IANA zone for a view config (validated `displayTimeZone` or default). */
+export function effectiveViewDisplayTimeZone(view: { displayTimeZone?: string }): string {
+  const tz = view.displayTimeZone?.trim();
+  if (tz && isValidIanaTimeZone(tz)) {
+    return tz;
+  }
+  return VIEW_DISPLAY_TIMEZONE_DEFAULT;
+}
+
+export function labelForDisplayTimeZone(iana: string): string {
+  const found = DISPLAY_TIMEZONE_OPTIONS.find((o) => o.value === iana);
+  return found?.label ?? iana;
+}
 
 /**
  * Format a Smartsheet / ISO date string for display in a chosen IANA time zone.

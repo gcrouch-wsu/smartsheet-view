@@ -3,6 +3,7 @@ import {
   CARD_LAYOUT_TEXT_PREFIX,
   FIELD_TEXT_STYLE_VALUES,
 } from "@/lib/config/types";
+import { isValidIanaTimeZone } from "@/lib/display-datetime";
 import { HEADER_BRAND_TEXT_MAX_LENGTH, validateHeaderLogoPair } from "@/lib/header-logo";
 import { isWritableRoleGroup } from "@/lib/role-groups";
 import type {
@@ -1114,6 +1115,16 @@ export function validateViewConfig(
     );
   }
 
+  const displayTimeZoneRaw = asOptionalString(input.displayTimeZone);
+  let displayTimeZone: string | undefined;
+  if (displayTimeZoneRaw) {
+    if (!isValidIanaTimeZone(displayTimeZoneRaw)) {
+      errors.push('displayTimeZone must be a valid IANA time zone (e.g. "America/Los_Angeles").');
+    } else {
+      displayTimeZone = displayTimeZoneRaw;
+    }
+  }
+
   return {
     success: errors.length === 0,
     errors,
@@ -1134,6 +1145,7 @@ export function validateViewConfig(
           style: styleResult.data,
           fixedLayout: asBoolean(input.fixedLayout),
           themePresetId: asOptionalString(input.themePresetId),
+          ...(displayTimeZone ? { displayTimeZone } : {}),
           editing: editingResult.data,
           fields,
         },

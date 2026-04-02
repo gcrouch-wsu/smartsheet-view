@@ -402,6 +402,11 @@ export interface ViewConfig {
   fixedLayout?: boolean;
   /** Theme preset id (e.g. wsu_crimson). When unset, WSU Crimson is used. */
   themePresetId?: string;
+  /**
+   * IANA time zone for interpreting date/datetime fields on the public page (e.g. America/Los_Angeles).
+   * Set in the admin view builder; visitors see a read-only label, not a control.
+   */
+  displayTimeZone?: string;
   editing?: ViewEditingConfig;
   fields: ViewFieldConfig[];
 }
@@ -527,6 +532,8 @@ export interface ResolvedView {
   style?: ViewStyleConfig;
   themePresetId?: string;
   fixedLayout?: boolean;
+  /** IANA zone from view config used to format date/datetime fields on the public page. */
+  displayTimeZone: string;
   /** Effective flags from presentation (defaults: email linked, phone not). */
   linkEmailsInView: boolean;
   linkPhonesInView: boolean;

@@ -39,6 +39,30 @@ describe("validateViewConfig", () => {
     expect(result.data?.presentation?.headingFieldKey).toBe("name");
   });
 
+  it("rejects invalid displayTimeZone", () => {
+    const base = {
+      id: "tz-bad",
+      slug: "tz-bad",
+      sourceId: "grad-programs",
+      label: "TZ bad",
+      layout: "table",
+      public: false,
+      fields: [
+        {
+          key: "name",
+          label: "Name",
+          source: { columnTitle: "Name" },
+          render: { type: "text" },
+        },
+      ],
+    } as const;
+
+    const result = validateViewConfig({ ...base, displayTimeZone: "Invalid/Zone" }, { knownSourceIds: ["grad-programs"] });
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("displayTimeZone"))).toBe(true);
+  });
+
   it("rejects presentation field keys that do not exist", () => {
     const result = validateViewConfig(
       {

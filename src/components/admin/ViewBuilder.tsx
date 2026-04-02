@@ -16,6 +16,7 @@ import { ThemeEditor } from "./ThemeEditor";
 import { isRoleGroupFieldSource } from "@/lib/role-groups";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX, FIELD_TEXT_STYLE_VALUES } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
+import { DISPLAY_TIMEZONE_OPTIONS, effectiveViewDisplayTimeZone } from "@/lib/display-datetime";
 import { slugify } from "@/lib/utils";
 import { effectiveValueLinkFlags } from "@/lib/transforms";
 import type {
@@ -738,6 +739,7 @@ export function ViewBuilder({
         style: view.style,
         themePresetId: view.themePresetId,
         fixedLayout: view.fixedLayout,
+        displayTimeZone: effectiveViewDisplayTimeZone(view),
         ...effectiveValueLinkFlags(view.presentation),
         rowCount: payload.rowCount ?? payload.rows.length,
         fields: payload.fields,
@@ -790,6 +792,7 @@ export function ViewBuilder({
                 style: view.style,
                 themePresetId: view.themePresetId,
                 fixedLayout: view.fixedLayout,
+                displayTimeZone: effectiveViewDisplayTimeZone(view),
                 ...effectiveValueLinkFlags(view.presentation),
                 rowCount: payload.rowCount ?? payload.rows.length,
                 fields: payload.fields,
@@ -1636,6 +1639,28 @@ export function ViewBuilder({
                   onChange={(show) => update("fixedLayout", !show)}
                   description="Allow viewers to switch between table, cards, and list views."
                 />
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+                <label className="block text-sm font-medium text-[color:var(--wsu-ink)]" htmlFor="view-display-tz">
+                  Display time zone for dates
+                </label>
+                <select
+                  id="view-display-tz"
+                  value={effectiveViewDisplayTimeZone(view)}
+                  onChange={(e) => update("displayTimeZone", e.target.value)}
+                  className="mt-1 w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)]"
+                >
+                  {DISPLAY_TIMEZONE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-[color:var(--wsu-muted)]">
+                  Public pages show this as a note next to search; date and datetime fields use it for display. Visitors
+                  cannot change it.
+                </p>
               </div>
             </div>
           </SetupAccordion>

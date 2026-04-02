@@ -12,6 +12,7 @@ describe("buildSlimViewExportPayload", () => {
         id: "v1",
         label: "L",
         layout: "table",
+        displayTimeZone: "America/Los_Angeles",
         linkEmailsInView: true,
         linkPhonesInView: false,
         rowCount: 1,

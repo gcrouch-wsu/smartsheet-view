@@ -318,6 +318,11 @@ export function normalizedValueToRoleAttributeText(
 
 /** First parseable date/datetime token from normalized cell value (for client time zone formatting). */
 export function extractDateSourceRawForDisplay(value: unknown): string | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
+
   const s = normalizeToStringList(value)[0];
   if (typeof s !== "string") {
     return undefined;

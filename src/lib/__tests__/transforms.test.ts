@@ -130,6 +130,11 @@ describe("transforms", () => {
     expect(extractDateSourceRawForDisplay("2024-01-15")).toBe("2024-01-15");
   });
 
+  it("extractDateSourceRawForDisplay treats finite numbers as Smartsheet epoch milliseconds", () => {
+    const raw = extractDateSourceRawForDisplay(1704844800000);
+    expect(raw).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
   it("buildResolvedFieldValue attaches dateSourceRaw when buildOptions provides it", () => {
     const field: ViewFieldConfig = {
       key: "d",

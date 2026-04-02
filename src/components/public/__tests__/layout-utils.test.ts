@@ -31,6 +31,7 @@ describe("getEditDrawerOrderedFields", () => {
       id: "v1",
       label: "View",
       layout: "stacked",
+      displayTimeZone: "America/Los_Angeles",
       linkEmailsInView: true,
       linkPhonesInView: false,
       rowCount: 1,

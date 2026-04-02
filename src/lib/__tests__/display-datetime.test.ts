@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { formatDateInDisplayTimeZone } from "@/lib/display-datetime";
+import { effectiveViewDisplayTimeZone, formatDateInDisplayTimeZone } from "@/lib/display-datetime";
+
+describe("effectiveViewDisplayTimeZone", () => {
+  it("defaults when unset or invalid", () => {
+    expect(effectiveViewDisplayTimeZone({})).toBe("America/Los_Angeles");
+    expect(effectiveViewDisplayTimeZone({ displayTimeZone: "Not/AZone" })).toBe("America/Los_Angeles");
+  });
+
+  it("uses valid IANA from view config", () => {
+    expect(effectiveViewDisplayTimeZone({ displayTimeZone: "America/New_York" })).toBe("America/New_York");
+  });
+});
 
 describe("formatDateInDisplayTimeZone", () => {
   it("keeps calendar date for YYYY-MM-DD across zones", () => {

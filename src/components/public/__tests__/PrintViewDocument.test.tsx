@@ -7,6 +7,7 @@ const view: ResolvedView = {
   id: "graduate-program-contact-list",
   label: "Graduate Program Contact List",
   layout: "stacked",
+  displayTimeZone: "America/Los_Angeles",
   linkEmailsInView: true,
   linkPhonesInView: false,
   rowCount: 1,

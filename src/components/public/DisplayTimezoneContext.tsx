@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-const STORAGE_KEY = "smartsheets_view_display_tz";
+import { VIEW_DISPLAY_TIMEZONE_DEFAULT, isValidIanaTimeZone } from "@/lib/display-datetime";
 
 type DisplayTimezoneContextValue = {
   timeZone: string;
@@ -11,50 +11,22 @@ type DisplayTimezoneContextValue = {
 
 const DisplayTimezoneContext = createContext<DisplayTimezoneContextValue | null>(null);
 
-function isValidTimeZone(tz: string): boolean {
-  try {
-    Intl.DateTimeFormat(undefined, { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function DisplayTimezoneProvider({ children }: { children: ReactNode }) {
-  const [timeZone, setTimeZoneState] = useState("America/Los_Angeles");
-
-  useEffect(() => {
-    const apply = () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored && isValidTimeZone(stored)) {
-          setTimeZoneState(stored);
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
-      const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (browser && isValidTimeZone(browser)) {
-        setTimeZoneState(browser);
-      }
-    };
-    queueMicrotask(apply);
-  }, []);
-
-  const setTimeZone = useCallback((tz: string) => {
-    if (!isValidTimeZone(tz)) {
-      return;
-    }
-    setTimeZoneState(tz);
-    try {
-      localStorage.setItem(STORAGE_KEY, tz);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const value = useMemo(() => ({ timeZone, setTimeZone }), [timeZone, setTimeZone]);
+export function DisplayTimezoneProvider({
+  children,
+  timeZone,
+}: {
+  children: ReactNode;
+  /** IANA zone from published view config (authoritative on public pages). */
+  timeZone: string;
+}) {
+  const safe = isValidIanaTimeZone(timeZone) ? timeZone : VIEW_DISPLAY_TIMEZONE_DEFAULT;
+  const value = useMemo(
+    () => ({
+      timeZone: safe,
+      setTimeZone: () => {},
+    }),
+    [safe],
+  );
 
   return <DisplayTimezoneContext.Provider value={value}>{children}</DisplayTimezoneContext.Provider>;
 }
@@ -63,7 +35,7 @@ export function useDisplayTimezone(): DisplayTimezoneContextValue {
   const ctx = useContext(DisplayTimezoneContext);
   if (!ctx) {
     return {
-      timeZone: "America/Los_Angeles",
+      timeZone: VIEW_DISPLAY_TIMEZONE_DEFAULT,
       setTimeZone: () => {},
     };
   }

@@ -4,6 +4,7 @@ import {
   getViewConfigById,
   listPublicPageSummaries,
 } from "@/lib/config/store";
+import { effectiveViewDisplayTimeZone } from "@/lib/display-datetime";
 import type {
   FieldSourceSelector,
   PublicPageSummary,
@@ -422,6 +423,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     style: view.style,
     themePresetId: view.themePresetId,
     fixedLayout: view.fixedLayout,
+    displayTimeZone: effectiveViewDisplayTimeZone(view),
     linkEmailsInView: linkFlags.linkEmailsInView,
     linkPhonesInView: linkFlags.linkPhonesInView,
     rowCount: sortedRows.length,
