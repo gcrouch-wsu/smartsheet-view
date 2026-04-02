@@ -567,7 +567,10 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
 }
 
 export function publicLinkFromSmartsheetCell(cell: SmartsheetCell | null): PublicLink | null {
-  const rawUrl = cell?.hyperlink?.url;
+  if (!cell) {
+    return null;
+  }
+  const rawUrl = cell.hyperlink?.url;
   if (typeof rawUrl !== "string" || !rawUrl.trim()) {
     return null;
   }
