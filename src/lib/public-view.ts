@@ -24,6 +24,7 @@ import type { FetchBehaviorOptions } from "@/lib/smartsheet";
 import { getSmartsheetDataset, normalizeColumnKey } from "@/lib/smartsheet";
 import { isRoleGroupFieldSource, isUnsafeDelimitedRoleGroup } from "@/lib/role-groups";
 import {
+  applySmartsheetHyperlinkToResolvedField,
   applyTransforms,
   buildResolvedFieldValue,
   buildResolvedPeopleGroupField,
@@ -267,7 +268,8 @@ function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConf
       sourceCell,
     });
 
-    return buildResolvedFieldValue(field, transformedValue);
+    const resolved = buildResolvedFieldValue(field, transformedValue);
+    return applySmartsheetHyperlinkToResolvedField(resolved, sourceCell);
   } catch (error) {
     console.error(
       `[smartsheets_view] Failed to resolve field "${field.key}" for view "${view.id}" row "${row.id}": ${

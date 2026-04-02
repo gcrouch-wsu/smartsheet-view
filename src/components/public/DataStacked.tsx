@@ -3,7 +3,16 @@ import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccen
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
-import { getCardLayoutColumnCount, getCardLayoutRows, getRowHeadingField, getRowSummaryField, getVisibleRowFields, hasCustomCardLayout } from "@/components/public/layout-utils";
+import {
+  customCardAlignedGridStyle,
+  customCardGridScrollWrapClassName,
+  getCardLayoutColumnCount,
+  getCardLayoutRows,
+  getRowHeadingField,
+  getRowSummaryField,
+  getVisibleRowFields,
+  hasCustomCardLayout,
+} from "@/components/public/layout-utils";
 import type { ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
@@ -55,28 +64,30 @@ export function DataStacked({
                 const colCount = getCardLayoutColumnCount(view);
                 const useAlignedGrid = colCount > 1;
                 const gridClass = useAlignedGrid ? "grid gap-2 sm:gap-3 md:gap-4" : "space-y-2 sm:space-y-3 md:space-y-4";
-                const gridStyle = useAlignedGrid
-                  ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`, gridTemplateRows: "auto auto" }
-                  : undefined;
+                const gridStyle = useAlignedGrid ? customCardAlignedGridStyle(colCount) : undefined;
+                const scrollWrap = customCardGridScrollWrapClassName(useAlignedGrid);
                 const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
+                const gridInner = (
+                  <div className={gridClass} style={gridStyle}>
+                    {useAlignedGrid ? (
+                      <>
+                        {paddedCells.map((cell, i) => (
+                          <CardLayoutCellRenderer key={`h-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="header" />
+                        ))}
+                        {paddedCells.map((cell, i) => (
+                          <CardLayoutCellRenderer key={`v-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="value" />
+                        ))}
+                      </>
+                    ) : (
+                      paddedCells.map((cell, i) => (
+                        <CardLayoutCellRenderer key={i} rowId={row.id} cell={cell} flexClass="w-full" />
+                      ))
+                    )}
+                  </div>
+                );
                 return (
                   <div key={rowIndex} className={rowDividerClass(rowIndex)}>
-                    <div className={gridClass} style={gridStyle}>
-                      {useAlignedGrid ? (
-                        <>
-                          {paddedCells.map((cell, i) => (
-                            <CardLayoutCellRenderer key={`h-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="header" />
-                          ))}
-                          {paddedCells.map((cell, i) => (
-                            <CardLayoutCellRenderer key={`v-${i}`} rowId={row.id} cell={cell} flexClass="min-w-0" mode="value" />
-                          ))}
-                        </>
-                      ) : (
-                        paddedCells.map((cell, i) => (
-                          <CardLayoutCellRenderer key={i} rowId={row.id} cell={cell} flexClass="w-full" />
-                        ))
-                      )}
-                    </div>
+                    {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
                   </div>
                 );
               })}

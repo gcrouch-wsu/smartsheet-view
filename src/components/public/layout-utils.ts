@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 
@@ -233,4 +234,30 @@ export function getEditDrawerOrderedFields(
     }
   }
   return appendMissingContributorFields(out);
+}
+
+/** Minimum width per custom card column so multi-column layouts scroll on narrow viewports instead of collapsing. */
+export const CUSTOM_CARD_COL_MIN_REM = 9;
+
+/** Grid style for aligned custom card rows (header row + value row). */
+export function customCardAlignedGridStyle(colCount: number): CSSProperties | undefined {
+  if (colCount <= 1) {
+    return undefined;
+  }
+  return {
+    gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+    gridTemplateRows: "auto auto",
+    minWidth: `${colCount * CUSTOM_CARD_COL_MIN_REM}rem`,
+  };
+}
+
+/**
+ * Outer wrapper for horizontal scroll when the inner grid is wider than the card
+ * (typical on phones for multi-column custom layouts).
+ */
+export function customCardGridScrollWrapClassName(useAlignedGrid: boolean): string | undefined {
+  if (!useAlignedGrid) {
+    return undefined;
+  }
+  return "min-w-0 -mx-1 max-w-full overflow-x-auto overscroll-x-contain px-1 [scrollbar-gutter:stable]";
 }

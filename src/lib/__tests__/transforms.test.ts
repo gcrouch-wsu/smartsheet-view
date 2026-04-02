@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { SmartsheetCell, SmartsheetRow, ViewFieldConfig } from "@/lib/config/types";
-import { applyTransforms, buildResolvedFieldValue, normalizeSourceValue } from "@/lib/transforms";
+import {
+  applySmartsheetHyperlinkToResolvedField,
+  applyTransforms,
+  buildResolvedFieldValue,
+  normalizeSourceValue,
+  publicLinkFromSmartsheetCell,
+} from "@/lib/transforms";
 
 function createRow(): SmartsheetRow {
   return {
@@ -32,6 +38,42 @@ describe("transforms", () => {
         name: "Structured Name",
       },
     ]);
+  });
+
+  it("reads Smartsheet cell hyperlink into a public link", () => {
+    const cell: SmartsheetCell = {
+      columnId: 1,
+      columnTitle: "Program page",
+      columnType: "TEXT_NUMBER",
+      value: 123 as unknown as string,
+      displayValue: "View program",
+      hyperlink: { url: "https://gradschool.wsu.edu/programs/example/" },
+    };
+    expect(publicLinkFromSmartsheetCell(cell)).toEqual({
+      href: "https://gradschool.wsu.edu/programs/example/",
+      label: "View program",
+    });
+  });
+
+  it("merges cell hyperlink when link field has no URLs in the value", () => {
+    const field: ViewFieldConfig = {
+      key: "site",
+      label: "Site",
+      source: { columnTitle: "Site" },
+      render: { type: "link" },
+    };
+    const base = buildResolvedFieldValue(field, "");
+    const cell: SmartsheetCell = {
+      columnId: 1,
+      columnTitle: "Site",
+      columnType: "TEXT_NUMBER",
+      displayValue: "Details",
+      value: "",
+      hyperlink: { url: "https://example.org/p" },
+    };
+    const merged = applySmartsheetHyperlinkToResolvedField(base, cell);
+    expect(merged.links).toEqual([{ href: "https://example.org/p", label: "Details" }]);
+    expect(merged.isEmpty).toBe(false);
   });
 
   it("extracts URL tokens for link rendering", () => {

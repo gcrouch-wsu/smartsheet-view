@@ -406,6 +406,11 @@ export interface SmartsheetColumn {
   locked?: boolean;
 }
 
+/** Optional cell hyperlink from the Smartsheet API (`cells[].hyperlink`). */
+export interface SmartsheetCellHyperlink {
+  url?: string;
+}
+
 export interface SmartsheetCell {
   columnId: number;
   columnTitle: string;
@@ -413,6 +418,7 @@ export interface SmartsheetCell {
   value: unknown;
   displayValue?: string;
   objectValue?: unknown;
+  hyperlink?: SmartsheetCellHyperlink | null;
 }
 
 export interface SmartsheetRow {

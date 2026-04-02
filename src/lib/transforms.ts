@@ -566,6 +566,49 @@ export function buildResolvedFieldValue(field: ViewFieldConfig, value: unknown):
   };
 }
 
+export function publicLinkFromSmartsheetCell(cell: SmartsheetCell | null): PublicLink | null {
+  const rawUrl = cell?.hyperlink?.url;
+  if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+    return null;
+  }
+  const href = rawUrl.trim();
+  const fromDisplay = typeof cell.displayValue === "string" ? cell.displayValue.trim() : "";
+  const fromValue = typeof cell.value === "string" ? cell.value.trim() : "";
+  const label = fromDisplay || fromValue || href;
+  return { href, label };
+}
+
+/** When Smartsheet provides a cell hyperlink and we did not derive links from the cell value, attach it. */
+export function applySmartsheetHyperlinkToResolvedField(
+  field: ResolvedFieldValue,
+  cell: SmartsheetCell | null,
+): ResolvedFieldValue {
+  const sheetLink = publicLinkFromSmartsheetCell(cell);
+  if (!sheetLink || field.links.length > 0) {
+    return field;
+  }
+  const canAttach =
+    field.renderType === "link" ||
+    field.renderType === "text" ||
+    field.renderType === "multiline_text" ||
+    field.renderType === "badge";
+  if (!canAttach) {
+    return field;
+  }
+
+  const hasText = Boolean(field.textValue?.trim());
+  const hasList = field.listValue.some((e) => String(e).trim());
+  const label = sheetLink.label || sheetLink.href;
+
+  return {
+    ...field,
+    links: [sheetLink],
+    isEmpty: false,
+    textValue: hasText ? field.textValue : label,
+    listValue: hasList ? field.listValue : label ? [label] : [],
+  };
+}
+
 function personEntryToSummaryLines(entry: ResolvedPersonRoleEntry): { textLines: string[]; links: PublicLink[] } {
   const textLines: string[] = [];
   const links: PublicLink[] = [];

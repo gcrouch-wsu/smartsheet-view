@@ -31,6 +31,7 @@ interface SmartsheetApiRow {
     value?: unknown;
     displayValue?: string;
     objectValue?: unknown;
+    hyperlink?: { url?: string } | null;
   }>;
 }
 
@@ -297,6 +298,7 @@ function normalizeRows(rows: SmartsheetApiRow[], columns: SmartsheetColumn[]): S
         value: cell.value,
         displayValue: cell.displayValue,
         objectValue: cell.objectValue,
+        hyperlink: cell.hyperlink,
       };
 
       cellsById[column.id] = normalizedCell;
