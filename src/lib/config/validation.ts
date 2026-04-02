@@ -26,6 +26,7 @@ import type {
   ViewFieldSource,
   ViewFieldSourceConfig,
   ViewFilterConfig,
+  CampusGroupingMode,
   ViewPresentationConfig,
   ViewSortConfig,
   ViewStyleConfig,
@@ -573,6 +574,19 @@ function parsePresentationConfig(
   const linkPhonesInView =
     input.linkPhonesInView === undefined ? undefined : asBoolean(input.linkPhonesInView, false);
   const printGroupByFieldKey = asOptionalString(input.printGroupByFieldKey);
+  const campusFieldKey = asOptionalString(input.campusFieldKey);
+  const programGroupFieldKey = asOptionalString(input.programGroupFieldKey);
+  const campusGroupingModeRaw = asOptionalString(input.campusGroupingMode);
+  let campusGroupingMode: CampusGroupingMode | undefined;
+  if (campusGroupingModeRaw) {
+    if (campusGroupingModeRaw !== "grouped") {
+      errors.push(`presentation.campusGroupingMode must be \"grouped\" when set.`);
+    } else {
+      campusGroupingMode = "grouped";
+    }
+  }
+  const showCampusFilter =
+    input.showCampusFilter === undefined ? undefined : asBoolean(input.showCampusFilter, false);
 
   const rawLogoUrl =
     typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
@@ -615,6 +629,13 @@ function parsePresentationConfig(
     errors.push(
       `presentation.printGroupByFieldKey \"${printGroupByFieldKey}\" must reference a non-hidden field (print cannot group by hidden columns).`,
     );
+  }
+  // campusFieldKey / programGroupFieldKey: must exist on the view but may be hidden (used for grouping/badges only).
+  if (campusFieldKey && !fieldKeys.has(campusFieldKey)) {
+    errors.push(`presentation.campusFieldKey \"${campusFieldKey}\" does not match any field key.`);
+  }
+  if (programGroupFieldKey && !fieldKeys.has(programGroupFieldKey)) {
+    errors.push(`presentation.programGroupFieldKey \"${programGroupFieldKey}\" does not match any field key.`);
   }
 
   let cardLayout: ViewPresentationConfig["cardLayout"];
@@ -676,7 +697,11 @@ function parsePresentationConfig(
       headerBrandTitle ||
       linkEmailsInView !== undefined ||
       linkPhonesInView !== undefined ||
-      Boolean(printGroupByFieldKey)
+      Boolean(printGroupByFieldKey) ||
+      Boolean(campusFieldKey) ||
+      Boolean(programGroupFieldKey) ||
+      Boolean(campusGroupingMode) ||
+      showCampusFilter !== undefined
   );
 
   return {
@@ -714,6 +739,10 @@ function parsePresentationConfig(
             ...(linkEmailsInView !== undefined ? { linkEmailsInView } : {}),
             ...(linkPhonesInView !== undefined ? { linkPhonesInView } : {}),
             ...(printGroupByFieldKey ? { printGroupByFieldKey } : {}),
+            ...(campusFieldKey ? { campusFieldKey } : {}),
+            ...(programGroupFieldKey ? { programGroupFieldKey } : {}),
+            ...(campusGroupingMode ? { campusGroupingMode } : {}),
+            ...(showCampusFilter !== undefined ? { showCampusFilter } : {}),
           },
   };
 }

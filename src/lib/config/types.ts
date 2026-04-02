@@ -156,6 +156,9 @@ export interface CardLayoutRow {
 
 export type RowDividerStyle = "none" | "default" | "subtle";
 
+/** Campus/program grouping on the public view. Expand with merge/hybrid later. */
+export type CampusGroupingMode = "grouped";
+
 export interface ViewPresentationConfig {
   /** Field used as the main heading in cards, accordions, etc. */
   headingFieldKey?: string;
@@ -218,6 +221,18 @@ export interface ViewPresentationConfig {
    * (useful when many rows share the same program name and differ only by campus).
    */
   printGroupByFieldKey?: string;
+  /**
+   * Smartsheet-backed campus column for grouping/badges (e.g. grad_campus). May point at a hidden field.
+   */
+  campusFieldKey?: string;
+  /**
+   * Program identity for grouped headers (e.g. program_name). May point at a hidden field.
+   */
+  programGroupFieldKey?: string;
+  /** When set, the public view may render program sections (see campus-grouping). */
+  campusGroupingMode?: CampusGroupingMode;
+  /** When true, show client-side campus filter controls (stacked with search). */
+  showCampusFilter?: boolean;
 }
 
 export interface ViewStyleConfig {
