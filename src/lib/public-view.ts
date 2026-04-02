@@ -26,6 +26,7 @@ import { isRoleGroupFieldSource, isUnsafeDelimitedRoleGroup } from "@/lib/role-g
 import {
   applySmartsheetHyperlinkToResolvedField,
   applyTransforms,
+  extractDateSourceRawForDisplay,
   buildResolvedFieldValue,
   buildResolvedPeopleGroupField,
   effectiveValueLinkFlags,
@@ -263,12 +264,17 @@ function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConf
     }
     const sourceCell = resolveSourceCell(row, field.source);
     const normalizedSourceValue = normalizeSourceValue(sourceCell);
+    const wantsDateTz =
+      field.render.type === "date" || field.transforms?.some((tr) => tr.op === "format_date");
+    const dateSourceRaw = wantsDateTz ? extractDateSourceRawForDisplay(normalizedSourceValue) : undefined;
     const transformedValue = applyTransforms(normalizedSourceValue, field.transforms, {
       row,
       sourceCell,
     });
 
-    const resolved = buildResolvedFieldValue(field, transformedValue, linkFlags);
+    const resolved = buildResolvedFieldValue(field, transformedValue, linkFlags, {
+      ...(dateSourceRaw ? { dateSourceRaw } : {}),
+    });
     return applySmartsheetHyperlinkToResolvedField(resolved, sourceCell, linkFlags);
   } catch (error) {
     console.error(

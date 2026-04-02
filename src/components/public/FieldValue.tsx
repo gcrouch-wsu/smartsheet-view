@@ -1,7 +1,9 @@
 "use client";
 
+import { useDisplayTimezone } from "@/components/public/DisplayTimezoneContext";
 import type { ResolvedFieldValue } from "@/lib/config/types";
 import { fieldValueTypographyClass } from "@/lib/field-typography";
+import { formatDateInDisplayTimeZone } from "@/lib/display-datetime";
 import { useViewValueLinkFlags } from "@/components/public/ViewValueLinkContext";
 
 function tx(field: ResolvedFieldValue, ...classes: string[]) {
@@ -149,6 +151,8 @@ export function FieldValue({
   /** When true (e.g. print layout), show link labels as plain text — no anchors. */
   plainValueLinks?: boolean;
 }) {
+  const { timeZone } = useDisplayTimezone();
+
   if (field.renderType === "hidden") {
     return null;
   }
@@ -159,6 +163,12 @@ export function FieldValue({
     return null;
   }
 
+  const zoned =
+    !plainValueLinks && field.dateSourceRaw
+      ? formatDateInDisplayTimeZone(field.dateSourceRaw, timeZone)
+      : "";
+  const primaryText = zoned.length > 0 ? zoned : field.textValue;
+
   if ((field.renderType === "mailto" || field.renderType === "mailto_list" || field.renderType === "phone" || field.renderType === "phone_list" || field.renderType === "link") && field.links.length > 0) {
     return renderLinkList(field, stacked || field.renderType.endsWith("_list"), plainValueLinks);
   }
@@ -167,10 +177,10 @@ export function FieldValue({
     if (field.links.length === 1) {
       const link = field.links[0]!;
       const newTab = /^https?:\/\//i.test(link.href);
-      const showText = Boolean(field.textValue?.trim() && field.textValue.trim() !== link.label.trim());
+      const showText = Boolean(primaryText?.trim() && primaryText.trim() !== link.label.trim());
       return (
         <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>
-          {showText ? <>{field.textValue} </> : null}
+          {showText ? <>{primaryText} </> : null}
           {plainValueLinks ? (
             <span>{link.label}</span>
           ) : (
@@ -277,8 +287,8 @@ export function FieldValue({
         </ul>
       );
     }
-    if (field.textValue) {
-      return <span className={tx(field, "leading-6 whitespace-pre-line text-[color:var(--wsu-ink)]")}>{field.textValue}</span>;
+    if (primaryText) {
+      return <span className={tx(field, "leading-6 whitespace-pre-line text-[color:var(--wsu-ink)]")}>{primaryText}</span>;
     }
   }
 
@@ -286,8 +296,8 @@ export function FieldValue({
     if (field.links.length > 0) {
       return (
         <div className={tx(field, "space-y-2")}>
-          {field.textValue ? (
-            <p className={tx(field, "whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]")}>{field.textValue}</p>
+          {primaryText ? (
+            <p className={tx(field, "whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]")}>{primaryText}</p>
           ) : null}
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {field.links.map((link) => {
@@ -312,15 +322,15 @@ export function FieldValue({
         </div>
       );
     }
-    return field.textValue ? (
-      <p className={tx(field, "whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]")}>{field.textValue}</p>
+    return primaryText ? (
+      <p className={tx(field, "whitespace-pre-line leading-6 text-[color:var(--wsu-ink)]")}>{primaryText}</p>
     ) : (
       <EmptyValue />
     );
   }
 
   if (field.renderType === "badge") {
-    return field.textValue ? (
+    return primaryText ? (
       <span
         className={tx(field, "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]")}
         style={{
@@ -328,8 +338,9 @@ export function FieldValue({
           backgroundColor: "var(--view-badge-bg, #f3f4f6)",
           color: "var(--view-badge-text, #374151)",
         }}
+        suppressHydrationWarning={Boolean(field.dateSourceRaw)}
       >
-        {field.textValue}
+        {primaryText}
       </span>
     ) : (
       <EmptyValue />
@@ -362,8 +373,10 @@ export function FieldValue({
     );
   }
 
-  return field.textValue ? (
-    <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")}>{field.textValue}</span>
+  return primaryText ? (
+    <span className={tx(field, "leading-6 text-[color:var(--wsu-ink)]")} suppressHydrationWarning={Boolean(field.dateSourceRaw)}>
+      {primaryText}
+    </span>
   ) : (
     <EmptyValue />
   );

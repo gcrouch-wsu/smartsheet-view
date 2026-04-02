@@ -499,6 +499,8 @@ export interface ResolvedFieldValue {
   listDisplay?: ListDisplayMode;
   /** Visual treatment for grouped people items. */
   peopleStyle?: PeopleGroupStyle;
+  /** Pre-transform date/datetime string from Smartsheet; public UI may reformat using the visitor's time zone. */
+  dateSourceRaw?: string;
 }
 
 export interface ResolvedViewRow {

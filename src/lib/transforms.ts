@@ -316,6 +316,26 @@ export function normalizedValueToRoleAttributeText(
   return extractNames(value).join(", ");
 }
 
+/** First parseable date/datetime token from normalized cell value (for client time zone formatting). */
+export function extractDateSourceRawForDisplay(value: unknown): string | undefined {
+  const s = normalizeToStringList(value)[0];
+  if (typeof s !== "string") {
+    return undefined;
+  }
+  const t = s.trim();
+  if (!t) {
+    return undefined;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) {
+    return t;
+  }
+  const parsed = new Date(t);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+  return t;
+}
+
 function sortKeyForDateRaw(rawDateStr: string): string | undefined {
   if (!rawDateStr.trim()) {
     return undefined;
@@ -496,10 +516,15 @@ function buildTextList(value: unknown) {
   return uniqueStrings(normalizeToStringList(value).map((entry) => entry.trim()).filter(Boolean));
 }
 
+export interface BuildResolvedFieldOptions {
+  dateSourceRaw?: string;
+}
+
 export function buildResolvedFieldValue(
   field: ViewFieldConfig,
   value: unknown,
   linkDisplay?: ValueLinkDisplayOptions,
+  buildOptions?: BuildResolvedFieldOptions,
 ): ResolvedFieldValue {
   const renderType = field.render.type;
   const emptyLabel = field.render.emptyLabel ?? "";
@@ -589,6 +614,7 @@ export function buildResolvedFieldValue(
     listDelimiter: field.render.listDelimiter,
     listDisplay: field.render.listDisplay,
     peopleStyle: field.render.peopleStyle,
+    ...(buildOptions?.dateSourceRaw ? { dateSourceRaw: buildOptions.dateSourceRaw } : {}),
   };
 }
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { ContributorProvider } from "@/components/public/ContributorContext";
+import { DisplayTimezoneProvider } from "@/components/public/DisplayTimezoneContext";
+import { DisplayTimezoneSelector } from "@/components/public/DisplayTimezoneSelector";
 import { EditRowDrawer } from "@/components/public/EditRowDrawer";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
 import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
@@ -160,13 +162,14 @@ export function ViewWithSearchAndIndex({
 
   return (
     <ContributorProvider value={contributorContextValue}>
-      <ViewValueLinkProvider
-        value={{
-          linkEmailsInView: filteredView.linkEmailsInView,
-          linkPhonesInView: filteredView.linkPhonesInView,
-        }}
-      >
-      <div className="relative">
+      <DisplayTimezoneProvider>
+        <ViewValueLinkProvider
+          value={{
+            linkEmailsInView: filteredView.linkEmailsInView,
+            linkPhonesInView: filteredView.linkPhonesInView,
+          }}
+        >
+          <div className="relative">
         {!embed && contributorEmail && (
           <div className="view-surface-muted mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
             <div className="flex flex-wrap items-center gap-3">
@@ -235,6 +238,13 @@ export function ViewWithSearchAndIndex({
                 ? `${filteredView.rowCount} of ${view.rowCount} your rows`
                 : `${filteredView.rowCount} of ${view.rowCount} rows`}
             </span>
+            <DisplayTimezoneSelector embed={false} />
+          </div>
+        )}
+
+        {embed && view.rows.length > 0 && (
+          <div className="mb-3 flex flex-wrap justify-end gap-2">
+            <DisplayTimezoneSelector embed />
           </div>
         )}
 
@@ -290,8 +300,9 @@ export function ViewWithSearchAndIndex({
           onClose={() => setEditingRowId(null)}
           returnFocusRef={editReturnFocusRef}
         />
-      </div>
-      </ViewValueLinkProvider>
+          </div>
+        </ViewValueLinkProvider>
+      </DisplayTimezoneProvider>
     </ContributorProvider>
   );
 }

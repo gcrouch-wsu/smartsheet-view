@@ -5,6 +5,7 @@ import {
   applySmartsheetHyperlinkToResolvedField,
   applyTransforms,
   buildResolvedFieldValue,
+  extractDateSourceRawForDisplay,
   normalizeSourceValue,
   publicLinkFromSmartsheetCell,
 } from "@/lib/transforms";
@@ -123,6 +124,21 @@ describe("transforms", () => {
     // textValue should be the formatted display string, not the ISO string
     expect(result.textValue).toMatch(/Jan/);
     expect(result.textValue).not.toBe("2024-01-15");
+  });
+
+  it("extractDateSourceRawForDisplay keeps YYYY-MM-DD calendar date", () => {
+    expect(extractDateSourceRawForDisplay("2024-01-15")).toBe("2024-01-15");
+  });
+
+  it("buildResolvedFieldValue attaches dateSourceRaw when buildOptions provides it", () => {
+    const field: ViewFieldConfig = {
+      key: "d",
+      label: "D",
+      source: { columnTitle: "D" },
+      render: { type: "text" },
+    };
+    const built = buildResolvedFieldValue(field, "x", undefined, { dateSourceRaw: "2024-06-01" });
+    expect(built.dateSourceRaw).toBe("2024-06-01");
   });
 
   it("does not set sortValue for non-date render types", () => {
