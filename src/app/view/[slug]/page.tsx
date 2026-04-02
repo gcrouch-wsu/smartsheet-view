@@ -22,6 +22,7 @@ import {
   isContributorStillInSheet,
 } from "@/lib/contributor-utils";
 import { CONTRIBUTOR_DATASET_OPTIONS, loadContributorDataset } from "@/lib/contributor-view";
+import { formatFetchedAtInViewTimeZone } from "@/lib/display-datetime";
 import {
   loadPublicPageState,
   resolveRequestedResolvedView,
@@ -330,7 +331,9 @@ export default async function PublicViewPage({
                                 }
                               >
                                 <span className="font-semibold text-[color:var(--wsu-ink)]">Refreshed:</span>{" "}
-                                {formatTimestamp(page.fetchedAt)}
+                                <time dateTime={page.fetchedAt} className="tabular-nums">
+                                  {formatFetchedAtInViewTimeZone(page.fetchedAt, activeView.displayTimeZone)}
+                                </time>
                               </p>
                             )}
                           </div>

@@ -13,9 +13,12 @@ export const DISPLAY_TIMEZONE_OPTIONS: { value: string; label: string }[] = [
   { value: "UTC", label: "UTC" },
 ];
 
-export function isValidIanaTimeZone(tz: string): boolean {
+export function isValidIanaTimeZone(tz: string | undefined | null): boolean {
+  if (typeof tz !== "string" || !tz.trim()) {
+    return false;
+  }
   try {
-    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    Intl.DateTimeFormat(undefined, { timeZone: tz.trim() });
     return true;
   } catch {
     return false;
@@ -34,6 +37,27 @@ export function effectiveViewDisplayTimeZone(view: { displayTimeZone?: string })
 export function labelForDisplayTimeZone(iana: string): string {
   const found = DISPLAY_TIMEZONE_OPTIONS.find((o) => o.value === iana);
   return found?.label ?? iana;
+}
+
+/**
+ * Format Smartsheet fetch time for the public header "Refreshed" line using the view's display zone
+ * (e.g. "2:34 PM PDT"). Use `<time dateTime={iso}>` for the full instant.
+ */
+export function formatFetchedAtInViewTimeZone(iso: string, ianaTimeZone: string | undefined): string {
+  const tz =
+    typeof ianaTimeZone === "string" && ianaTimeZone.trim() && isValidIanaTimeZone(ianaTimeZone)
+      ? ianaTimeZone.trim()
+      : VIEW_DISPLAY_TIMEZONE_DEFAULT;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return iso;
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(d);
 }
 
 /**

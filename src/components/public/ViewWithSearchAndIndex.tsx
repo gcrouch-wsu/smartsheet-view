@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import { ContributorProvider } from "@/components/public/ContributorContext";
-import { DisplayTimezoneCaption } from "@/components/public/DisplayTimezoneCaption";
 import { DisplayTimezoneProvider } from "@/components/public/DisplayTimezoneContext";
 import { EditRowDrawer } from "@/components/public/EditRowDrawer";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
@@ -238,13 +237,6 @@ export function ViewWithSearchAndIndex({
                 ? `${filteredView.rowCount} of ${view.rowCount} your rows`
                 : `${filteredView.rowCount} of ${view.rowCount} rows`}
             </span>
-            <DisplayTimezoneCaption timeZone={view.displayTimeZone} />
-          </div>
-        )}
-
-        {embed && view.rows.length > 0 && (
-          <div className="mb-3 flex flex-wrap justify-end gap-2">
-            <DisplayTimezoneCaption embed timeZone={view.displayTimeZone} />
           </div>
         )}
 

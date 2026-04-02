@@ -17,9 +17,12 @@ export function DisplayTimezoneProvider({
 }: {
   children: ReactNode;
   /** IANA zone from published view config (authoritative on public pages). */
-  timeZone: string;
+  timeZone: string | undefined;
 }) {
-  const safe = isValidIanaTimeZone(timeZone) ? timeZone : VIEW_DISPLAY_TIMEZONE_DEFAULT;
+  const safe =
+    typeof timeZone === "string" && timeZone.trim() && isValidIanaTimeZone(timeZone)
+      ? timeZone.trim()
+      : VIEW_DISPLAY_TIMEZONE_DEFAULT;
   const value = useMemo(
     () => ({
       timeZone: safe,

@@ -2,8 +2,33 @@ import { describe, expect, it } from "vitest";
 import {
   effectiveViewDisplayTimeZone,
   formatDateInDisplayTimeZone,
+  formatFetchedAtInViewTimeZone,
   instantMillisFromSmartsheetDateString,
+  isValidIanaTimeZone,
 } from "@/lib/display-datetime";
+
+describe("isValidIanaTimeZone", () => {
+  it("rejects undefined, null, and empty string", () => {
+    expect(isValidIanaTimeZone(undefined)).toBe(false);
+    expect(isValidIanaTimeZone(null)).toBe(false);
+    expect(isValidIanaTimeZone("")).toBe(false);
+  });
+});
+
+describe("formatFetchedAtInViewTimeZone", () => {
+  it("uses view zone with clock and short zone name", () => {
+    const out = formatFetchedAtInViewTimeZone("2026-06-15T21:34:00.000Z", "America/Los_Angeles");
+    expect(out).toMatch(/34/);
+    expect(out).toMatch(/PM|AM/);
+    expect(out.length).toBeGreaterThan(4);
+  });
+
+  it("falls back when zone is missing", () => {
+    const a = formatFetchedAtInViewTimeZone("2026-06-15T21:34:00.000Z", undefined);
+    const b = formatFetchedAtInViewTimeZone("2026-06-15T21:34:00.000Z", "America/Los_Angeles");
+    expect(a).toBe(b);
+  });
+});
 
 describe("effectiveViewDisplayTimeZone", () => {
   it("defaults when unset or invalid", () => {
