@@ -1091,6 +1091,40 @@ export function buildContributorEditingClientConfig(
   } satisfies ContributorEditingClientConfig;
 }
 
+/**
+ * Remove contributor editing column ids that no longer exist in Smartsheet (e.g. after deleting/recreating a column).
+ * Prevents save from failing with "does not exist in the current source schema" until the admin re-checks fields.
+ */
+export function pruneStaleContributorColumnIds(
+  view: ViewConfig,
+  columns: SmartsheetColumn[],
+): { view: ViewConfig; pruned: boolean } {
+  const editing = view.editing;
+  if (!editing) {
+    return { view, pruned: false };
+  }
+  const ids = new Set(columns.map((c) => c.id));
+  const contactColumnIds = editing.contactColumnIds.filter((id) => ids.has(id));
+  const editableColumnIds = editing.editableColumnIds.filter((id) => ids.has(id));
+  const pruned =
+    contactColumnIds.length !== editing.contactColumnIds.length ||
+    editableColumnIds.length !== editing.editableColumnIds.length;
+  if (!pruned) {
+    return { view, pruned: false };
+  }
+  return {
+    view: {
+      ...view,
+      editing: {
+        ...editing,
+        contactColumnIds,
+        editableColumnIds,
+      },
+    },
+    pruned: true,
+  };
+}
+
 export function getContributorEditingValidationErrors(
   view: ViewConfig,
   columns: SmartsheetColumn[],

@@ -14,6 +14,7 @@ import {
   serializeMultiPersonToCells,
   validateContributorPicklistCells,
   validateMultiPersonGroupsForSave,
+  pruneStaleContributorColumnIds,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
 import type {
@@ -795,5 +796,32 @@ describe("derived role-group contributor editing", () => {
     expect(getContributorEditingValidationErrors(view, columns, sourceConfig)).not.toContain(
       "Select at least one Editable Field (what contributors can edit), add a Multi-person field group, or include a writable role-group field. Contact columns only define who can edit, not what.",
     );
+  });
+});
+
+describe("pruneStaleContributorColumnIds", () => {
+  it("removes contact and editable column ids absent from the current schema", () => {
+    const view: ViewConfig = {
+      id: "v",
+      slug: "v",
+      sourceId: "s",
+      label: "V",
+      layout: "table",
+      public: false,
+      fields: [],
+      editing: {
+        enabled: true,
+        contactColumnIds: [100, 999999],
+        editableColumnIds: [200, 2953654070890372],
+      },
+    };
+    const columns: SmartsheetColumn[] = [
+      { id: 100, index: 0, title: "Contact", type: "CONTACT_LIST" },
+      { id: 200, index: 1, title: "Campus", type: "PICKLIST" },
+    ];
+    const { view: next, pruned } = pruneStaleContributorColumnIds(view, columns);
+    expect(pruned).toBe(true);
+    expect(next.editing?.contactColumnIds).toEqual([100]);
+    expect(next.editing?.editableColumnIds).toEqual([200]);
   });
 });

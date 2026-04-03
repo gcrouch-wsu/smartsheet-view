@@ -17,7 +17,10 @@ function ensureUniqueSlug(existingSlugs: Set<string>, baseSlug: string): string 
   return slug;
 }
 import type { ViewConfig } from "@/lib/config/types";
-import { getContributorEditingValidationErrors } from "@/lib/contributor-utils";
+import {
+  getContributorEditingValidationErrors,
+  pruneStaleContributorColumnIds,
+} from "@/lib/contributor-utils";
 import { collectSchemaDriftWarnings } from "@/lib/public-view";
 import { getSmartsheetSchema } from "@/lib/smartsheet";
 
@@ -67,7 +70,8 @@ async function validateContributorEditing(view: ViewConfig) {
 
   const source = await getSourceForView(view);
   const schema = await getSmartsheetSchema(source, { fresh: true });
-  const errors = getContributorEditingValidationErrors(view, schema.columns, source);
+  const { view: pruned } = pruneStaleContributorColumnIds(view, schema.columns);
+  const errors = getContributorEditingValidationErrors(pruned, schema.columns, source);
 
   if (errors.length > 0) {
     throw new AdminActionError({
@@ -76,6 +80,14 @@ async function validateContributorEditing(view: ViewConfig) {
       errors,
     });
   }
+}
+
+/** Fresh schema + view with contributor column ids pruned to columns that still exist in Smartsheet. */
+async function resolveViewForAdminSave(view: ViewConfig) {
+  const source = await getSourceForView(view);
+  const schema = await getSmartsheetSchema(source, { fresh: true });
+  const { view: pruned, pruned: columnsWerePruned } = pruneStaleContributorColumnIds(view, schema.columns);
+  return { source, schema, view: pruned, columnsWerePruned };
 }
 
 export async function saveAdminViewConfig(
@@ -95,10 +107,11 @@ export async function saveAdminViewConfig(
     }
   }
 
-  await validateContributorEditing(view);
+  const { view: viewToSave } = await resolveViewForAdminSave(view);
+  await validateContributorEditing(viewToSave);
 
-  if (view.public) {
-    const warnings = await getPublicationWarnings(view);
+  if (viewToSave.public) {
+    const warnings = await getPublicationWarnings(viewToSave);
     if (warnings.length > 0) {
       throw new AdminActionError({
         status: 409,
@@ -108,8 +121,8 @@ export async function saveAdminViewConfig(
     }
   }
 
-  await saveViewConfig(view);
-  return view;
+  await saveViewConfig(viewToSave);
+  return viewToSave;
 }
 
 export async function updateAdminViewPublication(viewId: string, isPublic: boolean) {
@@ -125,15 +138,20 @@ export async function updateAdminViewPublication(viewId: string, isPublic: boole
     });
   }
 
-  await validateContributorEditing(view);
+  const { view: viewToCheck, columnsWerePruned } = await resolveViewForAdminSave(view);
+  await validateContributorEditing(viewToCheck);
 
-  const warnings = await getPublicationWarnings(view);
+  const warnings = await getPublicationWarnings(viewToCheck);
   if (warnings.length > 0) {
     throw new AdminActionError({
       status: 409,
       message: "View could not be published because the current source schema no longer matches the config.",
       warnings,
     });
+  }
+
+  if (columnsWerePruned) {
+    await saveViewConfig(viewToCheck);
   }
 
   return updateViewPublication(viewId, true);

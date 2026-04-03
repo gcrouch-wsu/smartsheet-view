@@ -1424,13 +1424,6 @@ export function ViewBuilder({
                           ) : null}
                           {view.fields
                             .filter((f) => !row.fieldKeys.includes(f.key))
-                            .filter((f) => {
-                              const ck = view.presentation?.campusFieldKey;
-                              if (view.presentation?.hideCampusFieldInRecordDisplay && ck && f.key === ck) {
-                                return false;
-                              }
-                              return true;
-                            })
                             .map((f) => (
                               <option key={f.key} value={f.key}>{f.label || f.key}</option>
                             ))}
@@ -2393,14 +2386,6 @@ export function ViewBuilder({
                   {schema.columns.map((col) => {
                     const included = isColumnIncluded(col);
                     const field = getFieldForColumn(col);
-                    const campusK = view.presentation?.campusFieldKey;
-                    if (
-                      view.presentation?.hideCampusFieldInRecordDisplay === true &&
-                      campusK &&
-                      field?.key === campusK
-                    ) {
-                      return null;
-                    }
                     return (
                       <div key={col.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[color:var(--wsu-border)]/60 bg-[color:var(--wsu-stone)]/20 p-3">
                         <label className="flex min-h-[44px] items-center gap-2">
