@@ -73,11 +73,6 @@ export function EditRowDrawer({
     return keys;
   }, [contributor?.editingConfig?.editableFields, editableFieldGroups, view.fields]);
 
-  const orderedFields = useMemo(
-    () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys, editableByFieldKey) : []),
-    [view, row, contributorFieldKeys, editableByFieldKey],
-  );
-
   const editableByFieldKey = useMemo(() => {
     const m = new Map<string, ContributorEditableFieldDefinition>();
     for (const f of editableFields) {
@@ -85,6 +80,11 @@ export function EditRowDrawer({
     }
     return m;
   }, [editableFields]);
+
+  const orderedFields = useMemo(
+    () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys, editableByFieldKey) : []),
+    [view, row, contributorFieldKeys, editableByFieldKey],
+  );
 
   const groupByFieldKey = useMemo(() => {
     const m = new Map<string, EditableFieldGroup>();
