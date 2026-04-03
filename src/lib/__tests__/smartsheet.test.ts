@@ -373,4 +373,37 @@ describe("formatCellsForSmartsheetRowPut", () => {
       },
     ]);
   });
+
+  it("converts MULTI_PICKLIST comma-separated value to API objectValue", () => {
+    const types = new Map<number, string>([[214, "MULTI_PICKLIST"]]);
+    expect(
+      formatCellsForSmartsheetRowPut([{ columnId: 214, value: "Pullman, Spokane" }], types),
+    ).toEqual([
+      {
+        columnId: 214,
+        objectValue: { objectType: "MULTI_PICKLIST", values: ["Pullman", "Spokane"] },
+      },
+    ]);
+  });
+
+  it("clears MULTI_PICKLIST with value empty string or empty objectValue values", () => {
+    const types = new Map<number, string>([[214, "MULTI_PICKLIST"]]);
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 214, value: "" }], types)).toEqual([
+      { columnId: 214, value: "" },
+    ]);
+    expect(
+      formatCellsForSmartsheetRowPut(
+        [{ columnId: 214, objectValue: { objectType: "MULTI_PICKLIST", values: [] } }],
+        types,
+      ),
+    ).toEqual([{ columnId: 214, value: "" }]);
+  });
+
+  it("keeps valid MULTI_PICKLIST objectValue from client", () => {
+    const types = new Map<number, string>([[214, "MULTI_PICKLIST"]]);
+    const ov = { objectType: "MULTI_PICKLIST" as const, values: ["A", "B"] };
+    expect(formatCellsForSmartsheetRowPut([{ columnId: 214, objectValue: ov }], types)).toEqual([
+      { columnId: 214, objectValue: ov },
+    ]);
+  });
 });

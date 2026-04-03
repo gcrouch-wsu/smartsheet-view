@@ -510,6 +510,28 @@ function stringifyCellScalar(cell: { value?: unknown }): string {
 
 const SMARTSHEET_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT_LIST"]);
 
+/** Smartsheet MULTI_PICKLIST writes require `objectValue`; plain `value` fails CELL_VALUE_FAILS_VALIDATION under strict parsing. */
+function sanitizeMultiPicklistObjectValue(ov: unknown): {
+  objectType: "MULTI_PICKLIST";
+  values: string[];
+} {
+  if (ov == null || typeof ov !== "object") {
+    return { objectType: "MULTI_PICKLIST", values: [] };
+  }
+  const o = ov as Record<string, unknown>;
+  if (o.objectType !== "MULTI_PICKLIST") {
+    return { objectType: "MULTI_PICKLIST", values: [] };
+  }
+  const raw = o.values;
+  if (!Array.isArray(raw)) {
+    return { objectType: "MULTI_PICKLIST", values: [] };
+  }
+  const values = raw
+    .map((v) => (typeof v === "string" ? v.trim() : String(v ?? "").trim()))
+    .filter(Boolean);
+  return { objectType: "MULTI_PICKLIST", values };
+}
+
 /**
  * Smartsheet rejects bare `{ objectType: "CONTACT" }` (no email/name) under strict objectValue parsing → 1008.
  * For CONTACT_LIST, clearing uses `{ value: "" }` per API cell reference.
@@ -570,6 +592,8 @@ function sanitizeMultiContactObjectValue(ov: unknown): {
  *
  * - **TEXT_NUMBER / PICKLIST / PHONE:** `{ columnId, value }`. Smartsheet defaults to **strict** cell parsing
  *   (`strict: true`); we do not send `strict: false`, so PICKLIST text must match column options.
+ * - **MULTI_PICKLIST:** `{ columnId, objectValue }` with `{ objectType: "MULTI_PICKLIST", values: string[] }`.
+ *   Comma/semicolon-separated `value` from the contributor form is split and rewritten to this shape.
  * - **MULTI_CONTACT_LIST:** `{ columnId, objectValue }` with `{ objectType: "MULTI_CONTACT", values: [...] }`
  *   (REST + official SDKs use the plural **`values`** array, not `value`).
  * - **CONTACT_LIST:** `{ objectValue }` when setting a contact; **`{ value: "" }`** when clearing (bare
@@ -625,6 +649,28 @@ export function formatCellsForSmartsheetRowPut(
           ? { objectType: "CONTACT", email: s }
           : { objectType: "CONTACT", name: s },
       };
+    }
+
+    if (columnType === "MULTI_PICKLIST") {
+      if ("objectValue" in cell) {
+        const sanitized = sanitizeMultiPicklistObjectValue(cell.objectValue);
+        if (sanitized.values.length === 0) {
+          return { columnId, value: "" };
+        }
+        return { columnId, objectValue: sanitized };
+      }
+      const s = stringifyCellScalar(cell);
+      if (!s) {
+        return { columnId, value: "" };
+      }
+      const parts = s
+        .split(/[,;\n]+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (parts.length === 0) {
+        return { columnId, value: "" };
+      }
+      return { columnId, objectValue: { objectType: "MULTI_PICKLIST", values: parts } };
     }
 
     if ("objectValue" in cell) {
