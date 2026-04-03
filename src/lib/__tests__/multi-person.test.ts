@@ -111,4 +111,47 @@ describe("parseMultiPersonRow with numbered role groups (fromRoleGroupViewFieldK
       { name: "", email: "", phone: "" },
     ]);
   });
+
+  it("orders people by slot when resolved people array order does not match numeric slot order", () => {
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {
+        staff: {
+          key: "staff",
+          label: "Staff",
+          renderType: "people_group",
+          textValue: "",
+          listValue: [],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+          people: [
+            { slot: "3", name: "Carol", email: "c@wsu.edu", isEmpty: false },
+            { slot: "1", name: "Alice", email: "a@wsu.edu", isEmpty: false },
+            { slot: "2", name: "Bob", email: "b@wsu.edu", isEmpty: false },
+          ],
+        },
+      },
+    };
+    const group: EditableFieldGroup = {
+      id: "x",
+      label: "Staff Graduate Program Coordinator or Designee",
+      fromRoleGroupViewFieldKey: "staff",
+      usesFixedSlots: true,
+      attributes: [
+        { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1" },
+        { attribute: "email", fieldKey: "staff", columnId: 2, slot: "1" },
+        { attribute: "name", fieldKey: "staff", columnId: 3, slot: "2" },
+        { attribute: "email", fieldKey: "staff", columnId: 4, slot: "2" },
+        { attribute: "name", fieldKey: "staff", columnId: 5, slot: "3" },
+        { attribute: "email", fieldKey: "staff", columnId: 6, slot: "3" },
+      ],
+    };
+    const persons = parseMultiPersonRow(row, group);
+    expect(persons).toHaveLength(3);
+    expect(persons[0]).toMatchObject({ name: "Alice", email: "a@wsu.edu" });
+    expect(persons[1]).toMatchObject({ name: "Bob", email: "b@wsu.edu" });
+    expect(persons[2]).toMatchObject({ name: "Carol", email: "c@wsu.edu" });
+  });
 });

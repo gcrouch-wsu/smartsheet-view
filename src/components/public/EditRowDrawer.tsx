@@ -15,6 +15,7 @@ import {
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
+  slotOrderForEditableGroup,
   validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
@@ -381,6 +382,7 @@ export function EditRowDrawer({
                         }
                         const persons = groupValues[group.id] ?? [];
                         const fixedSlotCount = countFixedSlotsInEditableGroup(group);
+                        const fixedSlotOrder = fixedSlotCount > 0 ? slotOrderForEditableGroup(group) : [];
                         const hasName = group.attributes.some((a) => a.attribute === "name");
                         const hasEmail = group.attributes.some((a) => a.attribute === "email");
                         const hasPhone = group.attributes.some((a) => a.attribute === "phone");
@@ -405,9 +407,16 @@ export function EditRowDrawer({
                               )}
                               {persons.map((person, idx) => {
                                 const rowErr = groupErrors[idx];
+                                const slotId = fixedSlotOrder[idx];
+                                const smartsheetSlotTitle =
+                                  slotId != null
+                                    ? group.attributes.find((a) => a.slot === slotId && a.attribute === "name")
+                                        ?.columnTitle?.trim()
+                                    : undefined;
                                 const positionLabel =
                                   fixedSlotCount > 0
-                                    ? `${group.label} — ${idx + 1} of ${fixedSlotCount}`
+                                    ? smartsheetSlotTitle ||
+                                      `${group.label} — ${idx + 1} of ${fixedSlotCount}`
                                     : `${group.label} — person ${idx + 1}`;
                                 const preview =
                                   person.name.trim() || person.email.trim()

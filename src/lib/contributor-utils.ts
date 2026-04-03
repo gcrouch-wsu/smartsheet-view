@@ -270,11 +270,24 @@ export function parseMultiPersonRow(
     if (!people?.length) {
       return normalizeFixedSlotPersonsForEdit(group, []);
     }
-    const mapped = people.map((p) => ({
-      name: p.name?.trim() ?? "",
-      email: p.email?.trim() ?? "",
-      phone: p.phone?.trim() ?? "",
-    }));
+    const slotOrder = slotOrderFromAttributes(group.attributes);
+    if (slotOrder.length === 0) {
+      const mapped = people.map((p) => ({
+        name: p.name?.trim() ?? "",
+        email: p.email?.trim() ?? "",
+        phone: p.phone?.trim() ?? "",
+      }));
+      return normalizeFixedSlotPersonsForEdit(group, mapped);
+    }
+    const bySlot = new Map<string, MultiPersonEntry>();
+    for (const p of people) {
+      bySlot.set(String(p.slot), {
+        name: p.name?.trim() ?? "",
+        email: p.email?.trim() ?? "",
+        phone: p.phone?.trim() ?? "",
+      });
+    }
+    const mapped = slotOrder.map((slot) => bySlot.get(slot) ?? { name: "", email: "", phone: "" });
     return normalizeFixedSlotPersonsForEdit(group, mapped);
   }
 
@@ -375,6 +388,11 @@ function slotOrderFromAttributes(attributes: EditableFieldGroup["attributes"]): 
     }
   }
   return order.sort(compareSlotIds);
+}
+
+/** Distinct slot ids in contributor/serializer order (numeric sort). */
+export function slotOrderForEditableGroup(group: EditableFieldGroup): string[] {
+  return slotOrderFromAttributes(group.attributes);
 }
 
 /**
