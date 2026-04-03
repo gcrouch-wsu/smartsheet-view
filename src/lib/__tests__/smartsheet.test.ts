@@ -115,6 +115,36 @@ describe("smartsheet normalization", () => {
     expect(dataset.rows[0]?.sheetId).toBe(9999);
   });
 
+  it("normalizes picklist options when API returns object-shaped entries", async () => {
+    vi.stubEnv("SMARTSHEET_API_TOKEN", "token-123");
+
+    const body = {
+      id: 1,
+      name: "S",
+      columns: [
+        {
+          id: 200,
+          index: 0,
+          title: "Campus",
+          type: "PICKLIST",
+          options: [{ value: "Pullman" }, { name: "Spokane" }, { label: "Tri-Cities" }],
+        },
+      ],
+      rows: [],
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(body));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const dataset = await getSmartsheetDataset({
+      id: "x",
+      label: "X",
+      sourceType: "sheet",
+      smartsheetId: 1,
+    });
+
+    expect(dataset.columns[0]?.options).toEqual(["Pullman", "Spokane", "Tri-Cities"]);
+  });
+
   it("applies request-scoped fetch overrides without mutating the source config", async () => {
     vi.stubEnv("SMARTSHEET_API_TOKEN", "token-123");
 

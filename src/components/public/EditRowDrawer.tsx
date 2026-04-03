@@ -74,8 +74,8 @@ export function EditRowDrawer({
   }, [contributor?.editingConfig?.editableFields, editableFieldGroups, view.fields]);
 
   const orderedFields = useMemo(
-    () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys) : []),
-    [view, row, contributorFieldKeys],
+    () => (row ? getEditDrawerOrderedFields(view, row, contributorFieldKeys, editableByFieldKey) : []),
+    [view, row, contributorFieldKeys, editableByFieldKey],
   );
 
   const editableByFieldKey = useMemo(() => {
@@ -616,6 +616,47 @@ export function EditRowDrawer({
                                   </option>
                                 ))}
                               </select>
+                            ) : ed.columnType === "MULTI_PICKLIST" && ed.options && ed.options.length > 0 ? (
+                              <fieldset className="space-y-2">
+                                <legend className="sr-only">{fieldLabel}</legend>
+                                <p className="text-xs text-[color:var(--wsu-muted)]">Select one or more (saved as a comma-separated list).</p>
+                                <div className="flex flex-col gap-2">
+                                  {(() => {
+                                    const selected = new Set(
+                                      value
+                                        .split(/[,;\n]+/)
+                                        .map((s) => s.trim())
+                                        .filter(Boolean),
+                                    );
+                                    return ed.options!.map((option) => (
+                                      <label
+                                        key={option}
+                                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-[color:var(--wsu-border)]/60 bg-white px-3 py-2 text-sm"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={selected.has(option)}
+                                          onChange={(event) => {
+                                            const nextSel = new Set(selected);
+                                            if (event.target.checked) {
+                                              nextSel.add(option);
+                                            } else {
+                                              nextSel.delete(option);
+                                            }
+                                            const ordered = ed.options!.filter((o) => nextSel.has(o));
+                                            setFormValues((current) => ({
+                                              ...current,
+                                              [ed.columnId]: ordered.join(", "),
+                                            }));
+                                          }}
+                                          className="h-4 w-4 rounded border-[color:var(--wsu-border)] text-[color:var(--wsu-crimson)]"
+                                        />
+                                        <span>{option}</span>
+                                      </label>
+                                    ));
+                                  })()}
+                                </div>
+                              </fieldset>
                             ) : ed.renderType === "multiline_text" ? (
                               <textarea
                                 value={value}

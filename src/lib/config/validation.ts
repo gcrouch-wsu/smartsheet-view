@@ -573,9 +573,9 @@ function parsePresentationConfig(
   }
 
   const errors: string[] = [];
-  const headingFieldKey = asOptionalString(input.headingFieldKey);
-  const summaryFieldKey = asOptionalString(input.summaryFieldKey);
-  const indexFieldKey = asOptionalString(input.indexFieldKey);
+  let headingFieldKey = asOptionalString(input.headingFieldKey);
+  let summaryFieldKey = asOptionalString(input.summaryFieldKey);
+  let indexFieldKey = asOptionalString(input.indexFieldKey);
   const hideRowBadge = asBoolean(input.hideRowBadge, false);
   const rowDividerStyle = asOptionalString(input.rowDividerStyle);
   const validDividerStyles = ["none", "default", "subtle"];
@@ -599,9 +599,9 @@ function parsePresentationConfig(
     input.linkEmailsInView === undefined ? undefined : asBoolean(input.linkEmailsInView, true);
   const linkPhonesInView =
     input.linkPhonesInView === undefined ? undefined : asBoolean(input.linkPhonesInView, false);
-  const printGroupByFieldKey = asOptionalString(input.printGroupByFieldKey);
-  const campusFieldKey = asOptionalString(input.campusFieldKey);
-  const programGroupFieldKey = asOptionalString(input.programGroupFieldKey);
+  let printGroupByFieldKey = asOptionalString(input.printGroupByFieldKey);
+  let campusFieldKey = asOptionalString(input.campusFieldKey);
+  let programGroupFieldKey = asOptionalString(input.programGroupFieldKey);
   const campusGroupingModeRaw = asOptionalString(input.campusGroupingMode);
   let campusGroupingMode: CampusGroupingMode | undefined;
   if (campusGroupingModeRaw) {
@@ -620,7 +620,7 @@ function parsePresentationConfig(
       "presentation: turn on only one row merge mode — either merge by shared contact email or by same program and campus, not both.",
     );
   }
-  const mergePeopleFieldKey = asOptionalString(input.mergePeopleFieldKey);
+  let mergePeopleFieldKey = asOptionalString(input.mergePeopleFieldKey);
   let mergePeopleFieldKeys: string[] | undefined;
   if (Array.isArray(input.mergePeopleFieldKeys)) {
     mergePeopleFieldKeys = input.mergePeopleFieldKeys
@@ -631,6 +631,31 @@ function parsePresentationConfig(
     if (mergePeopleFieldKeys.length === 0) {
       mergePeopleFieldKeys = undefined;
     }
+  }
+  // Dropped columns / renamed field keys leave stale presentation pointers — clear them instead of failing validation.
+  if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
+    headingFieldKey = undefined;
+  }
+  if (summaryFieldKey && !fieldKeys.has(summaryFieldKey)) {
+    summaryFieldKey = undefined;
+  }
+  if (indexFieldKey && !fieldKeys.has(indexFieldKey)) {
+    indexFieldKey = undefined;
+  }
+  if (
+    printGroupByFieldKey &&
+    (!fieldKeys.has(printGroupByFieldKey) || !nonHiddenFieldKeys.has(printGroupByFieldKey))
+  ) {
+    printGroupByFieldKey = undefined;
+  }
+  if (campusFieldKey && !fieldKeys.has(campusFieldKey)) {
+    campusFieldKey = undefined;
+  }
+  if (programGroupFieldKey && !fieldKeys.has(programGroupFieldKey)) {
+    programGroupFieldKey = undefined;
+  }
+  if (mergePeopleFieldKey && !peopleGroupFieldKeys.has(mergePeopleFieldKey)) {
+    mergePeopleFieldKey = undefined;
   }
   const hideCampusFieldInRecordDisplay = input.hideCampusFieldInRecordDisplay === true;
   const showCampusStripOnProgramSections =
@@ -665,29 +690,6 @@ function parsePresentationConfig(
     headerBrandTitle = undefined;
   }
 
-  if (headingFieldKey && !fieldKeys.has(headingFieldKey)) {
-    errors.push(`presentation.headingFieldKey \"${headingFieldKey}\" does not match any field key.`);
-  }
-  if (summaryFieldKey && !fieldKeys.has(summaryFieldKey)) {
-    errors.push(`presentation.summaryFieldKey \"${summaryFieldKey}\" does not match any field key.`);
-  }
-  if (indexFieldKey && !fieldKeys.has(indexFieldKey)) {
-    errors.push(`presentation.indexFieldKey \"${indexFieldKey}\" does not match any field key.`);
-  }
-  if (printGroupByFieldKey && !fieldKeys.has(printGroupByFieldKey)) {
-    errors.push(`presentation.printGroupByFieldKey \"${printGroupByFieldKey}\" does not match any field key.`);
-  } else if (printGroupByFieldKey && !nonHiddenFieldKeys.has(printGroupByFieldKey)) {
-    errors.push(
-      `presentation.printGroupByFieldKey \"${printGroupByFieldKey}\" must reference a non-hidden field (print cannot group by hidden columns).`,
-    );
-  }
-  // campusFieldKey / programGroupFieldKey: must exist on the view but may be hidden (used for grouping/badges only).
-  if (campusFieldKey && !fieldKeys.has(campusFieldKey)) {
-    errors.push(`presentation.campusFieldKey \"${campusFieldKey}\" does not match any field key.`);
-  }
-  if (programGroupFieldKey && !fieldKeys.has(programGroupFieldKey)) {
-    errors.push(`presentation.programGroupFieldKey \"${programGroupFieldKey}\" does not match any field key.`);
-  }
   if (hideCampusFieldInRecordDisplay && !campusFieldKey) {
     errors.push(`presentation.hideCampusFieldInRecordDisplay requires presentation.campusFieldKey.`);
   }

@@ -15,6 +15,8 @@ export const CONTRIBUTOR_DATASET_OPTIONS: FetchBehaviorOptions = {
   fresh: true,
   fetchOptionsOverride: {
     includeObjectValue: true,
+    /** Required for contributor picklist dropdowns; sources may disable this on their default fetch. */
+    includeColumnOptions: true,
   },
 };
 

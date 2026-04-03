@@ -64,7 +64,7 @@ describe("validateViewConfig", () => {
     expect(result.errors.some((e) => e.includes("displayTimeZone"))).toBe(true);
   });
 
-  it("rejects presentation field keys that do not exist", () => {
+  it("drops stale presentation field keys (e.g. after deleting/recreating a column)", () => {
     const result = validateViewConfig(
       {
         id: "directory-detail",
@@ -75,6 +75,7 @@ describe("validateViewConfig", () => {
         public: false,
         presentation: {
           headingFieldKey: "missing",
+          summaryFieldKey: "also_missing",
         },
         fields: [
           {
@@ -88,11 +89,11 @@ describe("validateViewConfig", () => {
       { knownSourceIds: ["grad-programs"] }
     );
 
-    expect(result.success).toBe(false);
-    expect(result.errors[0]).toContain("presentation.headingFieldKey");
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation).toBeUndefined();
   });
 
-  it("rejects printGroupByFieldKey that does not match a field key", () => {
+  it("drops stale printGroupByFieldKey when the key no longer exists", () => {
     const result = validateViewConfig(
       {
         id: "print-bad",
@@ -116,8 +117,8 @@ describe("validateViewConfig", () => {
       { knownSourceIds: ["grad-programs"] }
     );
 
-    expect(result.success).toBe(false);
-    expect(result.errors.some((e) => e.includes("printGroupByFieldKey"))).toBe(true);
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation).toBeUndefined();
   });
 
   it("accepts printGroupByFieldKey that matches a field key", () => {
@@ -148,7 +149,7 @@ describe("validateViewConfig", () => {
     expect(result.data?.presentation?.printGroupByFieldKey).toBe("name");
   });
 
-  it("rejects printGroupByFieldKey when the field is hidden", () => {
+  it("drops printGroupByFieldKey when it points at a hidden field (print cannot group by hidden)", () => {
     const result = validateViewConfig(
       {
         id: "print-hidden",
@@ -178,11 +179,11 @@ describe("validateViewConfig", () => {
       { knownSourceIds: ["grad-programs"] }
     );
 
-    expect(result.success).toBe(false);
-    expect(result.errors.some((e) => e.includes("non-hidden field"))).toBe(true);
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation).toBeUndefined();
   });
 
-  it("rejects campusFieldKey that does not match a field key", () => {
+  it("drops stale campusFieldKey when the field was removed", () => {
     const result = validateViewConfig(
       {
         id: "campus-bad",
@@ -206,8 +207,8 @@ describe("validateViewConfig", () => {
       { knownSourceIds: ["grad-programs"] },
     );
 
-    expect(result.success).toBe(false);
-    expect(result.errors.some((e) => e.includes("campusFieldKey"))).toBe(true);
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation).toBeUndefined();
   });
 
   it("accepts campusFieldKey on a hidden field", () => {

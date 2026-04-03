@@ -9,6 +9,10 @@ import {
   type ResolvedView,
   type ResolvedViewRow,
 } from "@/lib/config/types";
+import {
+  contributorResolvedFieldStub,
+  type ContributorEditableFieldDefinition,
+} from "@/lib/contributor-utils";
 
 export type CardLayoutCell =
   | { type: "field"; field: ResolvedFieldValue }
@@ -45,6 +49,23 @@ export function buildStubResolvedField(view: ResolvedView, key: string): Resolve
     base.peopleStyle = "plain";
   }
   return base;
+}
+
+function contributorStubForLayoutKey(
+  view: ResolvedView,
+  key: string,
+  contributorFieldKeys: Set<string> | undefined,
+  contributorEditableByKey: Map<string, ContributorEditableFieldDefinition> | undefined,
+): ResolvedFieldValue | null {
+  const fromResolvedMeta = buildStubResolvedField(view, key);
+  if (fromResolvedMeta) {
+    return fromResolvedMeta;
+  }
+  if (!contributorFieldKeys?.has(key)) {
+    return null;
+  }
+  const ed = contributorEditableByKey?.get(key);
+  return ed ? contributorResolvedFieldStub(ed) : null;
 }
 
 export function describeResolvedField(field: ResolvedFieldValue) {
@@ -129,13 +150,17 @@ export function getIndexText(view: ResolvedView, row: ResolvedViewRow) {
 export function getCardLayoutRows(
   view: ResolvedView,
   row: ResolvedViewRow,
-  options?: { contributorFieldKeys?: Set<string> },
+  options?: {
+    contributorFieldKeys?: Set<string>;
+    contributorEditableByKey?: Map<string, ContributorEditableFieldDefinition>;
+  },
 ): CardLayoutCell[][] {
   const layout = view.presentation?.cardLayout;
   if (!layout || layout.length === 0) {
     return [];
   }
   const contrib = options?.contributorFieldKeys;
+  const contribEditable = options?.contributorEditableByKey;
 
   return layout
     .map((layoutRow) =>
@@ -163,7 +188,7 @@ export function getCardLayoutRows(
           return { type: "field", field };
         }
         if (contrib?.has(key)) {
-          const stub = buildStubResolvedField(view, key);
+          const stub = contributorStubForLayoutKey(view, key, contrib, contribEditable);
           if (stub) {
             return { type: "field", field: stub };
           }
@@ -221,6 +246,7 @@ export function getEditDrawerOrderedFields(
   view: ResolvedView,
   row: ResolvedViewRow,
   contributorFieldKeys: Set<string>,
+  contributorEditableByKey?: Map<string, ContributorEditableFieldDefinition>,
 ): ResolvedFieldValue[] {
   const shouldShow = (field: ResolvedFieldValue) =>
     contributorFieldKeys.has(field.key) || fieldCanRender(field);
@@ -229,7 +255,9 @@ export function getEditDrawerOrderedFields(
     const seen = new Set(ordered.map((f) => f.key));
     for (const key of contributorFieldKeys) {
       if (seen.has(key)) continue;
-      const field = row.fieldMap[key] ?? buildStubResolvedField(view, key);
+      const field =
+        row.fieldMap[key] ??
+        contributorStubForLayoutKey(view, key, contributorFieldKeys, contributorEditableByKey);
       if (field && shouldShow(field)) {
         ordered.push(field);
         seen.add(key);
@@ -239,7 +267,7 @@ export function getEditDrawerOrderedFields(
   };
 
   if (hasCustomCardLayout(view)) {
-    const rows = getCardLayoutRows(view, row, { contributorFieldKeys });
+    const rows = getCardLayoutRows(view, row, { contributorFieldKeys, contributorEditableByKey });
     const out: ResolvedFieldValue[] = [];
     const seenKeys = new Set<string>();
     for (const cells of rows) {

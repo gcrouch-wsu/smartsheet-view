@@ -19,7 +19,8 @@ interface SmartsheetApiColumn {
   title: string;
   type?: string;
   columnType?: string;
-  options?: string[];
+  /** Present when `include=columnOptions`; may be strings or API-specific objects. */
+  options?: unknown;
   locked?: boolean;
 }
 
@@ -267,13 +268,43 @@ function buildIncludeList(fetchOptions: EffectiveFetchOptions) {
   return [...includes];
 }
 
+function normalizePicklistOptionsFromApi(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return undefined;
+  }
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item === "string") {
+      if (item.length > 0) {
+        out.push(item);
+      }
+      continue;
+    }
+    if (item && typeof item === "object") {
+      const o = item as Record<string, unknown>;
+      const s =
+        typeof o.value === "string"
+          ? o.value
+          : typeof o.name === "string"
+            ? o.name
+            : typeof o.label === "string"
+              ? o.label
+              : null;
+      if (s && s.trim()) {
+        out.push(s.trim());
+      }
+    }
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 function normalizeColumns(columns: SmartsheetApiColumn[]): SmartsheetColumn[] {
   return columns.map((column) => ({
     id: column.id,
     index: column.index,
     title: column.title,
     type: column.type ?? column.columnType ?? "TEXT_NUMBER",
-    options: column.options,
+    options: normalizePicklistOptionsFromApi(column.options),
     locked: column.locked,
   }));
 }

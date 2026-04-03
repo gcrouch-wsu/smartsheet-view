@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cardLayoutIncludesCampusBadges, getCardLayoutRows, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
+import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
+import { contributorResolvedFieldStub } from "@/lib/contributor-utils";
 import { CARD_LAYOUT_CAMPUS_BADGES } from "@/lib/config/types";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 
@@ -149,5 +151,29 @@ describe("getEditDrawerOrderedFields", () => {
 
     const ordered = getEditDrawerOrderedFields(view, row, new Set(["program_name", "campus"]));
     expect(ordered.map((f) => f.key)).toEqual(["program_name", "campus"]);
+  });
+
+  it("includes a contributor-only field via editable map when ResolvedView.fields omits that key", () => {
+    const campusEd: ContributorEditableFieldDefinition = {
+      columnId: 9,
+      columnType: "PICKLIST",
+      fieldKey: "campus",
+      label: "Campus",
+      columnTitle: "Grad Campus",
+      renderType: "badge",
+      options: ["Pullman"],
+    };
+    const editableMap = new Map<string, ContributorEditableFieldDefinition>([["campus", campusEd]]);
+
+    const row = makeRow({ program_name: textField("program_name", "Program", "Bio") });
+    const view = makeView({
+      fields: [{ key: "program_name", label: "Program", renderType: "text" }],
+      presentation: { cardLayout: [{ fieldKeys: ["program_name", "campus"] }] },
+    });
+
+    const ordered = getEditDrawerOrderedFields(view, row, new Set(["program_name", "campus"]), editableMap);
+    expect(ordered.map((f) => f.key)).toEqual(["program_name", "campus"]);
+    const campusField = ordered.find((f) => f.key === "campus");
+    expect(campusField).toEqual(contributorResolvedFieldStub(campusEd));
   });
 });

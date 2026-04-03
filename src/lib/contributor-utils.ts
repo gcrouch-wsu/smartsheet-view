@@ -20,6 +20,7 @@ const CONTRIBUTOR_CONTACT_COLUMN_TYPES = new Set(["CONTACT_LIST", "MULTI_CONTACT
 const CONTRIBUTOR_EDITABLE_COLUMN_TYPES = new Set([
   "TEXT_NUMBER",
   "PICKLIST",
+  "MULTI_PICKLIST",
   "PHONE",
   "CONTACT_LIST",
   "MULTI_CONTACT_LIST",
@@ -57,7 +58,7 @@ export type ContactDisplayMode = "email" | "name";
 
 export interface ContributorEditableFieldDefinition {
   columnId: number;
-  columnType: "TEXT_NUMBER" | "PICKLIST" | "PHONE" | "CONTACT_LIST" | "MULTI_CONTACT_LIST";
+  columnType: "TEXT_NUMBER" | "PICKLIST" | "MULTI_PICKLIST" | "PHONE" | "CONTACT_LIST" | "MULTI_CONTACT_LIST";
   fieldKey: string;
   label: string;
   /** Smartsheet column title (preferred label in the edit UI). */
@@ -66,6 +67,24 @@ export interface ContributorEditableFieldDefinition {
   options?: string[];
   /** For CONTACT_LIST/MULTI_CONTACT_LIST: whether display shows emails or names. Used to reverse transform on write. */
   contactDisplayMode?: ContactDisplayMode;
+}
+
+/**
+ * Minimal resolved field for contributor drawer ordering when {@link ResolvedView} metadata
+ * omits the key (e.g. hidden fields or campus stripped from `ResolvedView.fields`).
+ */
+export function contributorResolvedFieldStub(ed: ContributorEditableFieldDefinition): ResolvedFieldValue {
+  return {
+    key: ed.fieldKey,
+    label: ed.label,
+    renderType: ed.renderType,
+    textValue: "",
+    listValue: [],
+    links: [],
+    isEmpty: true,
+    hideWhenEmpty: false,
+    hideLabel: false,
+  };
 }
 
 export interface ContributorEditingClientConfig {
@@ -551,7 +570,7 @@ export function serializeMultiPersonToCells(
 
 /**
  * Server-side guard for contributor PATCH: strict picklists must match column options; empty string clears.
- * Rejects `objectValue` on PICKLIST (wrong shape for Smartsheet).
+ * Rejects `objectValue` on PICKLIST / MULTI_PICKLIST (wrong shape for our contributor API).
  */
 export function validateContributorPicklistCells(
   cells: Array<{ columnId: number; value?: unknown; objectValue?: unknown }>,
@@ -559,7 +578,7 @@ export function validateContributorPicklistCells(
 ): { ok: true } | { ok: false; error: string } {
   for (const cell of cells) {
     const column = columnsById.get(cell.columnId);
-    if (!column || column.type !== "PICKLIST") {
+    if (!column || (column.type !== "PICKLIST" && column.type !== "MULTI_PICKLIST")) {
       continue;
     }
     const hasObject = cell.objectValue !== undefined && cell.objectValue !== null;
@@ -572,6 +591,22 @@ export function validateContributorPicklistCells(
     }
     const str = cell.value === undefined || cell.value === null ? "" : String(cell.value).trim();
     if (str === "") {
+      continue;
+    }
+    if (column.type === "MULTI_PICKLIST") {
+      const parts = str
+        .split(/[,;\n]+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const part of parts) {
+        if (!opts.includes(part)) {
+          const label = column.title?.trim() || "this field";
+          return {
+            ok: false,
+            error: `"${part}" is not a valid choice for ${label}. Use only listed options.`,
+          };
+        }
+      }
       continue;
     }
     if (!opts.includes(str)) {
@@ -644,8 +679,8 @@ function isContributorEditableNonContactRender(renderType: RenderType, columnTyp
   if (isContributorEditableRenderType(renderType)) {
     return true;
   }
-  // Config may still use "list" after changing the sheet from MULTI_PICKLIST to single PICKLIST.
-  if (renderType === "list" && columnType === "PICKLIST") {
+  // Config may still use "list" after changing the sheet column type; default MULTI_PICKLIST uses list render.
+  if (renderType === "list" && (columnType === "PICKLIST" || columnType === "MULTI_PICKLIST")) {
     return true;
   }
   return false;
@@ -833,6 +868,7 @@ export function getEligibleEditableFieldDefinitions(
 const MULTI_PERSON_GROUP_COLUMN_TYPES = new Set([
   "TEXT_NUMBER",
   "PICKLIST",
+  "MULTI_PICKLIST",
   "PHONE",
   "CONTACT_LIST",
   "MULTI_CONTACT_LIST",
