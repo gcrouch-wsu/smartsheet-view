@@ -4,6 +4,7 @@ import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { showCampusStripOnProgramSections } from "@/lib/campus-grouping";
 import type { ResolvedView } from "@/lib/config/types";
 
 export function DataTable({
@@ -87,7 +88,13 @@ export function DataTable({
                 <tr id={`group-${group.id}`} className="scroll-mt-24 border-b border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/25">
                   <th colSpan={colSpan} className="px-4 py-3 text-left align-top">
                     <div className="font-semibold text-[color:var(--wsu-ink)]">{group.label}</div>
-                    <CampusBadgeStrip campuses={group.campuses} className="mt-1" />
+                    {showCampusStripOnProgramSections(view.presentation) ? (
+                      <CampusBadgeStrip
+                        campuses={group.campuses}
+                        className="mt-1"
+                        badgeStyle={view.presentation?.campusBadgeStyle}
+                      />
+                    ) : null}
                   </th>
                 </tr>
                 {renderBodyRows(group.rows)}

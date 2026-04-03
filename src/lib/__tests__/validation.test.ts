@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CARD_LAYOUT_CAMPUS_BADGES } from "@/lib/config/types";
 import type { SourceConfig } from "@/lib/config/types";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
 
@@ -318,6 +319,91 @@ describe("validateViewConfig", () => {
     expect(result.success).toBe(true);
     expect(result.data?.presentation?.campusGroupingMode).toBe("grouped");
     expect(result.data?.presentation?.showCampusFilter).toBe(true);
+  });
+
+  it("rejects hideCampusFieldInRecordDisplay without campusFieldKey", () => {
+    const result = validateViewConfig(
+      {
+        id: "hide-campus-no-key",
+        slug: "hide-campus-no-key",
+        sourceId: "grad-programs",
+        label: "Hide campus no key",
+        layout: "table",
+        public: false,
+        presentation: {
+          hideCampusFieldInRecordDisplay: true,
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("hideCampusFieldInRecordDisplay"))).toBe(true);
+  });
+
+  it("accepts __campus_badges__ in cardLayout without campusFieldKey (no-op)", () => {
+    const result = validateViewConfig(
+      {
+        id: "campus-badges-no-key",
+        slug: "campus-badges-no-key",
+        sourceId: "grad-programs",
+        label: "Campus badges no key",
+        layout: "stacked",
+        public: false,
+        presentation: {
+          cardLayout: [{ fieldKeys: ["name", CARD_LAYOUT_CAMPUS_BADGES] }],
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.cardLayout?.[0]?.fieldKeys).toContain(CARD_LAYOUT_CAMPUS_BADGES);
+  });
+
+  it("accepts mergePeopleFieldKeys (plural array) and outputs it when merge is on", () => {
+    const result = validateViewConfig(
+      {
+        id: "merge-plural",
+        slug: "merge-plural",
+        sourceId: "grad-programs",
+        label: "Merge plural",
+        layout: "cards",
+        public: false,
+        presentation: {
+          mergeProgramRowsBySharedEmail: true,
+          programGroupFieldKey: "prog",
+          campusFieldKey: "campus",
+          mergePeopleFieldKeys: ["staff", "secondary"],
+        },
+        fields: [
+          { key: "prog", label: "Program", source: { columnTitle: "Program" }, render: { type: "text" } },
+          { key: "campus", label: "Campus", source: { columnTitle: "Campus" }, render: { type: "text" } },
+          { key: "staff", label: "Staff", source: { kind: "role_group", roleGroupId: "staff" }, render: { type: "people_group" } },
+          { key: "secondary", label: "Secondary", source: { kind: "role_group", roleGroupId: "secondary" }, render: { type: "people_group" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.mergePeopleFieldKeys).toEqual(["staff", "secondary"]);
   });
 
   it("rejects duplicate field keys across cardLayout rows", () => {

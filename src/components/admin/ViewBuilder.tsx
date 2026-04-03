@@ -14,7 +14,13 @@ import { HeaderCustomTextEditor } from "./HeaderCustomTextEditor";
 import { HeaderLogoBrandingSection } from "./HeaderLogoBrandingSection";
 import { ThemeEditor } from "./ThemeEditor";
 import { isRoleGroupFieldSource } from "@/lib/role-groups";
-import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX, FIELD_TEXT_STYLE_VALUES } from "@/lib/config/types";
+import {
+  CARD_LAYOUT_CAMPUS_BADGES,
+  CARD_LAYOUT_PLACEHOLDER,
+  CARD_LAYOUT_TEXT_PREFIX,
+  FIELD_TEXT_STYLE_VALUES,
+  type CampusBadgePresentationStyle,
+} from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { validateViewConfig } from "@/lib/config/validation";
 import { parseViewConfigFromBackupJson } from "@/lib/view-backup-json";
@@ -1328,6 +1334,7 @@ export function ViewBuilder({
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {row.fieldKeys.map((key, keyIndex) => {
                           const isPlaceholder = key === CARD_LAYOUT_PLACEHOLDER;
+                          const isCampusBadges = key === CARD_LAYOUT_CAMPUS_BADGES;
                           const isStaticText = key.startsWith(CARD_LAYOUT_TEXT_PREFIX);
                           const staticLabel = isStaticText ? key.slice(CARD_LAYOUT_TEXT_PREFIX.length) : "";
                           const field = view.fields.find((f) => f.key === key);
@@ -1355,6 +1362,8 @@ export function ViewBuilder({
                               </button>
                               {isPlaceholder ? (
                                 <span className="italic text-[color:var(--wsu-muted)]">(placeholder)</span>
+                              ) : isCampusBadges ? (
+                                <span className="text-[color:var(--wsu-crimson)]">Campus badges</span>
                               ) : isStaticText ? (
                                 <span className="text-[color:var(--wsu-muted)]">&quot;{staticLabel}&quot;</span>
                               ) : (
@@ -1410,8 +1419,19 @@ export function ViewBuilder({
                         >
                           <option value="">Add field</option>
                           <option value={CARD_LAYOUT_PLACEHOLDER}>Add placeholder (blank for alignment)</option>
+                          {view.presentation?.campusFieldKey &&
+                          !row.fieldKeys.includes(CARD_LAYOUT_CAMPUS_BADGES) ? (
+                            <option value={CARD_LAYOUT_CAMPUS_BADGES}>Campus badges (union)</option>
+                          ) : null}
                           {view.fields
                             .filter((f) => !row.fieldKeys.includes(f.key))
+                            .filter((f) => {
+                              const ck = view.presentation?.campusFieldKey;
+                              if (view.presentation?.hideCampusFieldInRecordDisplay && ck && f.key === ck) {
+                                return false;
+                              }
+                              return true;
+                            })
                             .map((f) => (
                               <option key={f.key} value={f.key}>{f.label || f.key}</option>
                             ))}
@@ -1696,10 +1716,18 @@ export function ViewBuilder({
                       checked={view.presentation?.mergeProgramRowsBySharedEmail === true}
                       onChange={(e) => {
                         const on = e.target.checked;
+                        const peopleKeys = view.fields.filter((f) => f.render.type === "people_group").map((f) => f.key);
                         update("presentation", {
                           ...view.presentation,
                           mergeProgramRowsBySharedEmail: on ? true : undefined,
-                          ...(!on ? { mergePeopleFieldKey: undefined } : {}),
+                          ...(!on
+                            ? { mergePeopleFieldKey: undefined, mergePeopleFieldKeys: undefined }
+                            : peopleKeys.length > 0
+                              ? {
+                                  mergePeopleFieldKey: undefined,
+                                  mergePeopleFieldKeys: peopleKeys,
+                                }
+                              : {}),
                         });
                       }}
                       className="mt-0.5 rounded border-[color:var(--wsu-border)]"
@@ -1707,43 +1735,177 @@ export function ViewBuilder({
                     <span>
                       <span className="font-medium text-[color:var(--wsu-ink)]">Merge rows (same program + same contact emails)</span>
                       <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                        Smartsheet rows that share the same program and the same email address(es) on your people field become one listing;
-                        campus badges show every campus included. Applies to cards, tables, and print/PDF. Rows without any email are not
-                        merged with others.
+                        Smartsheet rows that share the same program and the same email address(es) on the selected people fields (all emails
+                        on the row are combined) become one listing. Campus badges can show every campus included. Applies to cards, tables,
+                        and print/PDF. Rows without any email on the selected fields are not merged with others.
                       </span>
                     </span>
                   </label>
 
                   {view.presentation?.mergeProgramRowsBySharedEmail === true &&
-                  view.fields.filter((f) => f.render.type === "people_group").length > 1 ? (
-                    <div className="pl-0 sm:pl-7">
-                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">People field for email matching</label>
-                      <select
-                        value={view.presentation?.mergePeopleFieldKey ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          update("presentation", {
-                            ...view.presentation,
-                            mergePeopleFieldKey: v || undefined,
-                          });
-                        }}
-                        className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                      >
-                        <option value="">Select people_group field…</option>
+                  view.fields.filter((f) => f.render.type === "people_group").length > 0 ? (
+                    <div className="space-y-2 pl-0 sm:pl-7">
+                      <p className="text-xs font-medium text-[color:var(--wsu-muted)]">People fields for email matching</p>
+                      <p className="text-[10px] text-[color:var(--wsu-muted)]">
+                        Select one or more role / people fields. Merge compares the sorted, deduped set of emails across all of them.
+                      </p>
+                      <div className="flex flex-col gap-2">
                         {view.fields
                           .filter((f) => f.render.type === "people_group")
-                          .map((f) => (
-                            <option key={f.key} value={f.key}>
-                              {f.label || f.key}
-                            </option>
+                          .map((f) => {
+                            const selected = new Set(
+                              (view.presentation?.mergePeopleFieldKeys?.length
+                                ? view.presentation.mergePeopleFieldKeys
+                                : view.presentation?.mergePeopleFieldKey
+                                  ? [view.presentation.mergePeopleFieldKey]
+                                  : view.fields.filter((ff) => ff.render.type === "people_group").length === 1
+                                    ? [view.fields.find((ff) => ff.render.type === "people_group")!.key]
+                                    : []) as string[],
+                            );
+                            const checked = selected.has(f.key);
+                            return (
+                              <label key={f.key} className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    const next = new Set(selected);
+                                    if (next.has(f.key)) {
+                                      next.delete(f.key);
+                                    } else {
+                                      next.add(f.key);
+                                    }
+                                    const arr = [...next];
+                                    update("presentation", {
+                                      ...view.presentation,
+                                      mergePeopleFieldKeys: arr.length > 0 ? arr : undefined,
+                                      mergePeopleFieldKey: undefined,
+                                    });
+                                  }}
+                                  className="rounded border-[color:var(--wsu-border)]"
+                                />
+                                <span>{f.label || f.key}</span>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {view.presentation?.campusFieldKey ? (
+                    <div className="space-y-3 border-t border-[color:var(--wsu-border)] pt-4">
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={view.presentation?.hideCampusFieldInRecordDisplay === true}
+                          onChange={(e) =>
+                            update("presentation", {
+                              ...view.presentation,
+                              hideCampusFieldInRecordDisplay: e.target.checked ? true : undefined,
+                            })
+                          }
+                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                        />
+                        <span>
+                          <span className="font-medium text-[color:var(--wsu-ink)]">Hide campus column from records</span>
+                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                            Campus still loads from the sheet for grouping, merge, and filters. Show campuses with the{" "}
+                            <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">{CARD_LAYOUT_CAMPUS_BADGES}</code> slot in
+                            Custom card layout (Setup).
+                          </span>
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={view.presentation?.showCampusStripOnProgramSections !== false}
+                          onChange={(e) =>
+                            update("presentation", {
+                              ...view.presentation,
+                              showCampusStripOnProgramSections: e.target.checked ? true : false,
+                            })
+                          }
+                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                        />
+                        <span>
+                          <span className="font-medium text-[color:var(--wsu-ink)]">Show campus chips under program section titles</span>
+                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                            Turn off when you only want campuses in custom layout badges. Styling below applies here and to those badges.
+                          </span>
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={view.presentation?.showMergedCampusBadgesOnRecords !== false}
+                          onChange={(e) =>
+                            update("presentation", {
+                              ...view.presentation,
+                              showMergedCampusBadgesOnRecords: e.target.checked ? true : false,
+                            })
+                          }
+                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                        />
+                        <span>
+                          <span className="font-medium text-[color:var(--wsu-ink)]">Show automatic merged-row campus badges</span>
+                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                            When off, merged rows only show campus chips if you add the{" "}
+                            <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">{CARD_LAYOUT_CAMPUS_BADGES}</code> row in
+                            custom layout.
+                          </span>
+                        </span>
+                      </label>
+                      <div className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 p-3">
+                        <p className="text-xs font-medium text-[color:var(--wsu-ink)]">Campus chip typography &amp; colors</p>
+                        <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">CSS values (e.g. #335B33, 0.75rem, 9999px).</p>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {(
+                            [
+                              ["fontSize", "Font size"],
+                              ["fontWeight", "Font weight"],
+                              ["fontFamily", "Font family"],
+                              ["background", "Background"],
+                              ["color", "Text color"],
+                              ["borderColor", "Border color"],
+                              ["borderRadius", "Border radius"],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <label key={key} className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                              {label}
+                              <input
+                                type="text"
+                                value={String((view.presentation?.campusBadgeStyle as Record<string, string> | undefined)?.[key] ?? "")}
+                                onChange={(e) => {
+                                  const v = e.target.value.trim();
+                                  const nextStyle = { ...(view.presentation?.campusBadgeStyle ?? {}) } as Record<
+                                    keyof CampusBadgePresentationStyle,
+                                    string | undefined
+                                  >;
+                                  if (!v) {
+                                    delete nextStyle[key];
+                                  } else {
+                                    nextStyle[key] = v;
+                                  }
+                                  const compact = Object.fromEntries(
+                                    Object.entries(nextStyle).filter(([, val]) => Boolean(val && String(val).trim())),
+                                  ) as CampusBadgePresentationStyle;
+                                  update("presentation", {
+                                    ...view.presentation,
+                                    campusBadgeStyle: Object.keys(compact).length > 0 ? compact : undefined,
+                                  });
+                                }}
+                                className="mt-1 w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs font-medium"
+                              />
+                            </label>
                           ))}
-                      </select>
+                        </div>
+                      </div>
                     </div>
                   ) : null}
 
                   <p className="text-xs leading-relaxed text-[color:var(--wsu-muted)]">
-                    Section headers list every campus on any row for that program even when filtering. Merged cards add a campus badge row
-                    when multiple campuses were combined.
+                    Section headers list every campus on any row for that program even when filtering (unless chips under titles are turned
+                    off). Merged cards can add a campus badge row when multiple campuses were combined.
                   </p>
                 </>
               )}
@@ -2176,6 +2338,11 @@ export function ViewBuilder({
             <div>
               <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Columns & display names</h2>
               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Load columns from the source, then select which to include and set their display names.</p>
+              {view.presentation?.hideCampusFieldInRecordDisplay && view.presentation?.campusFieldKey && (
+                <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">
+                  Note: the campus column (<code>{view.presentation.campusFieldKey}</code>) is not shown here because <strong>Hide campus column from records</strong> is on — it is still used for grouping, row merge, and badge display.
+                </p>
+              )}
             </div>
         {!view.sourceId ? (
           <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">Select a source above, then load columns.</p>
@@ -2206,6 +2373,14 @@ export function ViewBuilder({
                   {schema.columns.map((col) => {
                     const included = isColumnIncluded(col);
                     const field = getFieldForColumn(col);
+                    const campusK = view.presentation?.campusFieldKey;
+                    if (
+                      view.presentation?.hideCampusFieldInRecordDisplay === true &&
+                      campusK &&
+                      field?.key === campusK
+                    ) {
+                      return null;
+                    }
                     return (
                       <div key={col.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[color:var(--wsu-border)]/60 bg-[color:var(--wsu-stone)]/20 p-3">
                         <label className="flex min-h-[44px] items-center gap-2">
@@ -2276,7 +2451,17 @@ export function ViewBuilder({
           {view.fields.length === 0 ? (
             <p className="text-sm text-[color:var(--wsu-muted)]">Select columns above to add them here, then reorder.</p>
           ) : (
-            view.fields.map((field, index) => {
+            view.fields
+              .map((field, index) => ({ field, index }))
+              .filter(({ field }) => {
+                const ck = view.presentation?.campusFieldKey;
+                return !(
+                  view.presentation?.hideCampusFieldInRecordDisplay === true &&
+                  ck &&
+                  field.key === ck
+                );
+              })
+              .map(({ field, index }) => {
               const rgSrc = isRoleGroupFieldSource(field.source) ? field.source : null;
               const colSource = (rgSrc ? null : field.source) as ViewFieldSource | null;
               const overlapWarning = roleGroupOverlapByFieldKey.get(field.key);
@@ -2608,7 +2793,7 @@ export function ViewBuilder({
                 </div>
               </div>
             );
-            })
+              })
           )}
               {activeSource?.roleGroups && activeSource.roleGroups.length > 0 ? (
                 <div className="mt-4 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">

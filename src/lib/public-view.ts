@@ -415,6 +415,14 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
   const sortedRows = sortResolvedRows(resolvedRows, view.defaultSort);
   const mergedRows = mergeResolvedRowsByProgramAndEmail(view, sortedRows);
   const linkFlags = effectiveValueLinkFlags(view.presentation);
+  const campusKey = view.presentation?.campusFieldKey;
+  const hideCampusCol = view.presentation?.hideCampusFieldInRecordDisplay === true && Boolean(campusKey);
+  const rowsForDisplay = hideCampusCol
+    ? mergedRows.map((r) => ({
+        ...r,
+        fields: r.fields.filter((f) => f.key !== campusKey),
+      }))
+    : mergedRows;
 
   return {
     id: view.id,
@@ -428,9 +436,10 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     displayTimeZone: effectiveViewDisplayTimeZone(view),
     linkEmailsInView: linkFlags.linkEmailsInView,
     linkPhonesInView: linkFlags.linkPhonesInView,
-    rowCount: mergedRows.length,
+    rowCount: rowsForDisplay.length,
     fields: view.fields
       .filter((field) => field.render.type !== "hidden")
+      .filter((field) => !(hideCampusCol && campusKey && field.key === campusKey))
       .map((field) => ({
         key: field.key,
         label: field.label,
@@ -439,7 +448,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
         textStyle: field.render.textStyle,
         labelStyle: field.render.labelStyle,
       })),
-    rows: mergedRows,
+    rows: rowsForDisplay,
   };
 }
 

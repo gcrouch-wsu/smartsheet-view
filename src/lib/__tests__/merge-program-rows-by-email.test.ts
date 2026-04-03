@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  combinedEmailSignatureFromPeopleFields,
   emailSignatureFromPeopleField,
   mergeResolvedRowsByProgramAndEmail,
   resolveMergePeopleFieldKey,
+  resolveMergePeopleFieldKeys,
 } from "@/lib/merge-program-rows-by-email";
 import type { ResolvedFieldValue, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
 
@@ -121,12 +123,87 @@ describe("mergeResolvedRowsByProgramAndEmail", () => {
     ];
     expect(mergeResolvedRowsByProgramAndEmail(view, rows)).toHaveLength(2);
   });
+
+  it("merges when matching emails come from two different selected people fields", () => {
+    const dualStaffView: ViewConfig = {
+      ...viewBase,
+      presentation: {
+        ...viewBase.presentation!,
+        mergePeopleFieldKeys: ["staff", "secondary"],
+        mergePeopleFieldKey: undefined,
+      },
+      fields: [
+        ...(viewBase.fields ?? []),
+        {
+          key: "secondary",
+          label: "Secondary",
+          source: { columnTitle: "S2" },
+          render: { type: "people_group" },
+        },
+      ],
+    };
+    const r1Fields = [
+      textField("program_name", "Biology"),
+      textField("campus", "Pullman"),
+      peopleField("staff", []),
+      peopleField("secondary", ["alice@wsu.edu"]),
+    ];
+    const r2Fields = [
+      textField("program_name", "Biology"),
+      textField("campus", "Spokane"),
+      peopleField("staff", []),
+      peopleField("secondary", ["alice@wsu.edu"]),
+    ];
+    const r1: ResolvedViewRow = { id: 1, fields: r1Fields, fieldMap: Object.fromEntries(r1Fields.map((f) => [f.key, f])) };
+    const r2: ResolvedViewRow = { id: 2, fields: r2Fields, fieldMap: Object.fromEntries(r2Fields.map((f) => [f.key, f])) };
+    const out = mergeResolvedRowsByProgramAndEmail(dualStaffView, [r1, r2]);
+    expect(out).toHaveLength(1);
+    expect(out[0]?.mergedSourceRowIds?.sort()).toEqual([1, 2]);
+  });
 });
 
 describe("emailSignatureFromPeopleField", () => {
   it("sorts and joins emails", () => {
     const f = peopleField("s", ["z@x.edu", "a@x.edu"]);
     expect(emailSignatureFromPeopleField(f)).toBe("a@x.edu|z@x.edu");
+  });
+});
+
+describe("combinedEmailSignatureFromPeopleFields", () => {
+  it("unions emails across keys", () => {
+    const fields = [
+      textField("program_name", "Bio"),
+      textField("campus", "P"),
+      peopleField("staff", ["z@x.edu"]),
+      peopleField("other", ["a@x.edu"]),
+    ];
+    const r: ResolvedViewRow = { id: 1, fields, fieldMap: Object.fromEntries(fields.map((f) => [f.key, f])) };
+    expect(combinedEmailSignatureFromPeopleFields(r, ["staff", "other"])).toBe("a@x.edu|z@x.edu");
+  });
+});
+
+describe("resolveMergePeopleFieldKeys", () => {
+  it("returns mergePeopleFieldKeys when set", () => {
+    const keys = resolveMergePeopleFieldKeys({
+      id: "v",
+      slug: "s",
+      label: "L",
+      sourceId: "src",
+      layout: "cards",
+      public: true,
+      presentation: {
+        mergeProgramRowsBySharedEmail: true,
+        programGroupFieldKey: "program_name",
+        campusFieldKey: "campus",
+        mergePeopleFieldKeys: ["staff"],
+      },
+      fields: [
+        { key: "program_name", label: "P", source: {}, render: { type: "text" } },
+        { key: "campus", label: "C", source: {}, render: { type: "text" } },
+        { key: "staff", label: "S", source: {}, render: { type: "people_group" } },
+      ],
+    });
+    expect(keys).toEqual(["staff"]);
   });
 });
 

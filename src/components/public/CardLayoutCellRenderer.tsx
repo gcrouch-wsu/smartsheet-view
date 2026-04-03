@@ -1,3 +1,4 @@
+import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
 import type { CardLayoutCell } from "@/components/public/layout-utils";
@@ -27,6 +28,32 @@ export function CardLayoutCellRenderer({
     return (
       <div key={`text-${cell.label}`} className={`${baseClass} space-y-0.5`}>
         <p className={`${staticLabelClass} leading-tight`}>{cell.label}</p>
+      </div>
+    );
+  }
+
+  if (cell.type === "campus_badges") {
+    if (mode === "header") {
+      // No campuses → keep the grid slot empty so column positions stay aligned.
+      if (cell.campuses.length === 0) {
+        return <div key="campus-badges-h" className={baseClass} aria-hidden />;
+      }
+      return (
+        <div key="campus-badges-h" className={baseClass}>
+          <p className={`${staticLabelClass} leading-tight`}>Campuses</p>
+        </div>
+      );
+    }
+    if (mode === "value") {
+      return (
+        <div key="campus-badges-v" className={baseClass}>
+          <CampusBadgeStrip campuses={cell.campuses} badgeStyle={cell.style} className="mt-0" />
+        </div>
+      );
+    }
+    return (
+      <div key="campus-badges" className={baseClass}>
+        <CampusBadgeStrip campuses={cell.campuses} badgeStyle={cell.style} className="mt-0" />
       </div>
     );
   }

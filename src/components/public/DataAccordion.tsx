@@ -102,6 +102,7 @@ export function DataAccordion({
                 <MergedRowCampusBadges
                   row={row}
                   suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                  presentation={view.presentation}
                 />
                 {customRows.map((cells, rowIndex) => {
                   const colCount = getCardLayoutColumnCount(view);
@@ -170,6 +171,7 @@ export function DataAccordion({
               <MergedRowCampusBadges
                 row={row}
                 suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                presentation={view.presentation}
               />
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (

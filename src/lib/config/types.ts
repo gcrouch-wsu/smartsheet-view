@@ -148,6 +148,25 @@ export interface ViewSortConfig {
 /** Special keys for card layout: __placeholder__ = blank for alignment, __text:Label__ = static text. */
 export const CARD_LAYOUT_PLACEHOLDER = "__placeholder__";
 export const CARD_LAYOUT_TEXT_PREFIX = "__text:";
+/**
+ * Special card layout key that renders the campus union badge strip for a row.
+ * Sources (in priority order): `row.mergedCampuses` (set during row merge) → `campusFieldKey` text value.
+ * If `campusFieldKey` is absent and the row is not merged, the cell renders an empty badge strip (no-op).
+ * At most one `__campus_badges__` slot is allowed per card layout (validated on save).
+ * Style via `presentation.campusBadgeStyle`.
+ */
+export const CARD_LAYOUT_CAMPUS_BADGES = "__campus_badges__";
+
+/** Optional styling for campus chips (card layout token + merged-row badges + section strips). */
+export interface CampusBadgePresentationStyle {
+  fontSize?: string;
+  fontWeight?: string;
+  fontFamily?: string;
+  background?: string;
+  color?: string;
+  borderColor?: string;
+  borderRadius?: string;
+}
 
 export interface CardLayoutRow {
   /** Field keys or special values (__placeholder__, __text:Label). Multiple items render side-by-side. */
@@ -235,12 +254,33 @@ export interface ViewPresentationConfig {
   showCampusFilter?: boolean;
   /**
    * When true, merge resolved rows that share the same program field value and the same contact email(s)
-   * on `mergePeopleFieldKey` (or the sole people_group field). Campuses are unioned; cards show badges via
-   * `mergedCampuses`; table/print show campus cell as "A; B". Requires programGroupFieldKey + campusFieldKey.
+   * across `mergePeopleFieldKeys` (or legacy `mergePeopleFieldKey`, or the sole people_group field). Campuses are unioned.
+   * Requires programGroupFieldKey + campusFieldKey.
    */
   mergeProgramRowsBySharedEmail?: boolean;
-  /** people_group field used for email matching when merging. If omitted and the view has exactly one people_group, that field is used. */
+  /**
+   * people_group fields used for email matching when merging (union of all emails on the row from these fields).
+   * If empty/unset, falls back to `mergePeopleFieldKey`, then to the sole people_group field.
+   */
+  mergePeopleFieldKeys?: string[];
+  /** @deprecated Prefer `mergePeopleFieldKeys`. When set alone, treated as a one-element list. */
   mergePeopleFieldKey?: string;
+  /**
+   * When true, the campus field stays in the sheet mapping but is omitted from public tables/cards/lists
+   * (still used for grouping, merge, filters, and the `CARD_LAYOUT_CAMPUS_BADGES` slot).
+   */
+  hideCampusFieldInRecordDisplay?: boolean;
+  /**
+   * When false, program section headers omit the campus chip row. Default true when unset.
+   */
+  showCampusStripOnProgramSections?: boolean;
+  /**
+   * When false, merged rows do not show the automatic campus badge row (use custom layout `__campus_badges__` only).
+   * Default true when unset.
+   */
+  showMergedCampusBadgesOnRecords?: boolean;
+  /** Typography and colors for campus chips (`__campus_badges__`, merged badges, section strips). */
+  campusBadgeStyle?: CampusBadgePresentationStyle;
 }
 
 export interface ViewStyleConfig {

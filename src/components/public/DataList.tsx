@@ -11,7 +11,7 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
-import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { isCampusGroupingActive, showCampusStripOnProgramSections } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
@@ -52,7 +52,11 @@ export function DataList({
     const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
     const editTargetId = contributorEditTargetRowId(row, editableRowIds);
     const mergeBadges = (
-      <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
+      <MergedRowCampusBadges
+        row={row}
+        suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+        presentation={view.presentation}
+      />
     );
 
     if (customRows.length > 0) {
@@ -137,7 +141,9 @@ export function DataList({
           <section key={group.id} id={`group-${group.id}`} className="scroll-mt-24">
             <header className="mb-3 rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/35 px-4 py-3 sm:px-5">
               <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)] sm:text-xl">{group.label}</h2>
-              <CampusBadgeStrip campuses={group.campuses} />
+              {showCampusStripOnProgramSections(view.presentation) ? (
+                <CampusBadgeStrip campuses={group.campuses} badgeStyle={view.presentation?.campusBadgeStyle} />
+              ) : null}
             </header>
             <div className="overflow-hidden rounded-[1.75rem] border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]">
               <ul className={listDividerClass}>{group.rows.map((row) => renderListItem(row))}</ul>

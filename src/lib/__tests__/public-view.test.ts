@@ -579,4 +579,95 @@ describe("public view resolution", () => {
     expect(mergedBio?.fieldMap.campus?.textValue).toContain("Pullman");
     expect(mergedBio?.fieldMap.campus?.textValue).toContain("Spokane");
   });
+
+  it("strips campus from ResolvedView.fields and row.fields when hideCampusFieldInRecordDisplay is on, preserving fieldMap and mergedCampuses", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        presentation: {
+          mergeProgramRowsBySharedEmail: true,
+          programGroupFieldKey: "programName",
+          campusFieldKey: "campus",
+          mergePeopleFieldKey: "staffCoordinators",
+          hideCampusFieldInRecordDisplay: true,
+        },
+        fields: [
+          {
+            key: "programName",
+            label: "Program",
+            source: { columnTitle: "Program" },
+            render: { type: "text" },
+          },
+          {
+            key: "campus",
+            label: "Campus",
+            source: { columnTitle: "Campus" },
+            render: { type: "text" },
+          },
+          {
+            key: "staffCoordinators",
+            label: "Staff",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 201, columnTitle: "Staff Name" },
+              email: { columnId: 202, columnTitle: "Staff Email" },
+            },
+          ],
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 100, index: 0, title: "Program", type: "TEXT_NUMBER" },
+          { id: 101, index: 1, title: "Campus", type: "TEXT_NUMBER" },
+          { id: 201, index: 2, title: "Staff Name", type: "TEXT_NUMBER" },
+          { id: 202, index: 3, title: "Staff Email", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(100, "Program", "Biology"),
+            createCell(101, "Campus", "Pullman"),
+            createCell(201, "Staff Name", "Alice A"),
+            createCell(202, "Staff Email", "alice@wsu.edu"),
+          ]),
+          createRow(2, [
+            createCell(100, "Program", "Biology"),
+            createCell(101, "Campus", "Spokane"),
+            createCell(201, "Staff Name", "Alice A"),
+            createCell(202, "Staff Email", "alice@wsu.edu"),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const resolvedView = page?.views[0];
+    const mergedRow = resolvedView?.rows[0];
+
+    // ResolvedView.fields must not include the campus column (hidden from table/print headers)
+    expect(resolvedView?.fields.some((f) => f.key === "campus")).toBe(false);
+
+    // Row's .fields array must not include campus (hidden from card/table cell rendering)
+    expect(mergedRow?.fields.some((f) => f.key === "campus")).toBe(false);
+
+    // fieldMap retains campus for grouping, merge, and __campus_badges__ resolution
+    expect(mergedRow?.fieldMap.campus).toBeDefined();
+
+    // mergedCampuses is still populated for badge display
+    expect(mergedRow?.mergedCampuses?.slice().sort((a, b) => a.localeCompare(b, "en"))).toEqual(["Pullman", "Spokane"]);
+  });
 });

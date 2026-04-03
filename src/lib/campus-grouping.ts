@@ -46,6 +46,24 @@ function rowFieldText(row: ResolvedViewRow, fieldKey: string): string {
   return row.fieldMap[fieldKey]?.textValue?.trim() ?? "";
 }
 
+/** Campus labels for badge strips: merged union when present, else parsed campus field text. */
+export function resolvedRowCampusBadgeLabels(row: ResolvedViewRow, campusFieldKey: string | undefined): string[] {
+  if (row.mergedCampuses?.length) {
+    return row.mergedCampuses;
+  }
+  if (!campusFieldKey) {
+    return [];
+  }
+  const raw = row.fieldMap[campusFieldKey]?.textValue ?? "";
+  if (!raw.trim()) {
+    return [];
+  }
+  return raw
+    .split(";")
+    .map((s) => normalizeCampusDisplay(s.trim()))
+    .filter((s) => s.length > 0);
+}
+
 /**
  * Group flat resolved rows by program field; collect campus union per group.
  * Preserves row order within each group and first-seen group order.
@@ -135,4 +153,9 @@ export function isCampusGroupingActive(presentation: {
       presentation?.programGroupFieldKey &&
       presentation?.campusFieldKey,
   );
+}
+
+/** When false, program section headings omit the campus chip row (default: show). */
+export function showCampusStripOnProgramSections(presentation: { showCampusStripOnProgramSections?: boolean } | undefined): boolean {
+  return presentation?.showCampusStripOnProgramSections !== false;
 }

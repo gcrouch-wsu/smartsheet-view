@@ -139,6 +139,7 @@ export function DataTabbed({
         <MergedRowCampusBadges
           row={activeRow}
           suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+          presentation={view.presentation}
         />
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">

@@ -1,11 +1,20 @@
 import type { CSSProperties } from "react";
-import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX } from "@/lib/config/types";
-import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import { resolvedRowCampusBadgeLabels } from "@/lib/campus-grouping";
+import {
+  CARD_LAYOUT_CAMPUS_BADGES,
+  CARD_LAYOUT_PLACEHOLDER,
+  CARD_LAYOUT_TEXT_PREFIX,
+  type CampusBadgePresentationStyle,
+  type ResolvedFieldValue,
+  type ResolvedView,
+  type ResolvedViewRow,
+} from "@/lib/config/types";
 
 export type CardLayoutCell =
   | { type: "field"; field: ResolvedFieldValue }
   | { type: "placeholder" }
-  | { type: "text"; label: string };
+  | { type: "text"; label: string }
+  | { type: "campus_badges"; campuses: string[]; style?: CampusBadgePresentationStyle };
 
 function fieldCanRender(field: ResolvedFieldValue) {
   return !(field.hideWhenEmpty && field.isEmpty);
@@ -137,6 +146,14 @@ export function getCardLayoutRows(
         if (key.startsWith(CARD_LAYOUT_TEXT_PREFIX)) {
           return { type: "text", label: key.slice(CARD_LAYOUT_TEXT_PREFIX.length) };
         }
+        if (key === CARD_LAYOUT_CAMPUS_BADGES) {
+          const campuses = resolvedRowCampusBadgeLabels(row, view.presentation?.campusFieldKey);
+          return {
+            type: "campus_badges",
+            campuses,
+            style: view.presentation?.campusBadgeStyle,
+          };
+        }
         const field = row.fieldMap[key];
         if (field && (fieldCanRender(field) || (contrib?.has(key) ?? false))) {
           return { type: "field", field };
@@ -151,7 +168,14 @@ export function getCardLayoutRows(
         return { type: "placeholder" };
       })
     )
-    .filter((cells) => cells.some((c) => c.type === "field" || c.type === "text"));
+    .filter((cells) =>
+      cells.some(
+        (c) =>
+          c.type === "field" ||
+          c.type === "text" ||
+          (c.type === "campus_badges" && c.campuses.length > 0),
+      ),
+    );
 }
 
 /** Get first field from a row of cells (for accordion/tabbed summary). */

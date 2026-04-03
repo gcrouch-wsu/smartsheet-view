@@ -28,16 +28,49 @@ export function emailSignatureFromPeopleField(field: ResolvedFieldValue | undefi
   return emails.join("|");
 }
 
+/** Union of emails across all configured people_group fields, sorted and joined. */
+export function combinedEmailSignatureFromPeopleFields(row: ResolvedViewRow, peopleKeys: string[]): string {
+  const allEmails = new Set<string>();
+  for (const k of peopleKeys) {
+    const field = row.fieldMap[k];
+    if (!field?.people?.length) {
+      continue;
+    }
+    for (const p of field.people) {
+      const e = (p.email ?? "").trim().toLowerCase();
+      if (e) {
+        allEmails.add(e);
+      }
+    }
+  }
+  return [...allEmails].sort().join("|");
+}
+
+const peopleGroupKeys = (view: ViewConfig): string[] =>
+  view.fields.filter((f) => f.render.type === "people_group").map((f) => f.key);
+
+/** people_group keys used for merge email matching (explicit list, legacy single key, or sole people field). */
+export function resolveMergePeopleFieldKeys(view: ViewConfig): string[] {
+  const keys = peopleGroupKeys(view);
+  const pres = view.presentation;
+  const fromArr = (pres?.mergePeopleFieldKeys ?? []).filter((k) => typeof k === "string" && keys.includes(k));
+  if (fromArr.length > 0) {
+    return fromArr;
+  }
+  const legacy = pres?.mergePeopleFieldKey?.trim();
+  if (legacy && keys.includes(legacy)) {
+    return [legacy];
+  }
+  if (keys.length === 1) {
+    const one = keys[0];
+    return one ? [one] : [];
+  }
+  return [];
+}
+
+/** @deprecated Use resolveMergePeopleFieldKeys; returns first key or undefined. */
 export function resolveMergePeopleFieldKey(view: ViewConfig): string | undefined {
-  const specified = view.presentation?.mergePeopleFieldKey?.trim();
-  if (specified) {
-    return specified;
-  }
-  const peopleFields = view.fields.filter((f) => f.render.type === "people_group");
-  if (peopleFields.length === 1) {
-    return peopleFields[0]?.key;
-  }
-  return undefined;
+  return resolveMergePeopleFieldKeys(view)[0];
 }
 
 function buildMergedRow(bucket: ResolvedViewRow[], campusKey: string): ResolvedViewRow {
@@ -71,7 +104,7 @@ function buildMergedRow(bucket: ResolvedViewRow[], campusKey: string): ResolvedV
 
 /**
  * Collapse multiple resolved rows when they share the same program (normalized) and the same
- * set of contact emails on the configured people_group field. Campus values are unioned; the
+ * combined contact emails on the configured people_group fields. Campus values are unioned; the
  * campus field text becomes "A; B" for table/print; card layouts can show `mergedCampuses` badges.
  */
 export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
@@ -81,8 +114,8 @@ export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: Resol
   }
   const progK = pres.programGroupFieldKey;
   const campusK = pres.campusFieldKey;
-  const peopleK = resolveMergePeopleFieldKey(view);
-  if (!progK || !campusK || !peopleK) {
+  const peopleKeys = resolveMergePeopleFieldKeys(view);
+  if (!progK || !campusK || peopleKeys.length === 0) {
     return rows;
   }
 
@@ -90,7 +123,7 @@ export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: Resol
   const buckets = new Map<string, Bucket>();
 
   for (const row of rows) {
-    const emailSig = emailSignatureFromPeopleField(row.fieldMap[peopleK]);
+    const emailSig = combinedEmailSignatureFromPeopleFields(row, peopleKeys);
     const programRaw = row.fieldMap[progK]?.textValue ?? "";
     const progNorm = normalizeGroupKey(programRaw);
     const key = emailSig ? `${progNorm}\u0000${emailSig}` : `__single__\u0000${row.id}`;

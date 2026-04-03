@@ -1,4 +1,5 @@
 import {
+  CARD_LAYOUT_CAMPUS_BADGES,
   CARD_LAYOUT_PLACEHOLDER,
   CARD_LAYOUT_TEXT_PREFIX,
   FIELD_TEXT_STYLE_VALUES,
@@ -30,7 +31,31 @@ import type {
   ViewPresentationConfig,
   ViewSortConfig,
   ViewStyleConfig,
+  CampusBadgePresentationStyle,
 } from "@/lib/config/types";
+
+function parseCampusBadgeStyle(input: unknown): CampusBadgePresentationStyle | undefined {
+  if (!isRecord(input)) {
+    return undefined;
+  }
+  const out: CampusBadgePresentationStyle = {};
+  for (const k of [
+    "fontSize",
+    "fontWeight",
+    "fontFamily",
+    "background",
+    "color",
+    "borderColor",
+    "borderRadius",
+  ] as const) {
+    const raw = input[k];
+    const v = typeof raw === "string" ? raw.trim() : "";
+    if (v && v.length <= 96) {
+      out[k] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
 
 export interface ValidationResult<T> {
   success: boolean;
@@ -590,6 +615,23 @@ function parsePresentationConfig(
     input.showCampusFilter === undefined ? undefined : asBoolean(input.showCampusFilter, false);
   const mergeProgramRowsBySharedEmail = input.mergeProgramRowsBySharedEmail === true;
   const mergePeopleFieldKey = asOptionalString(input.mergePeopleFieldKey);
+  let mergePeopleFieldKeys: string[] | undefined;
+  if (Array.isArray(input.mergePeopleFieldKeys)) {
+    mergePeopleFieldKeys = input.mergePeopleFieldKeys
+      .filter((k: unknown): k is string => typeof k === "string")
+      .map((k) => k.trim())
+      .filter(Boolean)
+      .filter((k) => fieldKeys.has(k) && peopleGroupFieldKeys.has(k));
+    if (mergePeopleFieldKeys.length === 0) {
+      mergePeopleFieldKeys = undefined;
+    }
+  }
+  const hideCampusFieldInRecordDisplay = input.hideCampusFieldInRecordDisplay === true;
+  const showCampusStripOnProgramSections =
+    input.showCampusStripOnProgramSections === undefined ? undefined : asBoolean(input.showCampusStripOnProgramSections, true);
+  const showMergedCampusBadgesOnRecords =
+    input.showMergedCampusBadgesOnRecords === undefined ? undefined : asBoolean(input.showMergedCampusBadgesOnRecords, true);
+  const campusBadgeStyle = parseCampusBadgeStyle(input.campusBadgeStyle);
 
   const rawLogoUrl =
     typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
@@ -640,9 +682,26 @@ function parsePresentationConfig(
   if (programGroupFieldKey && !fieldKeys.has(programGroupFieldKey)) {
     errors.push(`presentation.programGroupFieldKey \"${programGroupFieldKey}\" does not match any field key.`);
   }
+  if (hideCampusFieldInRecordDisplay && !campusFieldKey) {
+    errors.push(`presentation.hideCampusFieldInRecordDisplay requires presentation.campusFieldKey.`);
+  }
+  if (mergeProgramRowsBySharedEmail && peopleGroupFieldKeys.size > 1) {
+    const selected =
+      mergePeopleFieldKeys?.length && mergePeopleFieldKeys.length > 0
+        ? mergePeopleFieldKeys
+        : mergePeopleFieldKey && peopleGroupFieldKeys.has(mergePeopleFieldKey)
+          ? [mergePeopleFieldKey]
+          : [];
+    if (selected.length === 0) {
+      errors.push(
+        `presentation.mergePeopleFieldKeys: when row merge is on and multiple people_group fields exist, select at least one for email matching.`,
+      );
+    }
+  }
 
   let cardLayout: ViewPresentationConfig["cardLayout"];
   const cardLayoutKeyRows = new Map<string, number[]>();
+  let cardLayoutCampusBadgeSlots = 0;
   if (Array.isArray(input.cardLayout)) {
     cardLayout = [];
     for (let i = 0; i < input.cardLayout.length; i++) {
@@ -653,6 +712,12 @@ function parsePresentationConfig(
         const keys = row.fieldKeys.filter((k: unknown) => typeof k === "string").map((k: string) => k.trim()).filter(Boolean);
         for (const key of keys) {
           if (key === CARD_LAYOUT_PLACEHOLDER || key.startsWith(CARD_LAYOUT_TEXT_PREFIX)) continue;
+          if (key === CARD_LAYOUT_CAMPUS_BADGES) {
+            // Special token — not a field key, no field-key validation needed.
+            // Behavior when campusFieldKey is absent and row is not merged: renders empty badge strip (no-op).
+            cardLayoutCampusBadgeSlots += 1;
+            continue;
+          }
           if (!fieldKeys.has(key)) {
             errors.push(`presentation.cardLayout[${i}] references unknown field key \"${key}\".`);
           } else {
@@ -663,6 +728,9 @@ function parsePresentationConfig(
         }
         cardLayout.push({ fieldKeys: keys });
       }
+    }
+    if (cardLayoutCampusBadgeSlots > 1) {
+      errors.push(`presentation.cardLayout: \"${CARD_LAYOUT_CAMPUS_BADGES}\" may appear at most once across all rows.`);
     }
     for (const [key, rowIndices] of cardLayoutKeyRows) {
       if (rowIndices.length > 1) {
@@ -705,7 +773,12 @@ function parsePresentationConfig(
       Boolean(programGroupFieldKey) ||
       Boolean(campusGroupingMode) ||
       showCampusFilter !== undefined ||
-      mergeProgramRowsBySharedEmail
+      mergeProgramRowsBySharedEmail ||
+      Boolean(mergePeopleFieldKeys?.length) ||
+      hideCampusFieldInRecordDisplay ||
+      showCampusStripOnProgramSections !== undefined ||
+      showMergedCampusBadgesOnRecords !== undefined ||
+      Boolean(campusBadgeStyle)
   );
 
   return {
@@ -748,7 +821,15 @@ function parsePresentationConfig(
             ...(campusGroupingMode ? { campusGroupingMode } : {}),
             ...(showCampusFilter !== undefined ? { showCampusFilter } : {}),
             ...(mergeProgramRowsBySharedEmail ? { mergeProgramRowsBySharedEmail: true } : {}),
-            ...(mergeProgramRowsBySharedEmail && mergePeopleFieldKey ? { mergePeopleFieldKey } : {}),
+            ...(mergeProgramRowsBySharedEmail && mergePeopleFieldKeys?.length
+              ? { mergePeopleFieldKeys }
+              : mergeProgramRowsBySharedEmail && mergePeopleFieldKey
+                ? { mergePeopleFieldKey }
+                : {}),
+            ...(hideCampusFieldInRecordDisplay ? { hideCampusFieldInRecordDisplay: true } : {}),
+            ...(showCampusStripOnProgramSections !== undefined ? { showCampusStripOnProgramSections } : {}),
+            ...(showMergedCampusBadgesOnRecords !== undefined ? { showMergedCampusBadgesOnRecords } : {}),
+            ...(campusBadgeStyle ? { campusBadgeStyle } : {}),
           },
   };
 }
