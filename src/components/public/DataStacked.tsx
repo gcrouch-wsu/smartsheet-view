@@ -8,6 +8,7 @@ import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
+  cardLayoutIncludesCampusBadges,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   getRowHeadingField,
@@ -66,11 +67,13 @@ export function DataStacked({
               <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
             </div>
           )}
-          <MergedRowCampusBadges
-            row={row}
-            suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-            presentation={view.presentation}
-          />
+          {!cardLayoutIncludesCampusBadges(view) ? (
+            <MergedRowCampusBadges
+              row={row}
+              suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+              presentation={view.presentation}
+            />
+          ) : null}
           {customRows.map((cells, rowIndex) => {
             const colCount = getCardLayoutColumnCount(view);
             const useAlignedGrid = colCount > 1;
@@ -133,11 +136,13 @@ export function DataStacked({
                 <FieldValue field={summary} />
               </div>
             )}
-            <MergedRowCampusBadges
-              row={row}
-              suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-              presentation={view.presentation}
-            />
+            {!cardLayoutIncludesCampusBadges(view) ? (
+              <MergedRowCampusBadges
+                row={row}
+                suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                presentation={view.presentation}
+              />
+            ) : null}
           </div>
           {!view.presentation?.hideRowBadge && (
             <div className="flex shrink-0 flex-wrap items-center gap-2">

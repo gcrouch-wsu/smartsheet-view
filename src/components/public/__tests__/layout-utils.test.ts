@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCardLayoutRows, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
+import { cardLayoutIncludesCampusBadges, getCardLayoutRows, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
 import { CARD_LAYOUT_CAMPUS_BADGES } from "@/lib/config/types";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 
@@ -34,6 +34,24 @@ function makeView(overrides: Partial<ResolvedView> = {}): ResolvedView {
 function makeRow(fieldMap: Record<string, ResolvedFieldValue>, extra?: Partial<ResolvedViewRow>): ResolvedViewRow {
   return { id: 1, fields: Object.values(fieldMap), fieldMap, ...extra };
 }
+
+describe("cardLayoutIncludesCampusBadges", () => {
+  it("is true when any layout row includes the campus badges token", () => {
+    const view = makeView({
+      presentation: {
+        cardLayout: [{ fieldKeys: ["prog"] }, { fieldKeys: [CARD_LAYOUT_CAMPUS_BADGES] }],
+      },
+    });
+    expect(cardLayoutIncludesCampusBadges(view)).toBe(true);
+  });
+
+  it("is false when layout has no token", () => {
+    const view = makeView({
+      presentation: { cardLayout: [{ fieldKeys: ["prog", "other"] }] },
+    });
+    expect(cardLayoutIncludesCampusBadges(view)).toBe(false);
+  });
+});
 
 describe("getCardLayoutRows", () => {
   it("returns campus_badges cell populated from mergedCampuses", () => {

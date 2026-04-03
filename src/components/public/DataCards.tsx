@@ -7,6 +7,7 @@ import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
+  cardLayoutIncludesCampusBadges,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   getRowHeadingField,
@@ -81,11 +82,13 @@ export function DataCards({
               <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
             </div>
           )}
-          <MergedRowCampusBadges
-            row={row}
-            suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-            presentation={view.presentation}
-          />
+          {!cardLayoutIncludesCampusBadges(view) ? (
+            <MergedRowCampusBadges
+              row={row}
+              suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+              presentation={view.presentation}
+            />
+          ) : null}
           {customRows.map((cells, rowIndex) => {
             const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
             const gridInner = (
@@ -132,11 +135,13 @@ export function DataCards({
             <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
           </div>
         )}
-        <MergedRowCampusBadges
-          row={row}
-          suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-          presentation={view.presentation}
-        />
+        {!cardLayoutIncludesCampusBadges(view) ? (
+          <MergedRowCampusBadges
+            row={row}
+            suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+            presentation={view.presentation}
+          />
+        ) : null}
         {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
           <div className="border-b border-[color:var(--wsu-border)] pb-4">
             {!heading.hideLabel ? (

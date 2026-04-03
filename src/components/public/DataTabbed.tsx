@@ -10,6 +10,7 @@ import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   describeResolvedField,
+  cardLayoutIncludesCampusBadges,
   findResolvedViewRowByIdOrMergedSource,
   getCardLayoutColumnCount,
   getCardLayoutRows,
@@ -136,11 +137,13 @@ export function DataTabbed({
             )}
           </div>
         </div>
-        <MergedRowCampusBadges
-          row={activeRow}
-          suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-          presentation={view.presentation}
-        />
+        {!cardLayoutIncludesCampusBadges(view) ? (
+          <MergedRowCampusBadges
+            row={activeRow}
+            suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+            presentation={view.presentation}
+          />
+        ) : null}
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
             {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => {

@@ -202,6 +202,18 @@ export function hasCustomCardLayout(view: ResolvedView): boolean {
 }
 
 /**
+ * When true, merged campus chips are placed only via the `__campus_badges__` card-layout rows (in Arrange order).
+ * Suppress the automatic `<MergedRowCampusBadges>` block above custom layout so badges are not duplicated on top.
+ */
+export function cardLayoutIncludesCampusBadges(view: ResolvedView): boolean {
+  const layout = view.presentation?.cardLayout;
+  if (!layout?.length) {
+    return false;
+  }
+  return layout.some((row) => row.fieldKeys.includes(CARD_LAYOUT_CAMPUS_BADGES));
+}
+
+/**
  * Field order for the contributor edit drawer: mirrors public card order (custom layout or heading/summary/body)
  * and keeps contributor-target fields even when the card would hide them as empty.
  */

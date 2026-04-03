@@ -6,6 +6,7 @@ import { FieldValue } from "@/components/public/FieldValue";
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
+  cardLayoutIncludesCampusBadges,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   hasCustomCardLayout,
@@ -51,13 +52,13 @@ export function DataList({
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
     const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
     const editTargetId = contributorEditTargetRowId(row, editableRowIds);
-    const mergeBadges = (
+    const mergeBadges = !cardLayoutIncludesCampusBadges(view) ? (
       <MergedRowCampusBadges
         row={row}
         suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
         presentation={view.presentation}
       />
-    );
+    ) : null;
 
     if (customRows.length > 0) {
       return (

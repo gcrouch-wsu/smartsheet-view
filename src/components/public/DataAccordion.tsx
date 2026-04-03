@@ -7,6 +7,7 @@ import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   describeResolvedField,
+  cardLayoutIncludesCampusBadges,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   getFirstFieldFromCells,
@@ -168,11 +169,13 @@ export function DataAccordion({
               </div>
             </summary>
             <div className={`border-t ${innerBorderClass} px-5 py-5`}>
-              <MergedRowCampusBadges
-                row={row}
-                suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
-                presentation={view.presentation}
-              />
+              {!cardLayoutIncludesCampusBadges(view) ? (
+                <MergedRowCampusBadges
+                  row={row}
+                  suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                  presentation={view.presentation}
+                />
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div className="space-y-1">
