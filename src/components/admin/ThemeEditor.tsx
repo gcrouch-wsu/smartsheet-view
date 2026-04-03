@@ -63,7 +63,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-type DesignTabId = "palette" | "typography" | "effects" | "header";
+type DesignTabId = "palette" | "typography" | "chips" | "effects" | "header";
 
 export function ThemeEditor({ view, update }: ThemeEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -308,6 +308,7 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
               [
                 { id: "palette" as const, label: "Palette" },
                 { id: "typography" as const, label: "Typography" },
+                { id: "chips" as const, label: "Chips" },
                 { id: "effects" as const, label: "Cards & radius" },
                 { id: "header" as const, label: "Masthead" },
               ] as const
@@ -622,120 +623,121 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
                   </div>
                 </div>
 
-                {/* ── Campus chips ── */}
-                <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--wsu-border)]">Campus chips</p>
-                  <p className="mb-3 text-[10px] text-[color:var(--wsu-muted)]">
-                    Program-section strips, merged-row badges, and the{" "}
-                    <code className="rounded bg-[color:var(--wsu-stone)]/50 px-1 py-0.5 text-[10px]">__campus_badges__</code> card slot.
-                    Independent of palette{" "}
-                    <strong className="font-semibold text-[color:var(--wsu-ink)]">Badge background / Badge text</strong> (Smartsheet badge
-                    columns only).
-                  </p>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font size</label>
-                      <select
-                        value={campusFontSize}
-                        onChange={(e) => patchCampusBadgeStyle("fontSize", e.target.value)}
-                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                      >
-                        {campusFontSizeSelectOptions.map((opt) => (
-                          <option key={opt.value === "" ? "__campus_fs_default__" : opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">
-                        Bare numbers (e.g. typing <code className="text-[10px]">40</code> in export/raw config) render as{" "}
-                        <code className="text-[10px]">40px</code> on the public view.
-                      </p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font weight</label>
-                      <select
-                        value={campusFontWeight}
-                        onChange={(e) => patchCampusBadgeStyle("fontWeight", e.target.value)}
-                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                      >
-                        {campusFontWeightSelectOptions.map((opt) => (
-                          <option key={opt.value === "" ? "__campus_fw_default__" : opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font family</label>
-                      <select
-                        value={campusFontFamily}
-                        onChange={(e) => patchCampusBadgeStyle("fontFamily", e.target.value)}
-                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                      >
-                        {campusFontFamilySelectOptions.map((opt) => (
-                          <option key={opt.value === "" ? "__campus_ff_default__" : opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Corner radius</label>
-                      <select
-                        value={campusBorderRadius}
-                        onChange={(e) => patchCampusBadgeStyle("borderRadius", e.target.value)}
-                        className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
-                      >
-                        {campusRadiusSelectOptions.map((opt) => (
-                          <option key={opt.value === "" ? "__campus_rad_default__" : `${opt.value}-${opt.label}`} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {(
-                      [
-                        ["background", "Background"],
-                        ["color", "Text color"],
-                        ["borderColor", "Border color"],
-                      ] as const
-                    ).map(([token, label]) => (
-                      <div key={token}>
-                        <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">{label}</label>
-                        <div className="flex gap-2">
-                          <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-[color:var(--wsu-border)]">
-                            <input
-                              type="color"
-                              value={(getCampusBadge(token) || "").match(/#[0-9A-Fa-f]{3,6}/)?.[0] ?? "#e7e5e4"}
-                              onChange={(e) => patchCampusBadgeStyle(token, e.target.value)}
-                              className="absolute inset-[-4px] h-[calc(100%+8px)] w-[calc(100%+8px)] cursor-pointer"
-                            />
-                          </div>
-                          <div className="relative min-w-0 flex-1">
-                            <input
-                              type="text"
-                              value={getCampusBadge(token)}
-                              onChange={(e) => patchCampusBadgeStyle(token, e.target.value)}
-                              placeholder="e.g. radial-gradient(…) or empty"
-                              className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2.5 py-1.5 font-mono text-xs"
-                            />
-                            {getCampusBadge(token) && (
-                              <button
-                                type="button"
-                                onClick={() => patchCampusBadgeStyle(token, "")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-[color:var(--wsu-muted)] hover:text-rose-600"
-                                title="Clear"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              </div>
+            </Section>
+          )}
 
+          {designTab === "chips" && (
+            <Section title="Chips">
+              <p className="text-xs text-[color:var(--wsu-muted)]">
+                <strong className="font-semibold text-[color:var(--wsu-ink)]">Campus chips</strong> — styling for program-section strips,
+                merged-row campus badges, and the{" "}
+                <code className="rounded bg-[color:var(--wsu-stone)]/50 px-1 py-0.5 text-[10px]">__campus_badges__</code> card slot. Separate
+                from palette{" "}
+                <strong className="font-semibold text-[color:var(--wsu-ink)]">Badge background / Badge text</strong> (Smartsheet badge
+                columns only).
+              </p>
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font size</label>
+                  <select
+                    value={campusFontSize}
+                    onChange={(e) => patchCampusBadgeStyle("fontSize", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {campusFontSizeSelectOptions.map((opt) => (
+                      <option key={opt.value === "" ? "__campus_fs_default__" : opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-0.5 text-[10px] text-[color:var(--wsu-muted)]">
+                    Bare numbers (e.g. typing <code className="text-[10px]">40</code> in export/raw config) render as{" "}
+                    <code className="text-[10px]">40px</code> on the public view.
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font weight</label>
+                  <select
+                    value={campusFontWeight}
+                    onChange={(e) => patchCampusBadgeStyle("fontWeight", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {campusFontWeightSelectOptions.map((opt) => (
+                      <option key={opt.value === "" ? "__campus_fw_default__" : opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Font family</label>
+                  <select
+                    value={campusFontFamily}
+                    onChange={(e) => patchCampusBadgeStyle("fontFamily", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {campusFontFamilySelectOptions.map((opt) => (
+                      <option key={opt.value === "" ? "__campus_ff_default__" : opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Corner radius</label>
+                  <select
+                    value={campusBorderRadius}
+                    onChange={(e) => patchCampusBadgeStyle("borderRadius", e.target.value)}
+                    className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                  >
+                    {campusRadiusSelectOptions.map((opt) => (
+                      <option key={opt.value === "" ? "__campus_rad_default__" : `${opt.value}-${opt.label}`} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {(
+                  [
+                    ["background", "Background"],
+                    ["color", "Text color"],
+                    ["borderColor", "Border color"],
+                  ] as const
+                ).map(([token, label]) => (
+                  <div key={token}>
+                    <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">{label}</label>
+                    <div className="flex gap-2">
+                      <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-[color:var(--wsu-border)]">
+                        <input
+                          type="color"
+                          value={(getCampusBadge(token) || "").match(/#[0-9A-Fa-f]{3,6}/)?.[0] ?? "#e7e5e4"}
+                          onChange={(e) => patchCampusBadgeStyle(token, e.target.value)}
+                          className="absolute inset-[-4px] h-[calc(100%+8px)] w-[calc(100%+8px)] cursor-pointer"
+                        />
+                      </div>
+                      <div className="relative min-w-0 flex-1">
+                        <input
+                          type="text"
+                          value={getCampusBadge(token)}
+                          onChange={(e) => patchCampusBadgeStyle(token, e.target.value)}
+                          placeholder="e.g. radial-gradient(…) or empty"
+                          className="w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2.5 py-1.5 font-mono text-xs"
+                        />
+                        {getCampusBadge(token) && (
+                          <button
+                            type="button"
+                            onClick={() => patchCampusBadgeStyle(token, "")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[color:var(--wsu-muted)] hover:text-rose-600"
+                            title="Clear"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </Section>
           )}
