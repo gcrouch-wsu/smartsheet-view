@@ -2360,7 +2360,7 @@ export function ViewBuilder({
               <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Load columns from the source, then select which to include and set their display names.</p>
               {view.presentation?.hideCampusFieldInRecordDisplay && view.presentation?.campusFieldKey && (
                 <p className="mt-2 text-xs text-[color:var(--wsu-muted)]">
-                  Note: the campus column (<code>{view.presentation.campusFieldKey}</code>) is not shown here because <strong>Hide campus column from records</strong> is on — it is still used for grouping, row merge, and badge display.
+                  Note: <strong>Hide campus column from records</strong> only hides that field on the <em>public</em> card body. The campus column still appears below so you can include it, set its key/label, and use it for grouping, merge, and chips.
                 </p>
               )}
             </div>
@@ -2473,14 +2473,6 @@ export function ViewBuilder({
           ) : (
             view.fields
               .map((field, index) => ({ field, index }))
-              .filter(({ field }) => {
-                const ck = view.presentation?.campusFieldKey;
-                return !(
-                  view.presentation?.hideCampusFieldInRecordDisplay === true &&
-                  ck &&
-                  field.key === ck
-                );
-              })
               .map(({ field, index }) => {
               const rgSrc = isRoleGroupFieldSource(field.source) ? field.source : null;
               const colSource = (rgSrc ? null : field.source) as ViewFieldSource | null;
@@ -2529,6 +2521,16 @@ export function ViewBuilder({
                       </>
                     )}
                   </p>
+                  {!rgSrc &&
+                    view.presentation?.hideCampusFieldInRecordDisplay === true &&
+                    view.presentation?.campusFieldKey === field.key && (
+                      <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                        <span className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 font-medium text-sky-900">
+                          Campus (public)
+                        </span>{" "}
+                        Omitted from each card&apos;s body; chips / grouping / merge still use this field.
+                      </p>
+                    )}
                   {overlapWarning && (
                     <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                       This grouped role field overlaps raw fields still included in the view:{" "}
