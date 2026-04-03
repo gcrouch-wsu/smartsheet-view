@@ -180,7 +180,22 @@ export function getCardLayoutRows(
           };
         }
         const campusKey = view.presentation?.campusFieldKey;
-        if (campusKey && key === campusKey && view.presentation?.hideCampusFieldInRecordDisplay === true) {
+        if (
+          campusKey &&
+          key === campusKey &&
+          view.presentation?.hideCampusFieldInRecordDisplay === true
+        ) {
+          // Public cards use a placeholder; contributor editor still needs the real field (or stub).
+          if (contrib?.has(campusKey)) {
+            const campusField = row.fieldMap[campusKey];
+            if (campusField) {
+              return { type: "field", field: campusField };
+            }
+            const stub = contributorStubForLayoutKey(view, campusKey, contrib, contribEditable);
+            if (stub) {
+              return { type: "field", field: stub };
+            }
+          }
           return { type: "placeholder" };
         }
         const field = row.fieldMap[key];
@@ -249,7 +264,9 @@ export function getEditDrawerOrderedFields(
   contributorEditableByKey?: Map<string, ContributorEditableFieldDefinition>,
 ): ResolvedFieldValue[] {
   const shouldShow = (field: ResolvedFieldValue) =>
-    contributorFieldKeys.has(field.key) || fieldCanRender(field);
+    contributorFieldKeys.has(field.key) ||
+    contributorEditableByKey?.has(field.key) ||
+    fieldCanRender(field);
 
   const appendMissingContributorFields = (ordered: ResolvedFieldValue[]) => {
     const seen = new Set(ordered.map((f) => f.key));

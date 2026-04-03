@@ -98,7 +98,7 @@ describe("getCardLayoutRows", () => {
     expect(badgeCell?.type === "campus_badges" && badgeCell.campuses).toEqual([]);
   });
 
-  it("renders hidden campus field key as placeholder when hideCampusFieldInRecordDisplay is on", () => {
+  it("renders hidden campus field key as placeholder when hideCampusFieldInRecordDisplay is on (public)", () => {
     const row = makeRow({
       prog: textField("prog", "Program", "Biology"),
       campus: textField("campus", "Campus", "Pullman"),
@@ -113,6 +113,41 @@ describe("getCardLayoutRows", () => {
     const rows = getCardLayoutRows(view, row);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.map((c) => c.type)).toEqual(["field", "placeholder"]);
+  });
+
+  it("renders campus as a field for contributor layout when hideCampusFieldInRecordDisplay is on", () => {
+    const row = makeRow({
+      prog: textField("prog", "Program", "Biology"),
+      campus: textField("campus", "Campus", "Pullman"),
+    });
+    const view = makeView({
+      presentation: {
+        campusFieldKey: "campus",
+        hideCampusFieldInRecordDisplay: true,
+        cardLayout: [{ fieldKeys: ["prog", "campus"] }],
+      },
+    });
+    const ed = new Map<string, ContributorEditableFieldDefinition>([
+      [
+        "campus",
+        {
+          columnId: 99,
+          columnType: "PICKLIST",
+          fieldKey: "campus",
+          label: "Campus",
+          columnTitle: "Campus",
+          renderType: "badge",
+        },
+      ],
+    ]);
+    const rows = getCardLayoutRows(view, row, {
+      contributorFieldKeys: new Set(["campus"]),
+      contributorEditableByKey: ed,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.map((c) => c.type)).toEqual(["field", "field"]);
+    const campusCell = rows[0]?.[1];
+    expect(campusCell?.type === "field" && campusCell.field.key).toBe("campus");
   });
 });
 
