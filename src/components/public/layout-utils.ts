@@ -61,11 +61,14 @@ function contributorStubForLayoutKey(
   if (fromResolvedMeta) {
     return fromResolvedMeta;
   }
+  const ed = contributorEditableByKey?.get(key);
+  if (ed) {
+    return contributorResolvedFieldStub(ed);
+  }
   if (!contributorFieldKeys?.has(key)) {
     return null;
   }
-  const ed = contributorEditableByKey?.get(key);
-  return ed ? contributorResolvedFieldStub(ed) : null;
+  return null;
 }
 
 export function describeResolvedField(field: ResolvedFieldValue) {
@@ -161,6 +164,8 @@ export function getCardLayoutRows(
   }
   const contrib = options?.contributorFieldKeys;
   const contribEditable = options?.contributorEditableByKey;
+  const contribAllowsKey = (k: string) =>
+    (contrib?.has(k) ?? false) || (contribEditable?.has(k) ?? false);
 
   return layout
     .map((layoutRow) =>
@@ -186,7 +191,7 @@ export function getCardLayoutRows(
           view.presentation?.hideCampusFieldInRecordDisplay === true
         ) {
           // Public cards use a placeholder; contributor editor still needs the real field (or stub).
-          if (contrib?.has(campusKey)) {
+          if (contribAllowsKey(campusKey)) {
             const campusField = row.fieldMap[campusKey];
             if (campusField) {
               return { type: "field", field: campusField };
@@ -199,10 +204,10 @@ export function getCardLayoutRows(
           return { type: "placeholder" };
         }
         const field = row.fieldMap[key];
-        if (field && (fieldCanRender(field) || (contrib?.has(key) ?? false))) {
+        if (field && (fieldCanRender(field) || contribAllowsKey(key))) {
           return { type: "field", field };
         }
-        if (contrib?.has(key)) {
+        if (contribAllowsKey(key)) {
           const stub = contributorStubForLayoutKey(view, key, contrib, contribEditable);
           if (stub) {
             return { type: "field", field: stub };
@@ -270,12 +275,18 @@ export function getEditDrawerOrderedFields(
 
   const appendMissingContributorFields = (ordered: ResolvedFieldValue[]) => {
     const seen = new Set(ordered.map((f) => f.key));
-    for (const key of contributorFieldKeys) {
+    const keysToAdd = new Set<string>(contributorFieldKeys);
+    for (const k of contributorEditableByKey?.keys() ?? []) {
+      keysToAdd.add(k);
+    }
+    for (const key of keysToAdd) {
       if (seen.has(key)) continue;
       const field =
         row.fieldMap[key] ??
         contributorStubForLayoutKey(view, key, contributorFieldKeys, contributorEditableByKey);
-      if (field && shouldShow(field)) {
+      if (!field) continue;
+      const adminMarkedEditable = contributorEditableByKey?.has(key) === true;
+      if (adminMarkedEditable || shouldShow(field)) {
         ordered.push(field);
         seen.add(key);
       }

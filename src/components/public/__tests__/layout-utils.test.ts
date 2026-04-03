@@ -149,6 +149,39 @@ describe("getCardLayoutRows", () => {
     const campusCell = rows[0]?.[1];
     expect(campusCell?.type === "field" && campusCell.field.key).toBe("campus");
   });
+
+  it("renders campus as a field when hideCampusFieldInRecordDisplay is on and campus is only in contributorEditableByKey", () => {
+    const row = makeRow({
+      prog: textField("prog", "Program", "Biology"),
+      campus: textField("campus", "Campus", "Pullman"),
+    });
+    const view = makeView({
+      presentation: {
+        campusFieldKey: "campus",
+        hideCampusFieldInRecordDisplay: true,
+        cardLayout: [{ fieldKeys: ["prog", "campus"] }],
+      },
+    });
+    const ed = new Map<string, ContributorEditableFieldDefinition>([
+      [
+        "campus",
+        {
+          columnId: 99,
+          columnType: "PICKLIST",
+          fieldKey: "campus",
+          label: "Campus",
+          columnTitle: "Campus",
+          renderType: "badge",
+        },
+      ],
+    ]);
+    const rows = getCardLayoutRows(view, row, {
+      contributorFieldKeys: new Set(["prog"]),
+      contributorEditableByKey: ed,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.map((c) => c.type)).toEqual(["field", "field"]);
+  });
 });
 
 describe("getEditDrawerOrderedFields", () => {
@@ -210,5 +243,63 @@ describe("getEditDrawerOrderedFields", () => {
     expect(ordered.map((f) => f.key)).toEqual(["program_name", "campus"]);
     const campusField = ordered.find((f) => f.key === "campus");
     expect(campusField).toEqual(contributorResolvedFieldStub(campusEd));
+  });
+
+  it("appends contributor field by stub when key is missing from row.fieldMap and ResolvedView.fields (e.g. hidden column)", () => {
+    const pubEd: ContributorEditableFieldDefinition = {
+      columnId: 12,
+      columnType: "PICKLIST",
+      fieldKey: "public_visibility",
+      label: "Public Visibility",
+      columnTitle: "Public Visibility",
+      renderType: "badge",
+      options: ["Show", "Hide"],
+    };
+    const editableMap = new Map<string, ContributorEditableFieldDefinition>([["public_visibility", pubEd]]);
+
+    const row = makeRow({ program_name: textField("program_name", "Program", "Bio") });
+    const view = makeView({
+      fields: [{ key: "program_name", label: "Program", renderType: "text" }],
+      presentation: { cardLayout: [{ fieldKeys: ["program_name"] }] },
+    });
+
+    const ordered = getEditDrawerOrderedFields(view, row, new Set(["program_name"]), editableMap);
+    expect(ordered.map((f) => f.key)).toEqual(["program_name", "public_visibility"]);
+    expect(ordered.find((f) => f.key === "public_visibility")).toEqual(contributorResolvedFieldStub(pubEd));
+  });
+
+  it("includes empty hideWhenEmpty contributor field when admin marked editable", () => {
+    const ed: ContributorEditableFieldDefinition = {
+      columnId: 3,
+      columnType: "PICKLIST",
+      fieldKey: "pub",
+      label: "Public",
+      columnTitle: "Public",
+      renderType: "badge",
+    };
+    const editableMap = new Map<string, ContributorEditableFieldDefinition>([["pub", ed]]);
+    const row = makeRow({
+      program_name: textField("program_name", "Program", "Bio"),
+      pub: {
+        key: "pub",
+        label: "Public",
+        renderType: "badge",
+        textValue: "",
+        listValue: [],
+        links: [],
+        isEmpty: true,
+        hideWhenEmpty: true,
+      },
+    });
+    const view = makeView({
+      fields: [
+        { key: "program_name", label: "Program", renderType: "text" },
+        { key: "pub", label: "Public", renderType: "badge" },
+      ],
+      presentation: { cardLayout: [{ fieldKeys: ["program_name", "pub"] }] },
+    });
+
+    const ordered = getEditDrawerOrderedFields(view, row, new Set(["program_name", "pub"]), editableMap);
+    expect(ordered.map((f) => f.key)).toContain("pub");
   });
 });
