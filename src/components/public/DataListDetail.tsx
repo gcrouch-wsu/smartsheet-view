@@ -10,6 +10,7 @@ import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   describeResolvedField,
+  findResolvedViewRowByIdOrMergedSource,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   getRowHeadingField,
@@ -18,7 +19,10 @@ import {
   getVisibleRowFields,
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
@@ -54,11 +58,12 @@ export function DataListDetail({
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
 
-  const activeRow = view.rows.find((row) => row.id === activeRowId) ?? view.rows[0] ?? null;
+  const activeRow = findResolvedViewRowByIdOrMergedSource(view.rows, activeRowId);
   if (!activeRow) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
-  const activeRowEditable = editableRowIds?.has(activeRow.id) ?? false;
+  const activeRowEditable = isContributorRowOrMergedEditable(activeRow, editableRowIds);
+  const activeEditTargetId = contributorEditTargetRowId(activeRow, editableRowIds);
 
   const heading = getRowHeadingField(view, activeRow);
   const summary = getRowSummaryField(view, activeRow, heading?.key);
@@ -137,11 +142,15 @@ export function DataListDetail({
             {activeRowEditable && (
               <div className="flex items-center gap-2">
                 <ContributorEditableBadge />
-                <ContributorEditButton rowId={activeRow.id} onEditRow={onEditRow} />
+                <ContributorEditButton rowId={activeEditTargetId} onEditRow={onEditRow} />
               </div>
             )}
           </div>
         </div>
+        <MergedRowCampusBadges
+          row={activeRow}
+          suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+        />
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
             {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => {

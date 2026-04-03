@@ -1,5 +1,6 @@
 import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
 import { ContributorEditButton, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import type { ProgramGroup } from "@/lib/campus-grouping";
@@ -49,7 +50,8 @@ export function DataTable({
 
   function renderBodyRows(rows: typeof view.rows) {
     return rows.map((row) => {
-      const isEditable = editableRowIds?.has(row.id) ?? false;
+      const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+      const editTargetId = contributorEditTargetRowId(row, editableRowIds);
       return (
         <tr
           key={row.id}
@@ -63,7 +65,7 @@ export function DataTable({
           ))}
           {actionCol ? (
             <td className="px-4 py-4 text-right">
-              {isEditable ? <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact /> : null}
+              {isEditable ? <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact /> : null}
             </td>
           ) : null}
         </tr>

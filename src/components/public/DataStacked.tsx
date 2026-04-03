@@ -4,6 +4,7 @@ import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccen
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
@@ -15,7 +16,9 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
 import type { ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 export function DataStacked({
@@ -47,7 +50,8 @@ export function DataStacked({
 
   function renderStackedRow(row: ResolvedViewRow) {
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
-    const isEditable = editableRowIds?.has(row.id) ?? false;
+    const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+    const editTargetId = contributorEditTargetRowId(row, editableRowIds);
 
     if (customRows.length > 0) {
       return (
@@ -59,9 +63,10 @@ export function DataStacked({
           {isEditable && (
             <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
               <ContributorEditableBadge />
-              <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+              <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
             </div>
           )}
+          <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
           {customRows.map((cells, rowIndex) => {
             const colCount = getCardLayoutColumnCount(view);
             const useAlignedGrid = colCount > 1;
@@ -124,6 +129,7 @@ export function DataStacked({
                 <FieldValue field={summary} />
               </div>
             )}
+            <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
           </div>
           {!view.presentation?.hideRowBadge && (
             <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -131,7 +137,7 @@ export function DataStacked({
               <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
                 Row {row.id}
               </div>
-              {isEditable && <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />}
+              {isEditable && <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />}
             </div>
           )}
         </div>

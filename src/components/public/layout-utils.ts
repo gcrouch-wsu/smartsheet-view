@@ -236,6 +236,23 @@ export function getEditDrawerOrderedFields(
   return appendMissingContributorFields(out);
 }
 
+/**
+ * Resolves the display row for a tab/list selection when `rowId` is either the merged row id
+ * or a Smartsheet source row id absorbed into a merge.
+ */
+export function findResolvedViewRowByIdOrMergedSource(
+  rows: ResolvedViewRow[],
+  rowId: number | null,
+): ResolvedViewRow | null {
+  if (rows.length === 0) {
+    return null;
+  }
+  if (rowId == null) {
+    return rows[0] ?? null;
+  }
+  return rows.find((row) => row.id === rowId || row.mergedSourceRowIds?.includes(rowId)) ?? rows[0] ?? null;
+}
+
 /** Minimum width per custom card column so multi-column layouts scroll on narrow viewports instead of collapsing. */
 export const CUSTOM_CARD_COL_MIN_REM = 9;
 

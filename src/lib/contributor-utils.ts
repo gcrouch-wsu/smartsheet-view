@@ -33,6 +33,26 @@ const CONTRIBUTOR_EDITABLE_RENDER_TYPES = new Set<RenderType>([
   "mailto_list",
 ]);
 
+/** True if this display row or any merged source row is contributor-editable. */
+export function isContributorRowOrMergedEditable(row: ResolvedViewRow, editableRowIds: Set<number> | undefined): boolean {
+  if (!editableRowIds?.size) {
+    return false;
+  }
+  if (editableRowIds.has(row.id)) {
+    return true;
+  }
+  return row.mergedSourceRowIds?.some((id) => editableRowIds.has(id)) ?? false;
+}
+
+/** Smartsheet row id to open in the edit drawer (primary row, or first merged id the contributor may edit). */
+export function contributorEditTargetRowId(row: ResolvedViewRow, editableRowIds: Set<number> | undefined): number {
+  if (editableRowIds?.has(row.id)) {
+    return row.id;
+  }
+  const merged = row.mergedSourceRowIds?.find((id) => editableRowIds?.has(id));
+  return merged ?? row.id;
+}
+
 export type ContactDisplayMode = "email" | "name";
 
 export interface ContributorEditableFieldDefinition {

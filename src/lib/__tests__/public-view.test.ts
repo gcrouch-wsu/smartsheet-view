@@ -1,4 +1,4 @@
-﻿import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SmartsheetCell, SmartsheetDataset, SmartsheetRow, SourceConfig, ViewConfig } from "@/lib/config/types";
 
@@ -489,5 +489,94 @@ describe("public view resolution", () => {
 
     expect(field?.roleGroupReadOnly).toBe(true);
     expect(field?.people).toHaveLength(2);
+  });
+
+  it("merges rows by shared program and contact email when presentation.mergeProgramRowsBySharedEmail is set", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({
+        presentation: {
+          mergeProgramRowsBySharedEmail: true,
+          programGroupFieldKey: "programName",
+          campusFieldKey: "campus",
+          mergePeopleFieldKey: "staffCoordinators",
+        },
+        fields: [
+          {
+            key: "programName",
+            label: "Program",
+            source: { columnTitle: "Program" },
+            render: { type: "text" },
+          },
+          {
+            key: "campus",
+            label: "Campus",
+            source: { columnTitle: "Campus" },
+            render: { type: "text" },
+          },
+          {
+            key: "staffCoordinators",
+            label: "Staff",
+            source: { kind: "role_group", roleGroupId: "staff" },
+            render: { type: "people_group" },
+          },
+        ],
+      }),
+    ]);
+    storeMock.getSourceConfigById.mockResolvedValue({
+      ...sourceConfig,
+      roleGroups: [
+        {
+          id: "staff",
+          label: "Staff",
+          mode: "numbered_slots",
+          slots: [
+            {
+              slot: "1",
+              name: { columnId: 201, columnTitle: "Staff Name" },
+              email: { columnId: 202, columnTitle: "Staff Email" },
+            },
+          ],
+        },
+      ],
+    });
+    smartsheetMock.getSmartsheetDataset.mockResolvedValue(
+      createDataset(
+        [
+          { id: 100, index: 0, title: "Program", type: "TEXT_NUMBER" },
+          { id: 101, index: 1, title: "Campus", type: "TEXT_NUMBER" },
+          { id: 201, index: 2, title: "Staff Name", type: "TEXT_NUMBER" },
+          { id: 202, index: 3, title: "Staff Email", type: "TEXT_NUMBER" },
+        ],
+        [
+          createRow(1, [
+            createCell(100, "Program", "Biology"),
+            createCell(101, "Campus", "Pullman"),
+            createCell(201, "Staff Name", "Alice A"),
+            createCell(202, "Staff Email", "alice@wsu.edu"),
+          ]),
+          createRow(2, [
+            createCell(100, "Program", "Biology"),
+            createCell(101, "Campus", "Spokane"),
+            createCell(201, "Staff Name", "Alice A"),
+            createCell(202, "Staff Email", "alice@wsu.edu"),
+          ]),
+          createRow(3, [
+            createCell(100, "Program", "Chemistry"),
+            createCell(101, "Campus", "Pullman"),
+            createCell(201, "Staff Name", "Bob B"),
+            createCell(202, "Staff Email", "bob@wsu.edu"),
+          ]),
+        ],
+      ),
+    );
+
+    const page = await loadPublicPage("graduate-program-contacts");
+    const rows = page?.views[0]?.rows ?? [];
+    expect(rows).toHaveLength(2);
+    const mergedBio = rows.find((r) => r.fieldMap.programName?.textValue === "Biology");
+    expect(mergedBio?.mergedSourceRowIds?.slice().sort((a, b) => a - b)).toEqual([1, 2]);
+    expect(mergedBio?.mergedCampuses?.slice().sort((a, b) => a.localeCompare(b, "en"))).toEqual(["Pullman", "Spokane"]);
+    expect(mergedBio?.fieldMap.campus?.textValue).toContain("Pullman");
+    expect(mergedBio?.fieldMap.campus?.textValue).toContain("Spokane");
   });
 });

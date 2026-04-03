@@ -537,6 +537,7 @@ function parsePresentationConfig(
   fieldKeys: Set<string>,
   /** Keys of fields that are not `render.type === "hidden"` (print layout never resolves hidden fields). */
   nonHiddenFieldKeys: Set<string>,
+  peopleGroupFieldKeys: Set<string>,
 ): ValidationResult<ViewPresentationConfig | undefined> {
   if (input === undefined || input === null || input === "") {
     return { success: true, errors: [], data: undefined };
@@ -587,6 +588,8 @@ function parsePresentationConfig(
   }
   const showCampusFilter =
     input.showCampusFilter === undefined ? undefined : asBoolean(input.showCampusFilter, false);
+  const mergeProgramRowsBySharedEmail = input.mergeProgramRowsBySharedEmail === true;
+  const mergePeopleFieldKey = asOptionalString(input.mergePeopleFieldKey);
 
   const rawLogoUrl =
     typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
@@ -701,7 +704,8 @@ function parsePresentationConfig(
       Boolean(campusFieldKey) ||
       Boolean(programGroupFieldKey) ||
       Boolean(campusGroupingMode) ||
-      showCampusFilter !== undefined
+      showCampusFilter !== undefined ||
+      mergeProgramRowsBySharedEmail
   );
 
   return {
@@ -743,6 +747,8 @@ function parsePresentationConfig(
             ...(programGroupFieldKey ? { programGroupFieldKey } : {}),
             ...(campusGroupingMode ? { campusGroupingMode } : {}),
             ...(showCampusFilter !== undefined ? { showCampusFilter } : {}),
+            ...(mergeProgramRowsBySharedEmail ? { mergeProgramRowsBySharedEmail: true } : {}),
+            ...(mergeProgramRowsBySharedEmail && mergePeopleFieldKey ? { mergePeopleFieldKey } : {}),
           },
   };
 }
@@ -1130,7 +1136,15 @@ export function validateViewConfig(
   const nonHiddenFieldKeys = new Set(
     fields.filter((field) => field.render.type !== "hidden").map((field) => field.key),
   );
-  const presentationResult = parsePresentationConfig(input.presentation, fieldKeys, nonHiddenFieldKeys);
+  const peopleGroupFieldKeys = new Set(
+    fields.filter((field) => field.render.type === "people_group").map((field) => field.key),
+  );
+  const presentationResult = parsePresentationConfig(
+    input.presentation,
+    fieldKeys,
+    nonHiddenFieldKeys,
+    peopleGroupFieldKeys,
+  );
   const styleResult = parseStyleConfig(input.style);
   const editingResult = parseEditingConfig(input.editing);
   errors.push(...presentationResult.errors, ...styleResult.errors, ...editingResult.errors);

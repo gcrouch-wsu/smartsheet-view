@@ -34,6 +34,7 @@ import {
   normalizeSourceValue,
   normalizedValueToRoleAttributeText,
 } from "@/lib/transforms";
+import { mergeResolvedRowsByProgramAndEmail } from "@/lib/merge-program-rows-by-email";
 import { humanizeSlug } from "@/lib/utils";
 
 export interface AdminViewPreview {
@@ -412,6 +413,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     .map((row) => resolveRow(row, view, sourceConfig))
     .filter((row) => row.fields.some((field) => !field.isEmpty || field.textValue));
   const sortedRows = sortResolvedRows(resolvedRows, view.defaultSort);
+  const mergedRows = mergeResolvedRowsByProgramAndEmail(view, sortedRows);
   const linkFlags = effectiveValueLinkFlags(view.presentation);
 
   return {
@@ -426,7 +428,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     displayTimeZone: effectiveViewDisplayTimeZone(view),
     linkEmailsInView: linkFlags.linkEmailsInView,
     linkPhonesInView: linkFlags.linkPhonesInView,
-    rowCount: sortedRows.length,
+    rowCount: mergedRows.length,
     fields: view.fields
       .filter((field) => field.render.type !== "hidden")
       .map((field) => ({
@@ -437,7 +439,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
         textStyle: field.render.textStyle,
         labelStyle: field.render.labelStyle,
       })),
-    rows: sortedRows,
+    rows: mergedRows,
   };
 }
 

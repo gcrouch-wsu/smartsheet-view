@@ -188,10 +188,16 @@ export function ViewWithSearchAndIndex({
   }, [contributorRowsFiltered, filteredView.rowCount, view.rowCount, programGroups, view.presentation]);
 
   const editableRowIdSet = useMemo(() => new Set(editableRowIds), [editableRowIds]);
-  const editingRow = useMemo(
-    () => view.rows.find((row) => row.id === editingRowId) ?? null,
-    [editingRowId, view.rows],
-  );
+  const editingRow = useMemo(() => {
+    if (editingRowId == null) {
+      return null;
+    }
+    return (
+      filteredView.rows.find(
+        (row) => row.id === editingRowId || row.mergedSourceRowIds?.includes(editingRowId),
+      ) ?? null
+    );
+  }, [editingRowId, filteredView.rows]);
 
   function scrollToLetter(letter: string) {
     if (programGroups?.length) {

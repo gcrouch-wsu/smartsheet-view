@@ -233,6 +233,14 @@ export interface ViewPresentationConfig {
   campusGroupingMode?: CampusGroupingMode;
   /** When true, show client-side campus filter controls (stacked with search). */
   showCampusFilter?: boolean;
+  /**
+   * When true, merge resolved rows that share the same program field value and the same contact email(s)
+   * on `mergePeopleFieldKey` (or the sole people_group field). Campuses are unioned; cards show badges via
+   * `mergedCampuses`; table/print show campus cell as "A; B". Requires programGroupFieldKey + campusFieldKey.
+   */
+  mergeProgramRowsBySharedEmail?: boolean;
+  /** people_group field used for email matching when merging. If omitted and the view has exactly one people_group, that field is used. */
+  mergePeopleFieldKey?: string;
 }
 
 export interface ViewStyleConfig {
@@ -527,6 +535,10 @@ export interface ResolvedViewRow {
   id: number;
   fields: ResolvedFieldValue[];
   fieldMap: Record<string, ResolvedFieldValue>;
+  /** Smartsheet row ids merged into this display row (same program + matching emails). */
+  mergedSourceRowIds?: number[];
+  /** Canonical campus labels for merged row badge strip (and campus cell text). */
+  mergedCampuses?: string[];
 }
 
 export interface ResolvedViewField {

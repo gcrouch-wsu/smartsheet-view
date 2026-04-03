@@ -16,8 +16,11 @@ import {
   getVisibleRowFields,
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import { fieldLabelClassName } from "@/lib/field-typography";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -60,7 +63,8 @@ export function DataAccordion({
     <div className="space-y-3">
       {view.rows.map((row, index) => {
         const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
-        const isEditable = editableRowIds?.has(row.id) ?? false;
+        const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+        const editTargetId = contributorEditTargetRowId(row, editableRowIds);
 
         if (customRows.length > 0) {
           const firstRowCells = customRows[0] ?? [];
@@ -86,7 +90,7 @@ export function DataAccordion({
                 <div className="flex items-center gap-2">
                   {isEditable && <ContributorEditableBadge />}
                   {isEditable && (
-                    <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
+                    <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact stopPropagation />
                   )}
                   <span className="view-control px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] group-open:border-[color:var(--view-accent,var(--wsu-crimson))] group-open:text-[color:var(--view-accent,var(--wsu-crimson))]">
                     <span className="group-open:hidden">Expand</span>
@@ -95,6 +99,10 @@ export function DataAccordion({
                 </div>
               </summary>
               <div className={`border-t ${innerBorderClass} px-5 py-5`}>
+                <MergedRowCampusBadges
+                  row={row}
+                  suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                />
                 {customRows.map((cells, rowIndex) => {
                   const colCount = getCardLayoutColumnCount(view);
                   const useAlignedGrid = colCount > 1;
@@ -150,7 +158,7 @@ export function DataAccordion({
               <div className="flex items-center gap-2">
                 {isEditable && <ContributorEditableBadge />}
                 {isEditable && (
-                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact stopPropagation />
+                  <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact stopPropagation />
                 )}
                 <span className="view-control px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] group-open:border-[color:var(--view-accent,var(--wsu-crimson))] group-open:text-[color:var(--view-accent,var(--wsu-crimson))]">
                   <span className="group-open:hidden">Expand</span>
@@ -159,6 +167,10 @@ export function DataAccordion({
               </div>
             </summary>
             <div className={`border-t ${innerBorderClass} px-5 py-5`}>
+              <MergedRowCampusBadges
+                row={row}
+                suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+              />
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
                   <div className="space-y-1">

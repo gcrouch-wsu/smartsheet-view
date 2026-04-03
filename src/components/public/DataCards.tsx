@@ -3,6 +3,7 @@ import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
@@ -14,7 +15,9 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -57,7 +60,8 @@ export function DataCards({
 
   function renderCardRow(row: ResolvedViewRow) {
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
-    const isEditable = editableRowIds?.has(row.id) ?? false;
+    const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+    const editTargetId = contributorEditTargetRowId(row, editableRowIds);
 
     if (customRows.length > 0) {
       const colCount = getCardLayoutColumnCount(view);
@@ -74,9 +78,10 @@ export function DataCards({
           {isEditable && (
             <div className="mb-4 flex items-center justify-between gap-3">
               <ContributorEditableBadge />
-              <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+              <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
             </div>
           )}
+          <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
           {customRows.map((cells, rowIndex) => {
             const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
             const gridInner = (
@@ -120,9 +125,10 @@ export function DataCards({
         {isEditable && (
           <div className="mb-4 flex items-center justify-between gap-3">
             <ContributorEditableBadge />
-            <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+            <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
           </div>
         )}
+        <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
         {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
           <div className="border-b border-[color:var(--wsu-border)] pb-4">
             {!heading.hideLabel ? (

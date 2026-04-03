@@ -11,7 +11,10 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -46,7 +49,11 @@ export function DataList({
 
   function renderListItem(row: ResolvedViewRow) {
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
-    const isEditable = editableRowIds?.has(row.id) ?? false;
+    const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+    const editTargetId = contributorEditTargetRowId(row, editableRowIds);
+    const mergeBadges = (
+      <MergedRowCampusBadges row={row} suppressWhenProgramSections={isCampusGroupingActive(view.presentation)} />
+    );
 
     if (customRows.length > 0) {
       return (
@@ -54,9 +61,10 @@ export function DataList({
           {isEditable && (
             <div className="mb-4 flex items-center justify-between gap-3">
               <ContributorEditableBadge />
-              <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+              <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
             </div>
           )}
+          {mergeBadges}
           <div className="space-y-4">
             {customRows.map((cells, rowIndex) => {
               const rowDividerClass =
@@ -107,9 +115,10 @@ export function DataList({
         {isEditable && (
           <div className="mb-4 flex items-center justify-between gap-3">
             <ContributorEditableBadge />
-            <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+            <ContributorEditButton rowId={editTargetId} onEditRow={onEditRow} compact />
           </div>
         )}
+        {mergeBadges}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {row.fields
             .filter((field) => !(field.hideWhenEmpty && field.isEmpty))

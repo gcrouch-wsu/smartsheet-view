@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildContributorEditingClientConfig,
+  contributorEditTargetRowId,
   getContributorEditingValidationErrors,
   hasMultiPersonValidationErrors,
+  isContributorRowOrMergedEditable,
   mergeContributorContactPayloadWithExistingRow,
   parseMultiPersonValue,
   parseMultiPersonRow,
@@ -62,6 +64,43 @@ describe("mergeContributorContactPayloadWithExistingRow", () => {
     expect(mergeContributorContactPayloadWithExistingRow(cells, row, columnTypeById)).toEqual([
       { columnId: 10, objectValue: { objectType: "CONTACT", name: "Pat", email: "new@wsu.edu" } },
     ]);
+  });
+});
+
+describe("isContributorRowOrMergedEditable and contributorEditTargetRowId", () => {
+  const baseRow = (): ResolvedViewRow => ({
+    id: 1,
+    fields: [],
+    fieldMap: {},
+  });
+
+  it("returns false when editable set is missing or empty", () => {
+    const row = baseRow();
+    expect(isContributorRowOrMergedEditable(row, undefined)).toBe(false);
+    expect(isContributorRowOrMergedEditable(row, new Set())).toBe(false);
+  });
+
+  it("treats primary id as editable", () => {
+    const row = baseRow();
+    expect(isContributorRowOrMergedEditable(row, new Set([1]))).toBe(true);
+    expect(contributorEditTargetRowId(row, new Set([1]))).toBe(1);
+  });
+
+  it("treats merged source id as editable when only source ids match the set", () => {
+    const row: ResolvedViewRow = { ...baseRow(), id: 10, mergedSourceRowIds: [10, 20, 30] };
+    expect(isContributorRowOrMergedEditable(row, new Set([20]))).toBe(true);
+    expect(contributorEditTargetRowId(row, new Set([20]))).toBe(20);
+  });
+
+  it("prefers display row id for edit target when it is in the editable set", () => {
+    const row: ResolvedViewRow = { ...baseRow(), id: 10, mergedSourceRowIds: [10, 20] };
+    expect(contributorEditTargetRowId(row, new Set([10, 20]))).toBe(10);
+  });
+
+  it("falls back to display id when nothing in the set applies", () => {
+    const row: ResolvedViewRow = { ...baseRow(), id: 10, mergedSourceRowIds: [10, 20] };
+    expect(isContributorRowOrMergedEditable(row, new Set([99]))).toBe(false);
+    expect(contributorEditTargetRowId(row, new Set([99]))).toBe(10);
   });
 });
 

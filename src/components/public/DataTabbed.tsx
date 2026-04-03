@@ -10,6 +10,7 @@ import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   describeResolvedField,
+  findResolvedViewRowByIdOrMergedSource,
   getCardLayoutColumnCount,
   getCardLayoutRows,
   getRowHeadingField,
@@ -18,7 +19,10 @@ import {
   getVisibleRowFields,
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
+import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import type { ProgramGroup } from "@/lib/campus-grouping";
+import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
@@ -31,10 +35,6 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
       <FieldValue field={field} stacked />
     </div>
   );
-}
-
-function findSelectedRow(view: ResolvedView, rowId: number | null) {
-  return view.rows.find((row) => row.id === rowId) ?? view.rows[0] ?? null;
 }
 
 export function DataTabbed({
@@ -58,11 +58,12 @@ export function DataTabbed({
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
 
-  const activeRow = findSelectedRow(view, activeRowId);
+  const activeRow = findResolvedViewRowByIdOrMergedSource(view.rows, activeRowId);
   if (!activeRow) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
-  const activeRowEditable = editableRowIds?.has(activeRow.id) ?? false;
+  const activeRowEditable = isContributorRowOrMergedEditable(activeRow, editableRowIds);
+  const activeEditTargetId = contributorEditTargetRowId(activeRow, editableRowIds);
 
   const heading = getRowHeadingField(view, activeRow);
   const summary = getRowSummaryField(view, activeRow, heading?.key);
@@ -87,7 +88,7 @@ export function DataTabbed({
       <div role="tablist" aria-label="Records" className="flex flex-wrap gap-2">
         {view.rows.map((row) => {
           const active = row.id === activeRow.id;
-          const isEditable = editableRowIds?.has(row.id) ?? false;
+          const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
           const rowHeading = getRowHeadingField(view, row);
           const label = rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`;
 
@@ -130,11 +131,15 @@ export function DataTabbed({
             {activeRowEditable && (
               <div className="flex items-center gap-2">
                 <ContributorEditableBadge />
-                <ContributorEditButton rowId={activeRow.id} onEditRow={onEditRow} />
+                <ContributorEditButton rowId={activeEditTargetId} onEditRow={onEditRow} />
               </div>
             )}
           </div>
         </div>
+        <MergedRowCampusBadges
+          row={activeRow}
+          suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+        />
         {hasCustomCardLayout(view) ? (
           <div className="mt-5 space-y-4">
             {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => {
