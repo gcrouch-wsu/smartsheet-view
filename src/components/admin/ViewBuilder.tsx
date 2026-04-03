@@ -19,7 +19,6 @@ import {
   CARD_LAYOUT_PLACEHOLDER,
   CARD_LAYOUT_TEXT_PREFIX,
   FIELD_TEXT_STYLE_VALUES,
-  type CampusBadgePresentationStyle,
 } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { validateViewConfig } from "@/lib/config/validation";
@@ -1809,9 +1808,10 @@ export function ViewBuilder({
                         <span>
                           <span className="font-medium text-[color:var(--wsu-ink)]">Hide campus column from records</span>
                           <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                            Campus still loads from the sheet for grouping, merge, and filters. Show campuses with the{" "}
-                            <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">{CARD_LAYOUT_CAMPUS_BADGES}</code> slot in
-                            Custom card layout (Setup).
+                            Campus still loads for grouping, merge, and filters. The campus field is omitted from default field lists and
+                            from custom card slots that use the campus field key — add{" "}
+                            <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">{CARD_LAYOUT_CAMPUS_BADGES}</code> in Custom
+                            card layout if you want a badge strip there.
                           </span>
                         </span>
                       </label>
@@ -1830,7 +1830,8 @@ export function ViewBuilder({
                         <span>
                           <span className="font-medium text-[color:var(--wsu-ink)]">Show campus chips under program section titles</span>
                           <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                            Turn off when you only want campuses in custom layout badges. Styling below applies here and to those badges.
+                            Turn off when you only want campuses in custom layout badges. Chip styling lives under{" "}
+                            <strong>Appearance &amp; theme</strong> → Campus chips.
                           </span>
                         </span>
                       </label>
@@ -1855,51 +1856,6 @@ export function ViewBuilder({
                           </span>
                         </span>
                       </label>
-                      <div className="rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/15 p-3">
-                        <p className="text-xs font-medium text-[color:var(--wsu-ink)]">Campus chip typography &amp; colors</p>
-                        <p className="mt-1 text-[10px] text-[color:var(--wsu-muted)]">CSS values (e.g. #335B33, 0.75rem, 9999px).</p>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                          {(
-                            [
-                              ["fontSize", "Font size"],
-                              ["fontWeight", "Font weight"],
-                              ["fontFamily", "Font family"],
-                              ["background", "Background"],
-                              ["color", "Text color"],
-                              ["borderColor", "Border color"],
-                              ["borderRadius", "Border radius"],
-                            ] as const
-                          ).map(([key, label]) => (
-                            <label key={key} className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
-                              {label}
-                              <input
-                                type="text"
-                                value={String((view.presentation?.campusBadgeStyle as Record<string, string> | undefined)?.[key] ?? "")}
-                                onChange={(e) => {
-                                  const v = e.target.value.trim();
-                                  const nextStyle = { ...(view.presentation?.campusBadgeStyle ?? {}) } as Record<
-                                    keyof CampusBadgePresentationStyle,
-                                    string | undefined
-                                  >;
-                                  if (!v) {
-                                    delete nextStyle[key];
-                                  } else {
-                                    nextStyle[key] = v;
-                                  }
-                                  const compact = Object.fromEntries(
-                                    Object.entries(nextStyle).filter(([, val]) => Boolean(val && String(val).trim())),
-                                  ) as CampusBadgePresentationStyle;
-                                  update("presentation", {
-                                    ...view.presentation,
-                                    campusBadgeStyle: Object.keys(compact).length > 0 ? compact : undefined,
-                                  });
-                                }}
-                                className="mt-1 w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs font-medium"
-                              />
-                            </label>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   ) : null}
 

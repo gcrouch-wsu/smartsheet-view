@@ -77,6 +77,23 @@ describe("getCardLayoutRows", () => {
     const badgeCell = rows[0]?.find((c) => c.type === "campus_badges");
     expect(badgeCell?.type === "campus_badges" && badgeCell.campuses).toEqual([]);
   });
+
+  it("renders hidden campus field key as placeholder when hideCampusFieldInRecordDisplay is on", () => {
+    const row = makeRow({
+      prog: textField("prog", "Program", "Biology"),
+      campus: textField("campus", "Campus", "Pullman"),
+    });
+    const view = makeView({
+      presentation: {
+        campusFieldKey: "campus",
+        hideCampusFieldInRecordDisplay: true,
+        cardLayout: [{ fieldKeys: ["prog", "campus"] }],
+      },
+    });
+    const rows = getCardLayoutRows(view, row);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.map((c) => c.type)).toEqual(["field", "placeholder"]);
+  });
 });
 
 describe("getEditDrawerOrderedFields", () => {

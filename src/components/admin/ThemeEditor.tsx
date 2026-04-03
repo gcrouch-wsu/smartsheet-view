@@ -11,7 +11,7 @@ import {
   TEXT_TRANSFORM_OPTIONS,
 } from "@/lib/config/options";
 import { BUILT_IN_THEMES, mergeThemeTokens } from "@/lib/config/themes";
-import type { ViewConfig, ViewStyleConfig } from "@/lib/config/types";
+import type { CampusBadgePresentationStyle, ViewConfig, ViewStyleConfig } from "@/lib/config/types";
 import { getContrastRatio, getContrastScore } from "@/lib/color-utils";
 
 interface ThemeEditorProps {
@@ -96,6 +96,26 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
     update("style", Object.keys(nextStyle).length > 0 ? nextStyle : undefined);
   };
 
+  const patchCampusBadgeStyle = (key: keyof CampusBadgePresentationStyle, raw: string) => {
+    const v = raw.trim();
+    const nextStyle = { ...(view.presentation?.campusBadgeStyle ?? {}) } as Record<
+      keyof CampusBadgePresentationStyle,
+      string | undefined
+    >;
+    if (!v) {
+      delete nextStyle[key];
+    } else {
+      nextStyle[key] = v;
+    }
+    const compact = Object.fromEntries(
+      Object.entries(nextStyle).filter(([, val]) => Boolean(val && String(val).trim())),
+    ) as CampusBadgePresentationStyle;
+    update("presentation", {
+      ...view.presentation,
+      campusBadgeStyle: Object.keys(compact).length > 0 ? compact : undefined,
+    });
+  };
+
   const getValue = (token: keyof ViewStyleConfig) =>
     view.style?.[token] ?? (currentPreset.tokens[token] as string) ?? "";
 
@@ -173,6 +193,40 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
             );
           })}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-4 shadow-sm">
+        <Section title="Campus chips">
+          <p className="text-xs text-[color:var(--wsu-muted)]">
+            Typography and colors for program-section campus strips, merged-row badges, and the{" "}
+            <code className="rounded bg-[color:var(--wsu-stone)]/50 px-1 py-0.5 text-[10px]">__campus_badges__</code> card slot. Use CSS
+            values (e.g. <code className="text-[10px]">#335B33</code>, <code className="text-[10px]">0.75rem</code>,{" "}
+            <code className="text-[10px]">9999px</code>).
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {(
+              [
+                ["fontSize", "Font size"],
+                ["fontWeight", "Font weight"],
+                ["fontFamily", "Font family"],
+                ["background", "Background"],
+                ["color", "Text color"],
+                ["borderColor", "Border color"],
+                ["borderRadius", "Border radius"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key} className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--wsu-muted)]">
+                {label}
+                <input
+                  type="text"
+                  value={String((view.presentation?.campusBadgeStyle as Record<string, string> | undefined)?.[key] ?? "")}
+                  onChange={(e) => patchCampusBadgeStyle(key, e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[color:var(--wsu-border)] bg-white px-2 py-1.5 text-xs font-medium"
+                />
+              </label>
+            ))}
+          </div>
+        </Section>
       </div>
 
       <button

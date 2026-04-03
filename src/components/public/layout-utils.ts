@@ -154,6 +154,10 @@ export function getCardLayoutRows(
             style: view.presentation?.campusBadgeStyle,
           };
         }
+        const campusKey = view.presentation?.campusFieldKey;
+        if (campusKey && key === campusKey && view.presentation?.hideCampusFieldInRecordDisplay === true) {
+          return { type: "placeholder" };
+        }
         const field = row.fieldMap[key];
         if (field && (fieldCanRender(field) || (contrib?.has(key) ?? false))) {
           return { type: "field", field };
