@@ -16,6 +16,8 @@ import { ThemeEditor } from "./ThemeEditor";
 import { isRoleGroupFieldSource } from "@/lib/role-groups";
 import { CARD_LAYOUT_PLACEHOLDER, CARD_LAYOUT_TEXT_PREFIX, FIELD_TEXT_STYLE_VALUES } from "@/lib/config/types";
 import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
+import { validateViewConfig } from "@/lib/config/validation";
+import { parseViewConfigFromBackupJson } from "@/lib/view-backup-json";
 import { DISPLAY_TIMEZONE_OPTIONS, effectiveViewDisplayTimeZone } from "@/lib/display-datetime";
 import { slugify } from "@/lib/utils";
 import { effectiveValueLinkFlags } from "@/lib/transforms";
@@ -197,40 +199,6 @@ function toggleNumberSelection(values: number[], id: number, checked: boolean) {
 }
 
 const FETCH_CREDENTIALS: RequestCredentials = "include";
-
-/** Accepts full admin export (`viewConfig`), GET view payload (`view`), or a raw `ViewConfig` object. */
-function parseViewConfigFromBackupJson(raw: unknown): { ok: true; config: ViewConfig } | { ok: false; error: string } {
-  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ok: false, error: "File must contain a JSON object (not an array)." };
-  }
-  const root = raw as Record<string, unknown>;
-  if (root.format === "slim") {
-    return {
-      ok: false,
-      error: "Slim exports only include row snapshots. Use “Export JSON” for a restorable backup.",
-    };
-  }
-  let candidate: unknown = raw;
-  if (root.viewConfig && typeof root.viewConfig === "object" && !Array.isArray(root.viewConfig)) {
-    candidate = root.viewConfig;
-  } else if (root.view && typeof root.view === "object" && !Array.isArray(root.view)) {
-    candidate = root.view;
-  }
-  if (candidate === null || typeof candidate !== "object" || Array.isArray(candidate)) {
-    return { ok: false, error: "Could not find viewConfig or view in this file." };
-  }
-  const c = candidate as Record<string, unknown>;
-  if (typeof c.id !== "string" || !c.id.trim()) {
-    return { ok: false, error: "Backup is missing a non-empty view id." };
-  }
-  if (typeof c.sourceId !== "string" || !c.sourceId.trim()) {
-    return { ok: false, error: "Backup is missing sourceId." };
-  }
-  if (!Array.isArray(c.fields)) {
-    return { ok: false, error: "Backup is missing a fields array." };
-  }
-  return { ok: true, config: c as unknown as ViewConfig };
-}
 
 type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId">;
 type RoleGroupOverlapWarning = {
@@ -632,17 +600,28 @@ export function ViewBuilder({
         return;
       }
 
+      const validated = validateViewConfig(parsedConfig.config, {
+        knownSourceIds: sources.map((s) => s.id),
+        sources,
+      });
+      if (!validated.success || !validated.data) {
+        const msg = validated.errors[0] ?? "Imported JSON failed validation.";
+        setErrors(validated.errors);
+        toast.addToast(msg, "error");
+        return;
+      }
+
       const editorViewId = initialView?.id ?? view.id;
-      if (!isNew && editorViewId && parsedConfig.config.id !== editorViewId) {
-        const msg = `This backup is for view "${parsedConfig.config.id}". Open that view in the editor, or use a backup for "${editorViewId}".`;
+      if (!isNew && editorViewId && validated.data.id !== editorViewId) {
+        const msg = `This backup is for view "${validated.data.id}". Open that view in the editor, or use a backup for "${editorViewId}".`;
         setErrors([msg]);
         toast.addToast(msg, "error");
         return;
       }
 
-      let config = parsedConfig.config;
+      let config = validated.data;
       if (!isNew && editorViewId) {
-        config = { ...config, id: editorViewId, public: view.public };
+        config = { ...config, id: editorViewId, slug: view.slug, public: view.public };
       }
 
       const saveNow = window.confirm(
@@ -985,7 +964,7 @@ export function ViewBuilder({
                 <button
                   type="button"
                   disabled={isImporting || isSaving}
-                  title="Load a backup from Export JSON, or a raw view object from GET /api/admin/views/{id}"
+                  title="Load a backup from Export JSON (viewConfig), a page bundle with viewConfigs + defaultViewId, or GET /api/admin/views/{id}"
                   onClick={() => importFileInputRef.current?.click()}
                   className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)] disabled:opacity-50"
                 >
@@ -1598,6 +1577,16 @@ export function ViewBuilder({
                 layouts are unchanged.
               </p>
             </div>
+          </SetupAccordion>
+
+          <SetupAccordion
+            title="Campus & program grouping (live view)"
+            subtitle='JSON / Export only today: set presentation.campusGroupingMode to "grouped" plus campusFieldKey and programGroupFieldKey. Accordion, tabbed, and list/detail layouts switch to a stacked grouped presentation when grouping is on so program sections stay readable.'
+          >
+            <p className="text-xs leading-relaxed text-[color:var(--wsu-muted)]">
+              Campus chips only appear when there are two or more distinct campuses in the sheet. Program group headers show the full campus
+              set for each program even when a campus filter is active.
+            </p>
           </SetupAccordion>
 
           <SetupAccordion

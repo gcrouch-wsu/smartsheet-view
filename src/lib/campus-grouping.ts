@@ -74,6 +74,7 @@ export function groupResolvedRows(
   }
 
   const groups: ProgramGroup[] = [];
+  const usedIds = new Set<string>();
   for (const key of order) {
     const bucket = buckets.get(key)!;
     const campusSet = new Set<string>();
@@ -81,7 +82,14 @@ export function groupResolvedRows(
       campusSet.add(normalizeCampusDisplay(rowFieldText(r, campusFieldKey)));
     }
     const campuses = [...campusSet].sort((a, b) => a.localeCompare(b, "en"));
-    const id = key === "__empty__" ? "no-program" : slugify(bucket.norm || "no-program");
+    const baseId = key === "__empty__" ? "no-program" : slugify(bucket.norm || "no-program");
+    let id = baseId;
+    let n = 2;
+    while (usedIds.has(id)) {
+      id = `${baseId}-${n}`;
+      n += 1;
+    }
+    usedIds.add(id);
     groups.push({
       id,
       label: bucket.label,
@@ -91,6 +99,29 @@ export function groupResolvedRows(
   }
 
   return groups;
+}
+
+/** Keep group metadata (e.g. campus badges) from the full dataset; only row lists reflect filters. */
+export function narrowProgramGroupsToFilteredRows(
+  groups: ProgramGroup[],
+  filteredRows: ResolvedViewRow[],
+): ProgramGroup[] {
+  const idSet = new Set(filteredRows.map((r) => r.id));
+  return groups
+    .map((g) => ({ ...g, rows: g.rows.filter((r) => idSet.has(r.id)) }))
+    .filter((g) => g.rows.length > 0);
+}
+
+/** First letter for A–Z index (program group label or similar). */
+export function indexLetterFromLabel(label: string): string {
+  const first = label.trim().charAt(0).toUpperCase();
+  if (/[A-Z]/.test(first)) {
+    return first;
+  }
+  if (/[0-9]/.test(first)) {
+    return "#";
+  }
+  return "#";
 }
 
 /** True when the view config requests on-screen campus/program grouping. */

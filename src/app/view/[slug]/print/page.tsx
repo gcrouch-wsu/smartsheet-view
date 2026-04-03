@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { DisplayTimezoneProvider } from "@/components/public/DisplayTimezoneContext";
-import { PrintViewDocument } from "@/components/public/PrintViewDocument";
+import { PrintViewDocument, buildPrintColumnPickerOptions } from "@/components/public/PrintViewDocument";
 import {
   loadPublicPageState,
   resolveRequestedResolvedView,
@@ -89,19 +90,42 @@ export default async function PrintExportPage({
     notFound();
   }
 
+  const colsParam = firstValue(resolvedSearchParams.cols);
+  const printColumnKeys = colsParam
+    ? colsParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
+  const printCompact = firstValue(resolvedSearchParams.compact) === "1";
+  const printableColumnOptions = buildPrintColumnPickerOptions(activeView);
+
   return (
     <div className="min-h-screen bg-[color:var(--wsu-stone)] px-4 py-6 sm:px-6">
       <DisplayTimezoneProvider timeZone={activeView.displayTimeZone}>
-        <PrintViewDocument
-          slug={slug}
-          viewId={activeView.id}
-          pageTitle={page.title}
-          sourceLabel={page.sourceConfig.label}
-          sourceName={page.sourceName}
-          fetchedAt={page.fetchedAt}
-          view={activeView}
-        />
+        <Suspense fallback={<PrintExportFallback />}>
+          <PrintViewDocument
+            slug={slug}
+            viewId={activeView.id}
+            pageTitle={page.title}
+            sourceLabel={page.sourceConfig.label}
+            sourceName={page.sourceName}
+            fetchedAt={page.fetchedAt}
+            view={activeView}
+            printColumnKeys={printColumnKeys && printColumnKeys.length > 0 ? printColumnKeys : undefined}
+            printCompact={printCompact}
+            printableColumnOptions={printableColumnOptions}
+          />
+        </Suspense>
       </DisplayTimezoneProvider>
+    </div>
+  );
+}
+
+function PrintExportFallback() {
+  return (
+    <div className="mx-auto max-w-lg rounded-2xl border border-[color:var(--wsu-border)] bg-white p-8 text-center text-sm text-[color:var(--wsu-muted)]">
+      Loading print layout…
     </div>
   );
 }

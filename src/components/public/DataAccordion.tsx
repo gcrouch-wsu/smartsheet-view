@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { DataStacked } from "@/components/public/DataStacked";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
@@ -32,7 +33,7 @@ function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue
 
 export function DataAccordion({
   view,
-  programGroups: _programGroups,
+  programGroups,
   editableRowIds,
   onEditRow,
 }: {
@@ -41,7 +42,9 @@ export function DataAccordion({
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
-  void _programGroups;
+  if (programGroups && programGroups.length > 0) {
+    return <DataStacked view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
+  }
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }

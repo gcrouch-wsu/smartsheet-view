@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { DataStacked } from "@/components/public/DataStacked";
 import { ContributorEditButton, ContributorEditableBadge } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
@@ -38,7 +39,7 @@ function findSelectedRow(view: ResolvedView, rowId: number | null) {
 
 export function DataTabbed({
   view,
-  programGroups: _programGroups,
+  programGroups,
   editableRowIds,
   onEditRow,
 }: {
@@ -47,8 +48,11 @@ export function DataTabbed({
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
-  void _programGroups;
   const [activeRowId, setActiveRowId] = useState<number | null>(view.rows[0]?.id ?? null);
+
+  if (programGroups && programGroups.length > 0) {
+    return <DataStacked view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />;
+  }
 
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;

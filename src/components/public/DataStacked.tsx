@@ -1,4 +1,5 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
+import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldBlock } from "@/components/public/FieldBlock";
@@ -14,22 +15,20 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
-import type { ResolvedView } from "@/lib/config/types";
+import type { ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 export function DataStacked({
   view,
-  programGroups: _programGroups,
+  programGroups,
   editableRowIds,
   onEditRow,
 }: {
   view: ResolvedView;
-  /** Reserved for campus grouping UI (Step D). */
   programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
 }) {
-  void _programGroups;
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
   }
@@ -46,108 +45,122 @@ export function DataStacked({
           : "mt-4 border-t border-[color:var(--wsu-border)] pt-4"
       : "";
 
-  return (
-    <div className="space-y-3 md:space-y-4">
-      {view.rows.map((row) => {
-        const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
-        const isEditable = editableRowIds?.has(row.id) ?? false;
+  function renderStackedRow(row: ResolvedViewRow) {
+    const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
+    const isEditable = editableRowIds?.has(row.id) ?? false;
 
-        if (customRows.length > 0) {
-          return (
-            <article
-              key={row.id}
-              id={`row-${row.id}`}
-              className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
-            >
-              {isEditable && (
-                <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-                  <ContributorEditableBadge />
-                  <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
-                </div>
-              )}
-              {customRows.map((cells, rowIndex) => {
-                const colCount = getCardLayoutColumnCount(view);
-                const useAlignedGrid = colCount > 1;
-                const gridClass = useAlignedGrid ? "grid gap-2 sm:gap-3 md:gap-4" : "space-y-2 sm:space-y-3 md:space-y-4";
-                const gridStyle = useAlignedGrid ? customCardAlignedGridStyle(colCount) : undefined;
-                const scrollWrap = customCardGridScrollWrapClassName(useAlignedGrid);
-                const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
-                const gridInner = (
-                  <div className={gridClass} style={gridStyle}>
-                    {useAlignedGrid ? (
-                      <>
-                        {paddedCells.map((cell, i) => (
-                          <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
-                        ))}
-                        {paddedCells.map((cell, i) => (
-                          <CardLayoutCellRenderer key={`v-${i}`} cell={cell} flexClass="min-w-0" mode="value" />
-                        ))}
-                      </>
-                    ) : (
-                      paddedCells.map((cell, i) => (
-                        <CardLayoutCellRenderer key={i} cell={cell} flexClass="w-full" />
-                      ))
-                    )}
-                  </div>
-                );
-                return (
-                  <div key={rowIndex} className={rowDividerClass(rowIndex)}>
-                    {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
-                  </div>
-                );
-              })}
-            </article>
-          );
-        }
-
-        const heading = getRowHeadingField(view, row);
-        const summary = getRowSummaryField(view, row, heading?.key);
-        const bodyFields = getVisibleRowFields(row, [heading?.key ?? "", summary?.key ?? ""]);
-
-        return (
-          <article
-            key={row.id}
-            id={`row-${row.id}`}
-            className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--wsu-border)] pb-3 sm:gap-4 sm:pb-4">
-              <div>
-                {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
-                  <div>
-                    {!heading.hideLabel && (
-                      <p className={fieldLabelClassName(heading)}>{heading.label}</p>
-                    )}
-                    <div className="view-row-heading mt-2">
-                      <FieldValue field={heading} />
-                    </div>
-                  </div>
-                )}
-                {summary && (
-                  <div className="mt-2 text-sm text-[color:var(--wsu-muted)]">
-                    <FieldValue field={summary} />
-                  </div>
+    if (customRows.length > 0) {
+      return (
+        <article
+          key={row.id}
+          id={`row-${row.id}`}
+          className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
+        >
+          {isEditable && (
+            <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+              <ContributorEditableBadge />
+              <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />
+            </div>
+          )}
+          {customRows.map((cells, rowIndex) => {
+            const colCount = getCardLayoutColumnCount(view);
+            const useAlignedGrid = colCount > 1;
+            const gridClass = useAlignedGrid ? "grid gap-2 sm:gap-3 md:gap-4" : "space-y-2 sm:space-y-3 md:space-y-4";
+            const gridStyle = useAlignedGrid ? customCardAlignedGridStyle(colCount) : undefined;
+            const scrollWrap = customCardGridScrollWrapClassName(useAlignedGrid);
+            const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
+            const gridInner = (
+              <div className={gridClass} style={gridStyle}>
+                {useAlignedGrid ? (
+                  <>
+                    {paddedCells.map((cell, i) => (
+                      <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
+                    ))}
+                    {paddedCells.map((cell, i) => (
+                      <CardLayoutCellRenderer key={`v-${i}`} cell={cell} flexClass="min-w-0" mode="value" />
+                    ))}
+                  </>
+                ) : (
+                  paddedCells.map((cell, i) => (
+                    <CardLayoutCellRenderer key={i} cell={cell} flexClass="w-full" />
+                  ))
                 )}
               </div>
-              {!view.presentation?.hideRowBadge && (
-                <div className="flex items-center gap-2">
-                  {isEditable && <ContributorEditableBadge />}
-                  <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
-                    Row {row.id}
-                  </div>
-                  {isEditable && <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />}
+            );
+            return (
+              <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
+              </div>
+            );
+          })}
+        </article>
+      );
+    }
+
+    const heading = getRowHeadingField(view, row);
+    const summary = getRowSummaryField(view, row, heading?.key);
+    const bodyFields = getVisibleRowFields(row, [heading?.key ?? "", summary?.key ?? ""]);
+
+    return (
+      <article
+        key={row.id}
+        id={`row-${row.id}`}
+        className={`scroll-mt-24 rounded-2xl sm:rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] p-4 shadow-[0_16px_40px_rgba(35,31,32,0.06)] sm:p-5`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--wsu-border)] pb-3 sm:gap-4 sm:pb-4">
+          <div className="min-w-0">
+            {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
+              <div>
+                {!heading.hideLabel && (
+                  <p className={fieldLabelClassName(heading)}>{heading.label}</p>
+                )}
+                <div className="view-row-heading mt-2">
+                  <FieldValue field={heading} />
                 </div>
-              )}
+              </div>
+            )}
+            {summary && (
+              <div className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+                <FieldValue field={summary} />
+              </div>
+            )}
+          </div>
+          {!view.presentation?.hideRowBadge && (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {isEditable && <ContributorEditableBadge />}
+              <div className="rounded-full border border-[color:var(--wsu-border)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">
+                Row {row.id}
+              </div>
+              {isEditable && <ContributorEditButton rowId={row.id} onEditRow={onEditRow} compact />}
             </div>
-            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-              {bodyFields.map((field) => (
-                <div key={`${row.id}-${field.key}`}>
-                  <FieldBlock field={field} compact />
-                </div>
-              ))}
+          )}
+        </div>
+        <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          {bodyFields.map((field) => (
+            <div key={`${row.id}-${field.key}`}>
+              <FieldBlock field={field} compact />
             </div>
-          </article>
-        );
-      })}
-    </div>
-  );
+          ))}
+        </div>
+      </article>
+    );
+  }
+
+  if (programGroups && programGroups.length > 0) {
+    return (
+      <div className="space-y-6 md:space-y-8">
+        {programGroups.map((group) => (
+          <section key={group.id} id={`group-${group.id}`} className="scroll-mt-24 space-y-3 md:space-y-4">
+            <header className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/35 px-4 py-3 sm:px-5">
+              <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)] sm:text-xl">{group.label}</h2>
+              <CampusBadgeStrip campuses={group.campuses} />
+            </header>
+            <div className="space-y-3 md:space-y-4">{group.rows.map((row) => renderStackedRow(row))}</div>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  return <div className="space-y-3 md:space-y-4">{view.rows.map((row) => renderStackedRow(row))}</div>;
 }

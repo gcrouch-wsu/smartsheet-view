@@ -39,7 +39,8 @@ describe("FieldValue people_group", () => {
   it("renders grouped people inline by default", () => {
     const html = renderToStaticMarkup(<FieldValue field={buildPeopleField({ listDisplay: undefined })} />);
 
-    expect(html).toContain("grid gap-x-6 gap-y-3");
+    expect(html).toContain("grid-cols-1");
+    expect(html).toContain("sm:gap-x-6");
     expect(html).toContain("view-people-name");
     expect(html).not.toContain("rounded-2xl border");
     expect(html).not.toContain("space-y-3");

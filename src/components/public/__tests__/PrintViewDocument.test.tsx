@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import { PrintViewDocument } from "@/components/public/PrintViewDocument";
+import { describe, expect, it, vi } from "vitest";
+import { PrintViewDocument, buildPrintColumnPickerOptions } from "@/components/public/PrintViewDocument";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => "/view/grad-programs/print",
+  useSearchParams: () => new URLSearchParams(),
+}));
 import type { ResolvedView } from "@/lib/config/types";
 
 const view: ResolvedView = {
@@ -79,5 +85,106 @@ describe("PrintViewDocument", () => {
     expect(html).toContain('scope="row"');
     expect(html).toContain("print-cell-inner");
     expect(html).toContain("print-cell-inner--primary");
+  });
+
+  it("omits non-heading columns not listed in printColumnKeys", () => {
+    const html = renderToStaticMarkup(
+      <PrintViewDocument
+        slug="grad-programs"
+        viewId={view.id}
+        pageTitle="Graduate Programs"
+        sourceLabel="Programs"
+        sourceName="GRAD Programs"
+        fetchedAt="2026-03-31T12:00:00.000Z"
+        view={view}
+        printColumnKeys={["program_name"]}
+      />,
+    );
+
+    expect(html).toContain("Program Name");
+    expect(html).not.toContain("Staff Graduate Program Coordinator");
+    expect(html).not.toContain("Lisa Lujan");
+  });
+
+  it("renders separate print sections when printGroupByFieldKey splits rows", () => {
+    const row2Fields = [
+      {
+        key: "program_name",
+        label: "Program Name",
+        renderType: "text" as const,
+        textValue: "Biology",
+        listValue: ["Biology"],
+        links: [],
+        isEmpty: false,
+        hideWhenEmpty: false,
+      },
+      {
+        key: "staff",
+        label: "Staff Graduate Program Coordinator",
+        renderType: "people_group" as const,
+        textValue: "Pat Smith",
+        listValue: ["Pat Smith"],
+        links: [],
+        isEmpty: false,
+        hideWhenEmpty: false,
+        listDisplay: "inline" as const,
+        people: [{ slot: "1", name: "Pat Smith", email: "", isEmpty: false }],
+      },
+    ];
+    const row2: (typeof view.rows)[0] = { id: 102, fields: row2Fields, fieldMap: {} };
+    row2.fieldMap = Object.fromEntries(row2.fields.map((f) => [f.key, f]));
+
+    const twoProgramView: ResolvedView = {
+      ...view,
+      rowCount: 2,
+      presentation: { printGroupByFieldKey: "program_name" },
+      rows: [view.rows[0]!, row2],
+    };
+
+    const html = renderToStaticMarkup(
+      <PrintViewDocument
+        slug="grad-programs"
+        viewId={view.id}
+        pageTitle="Graduate Programs"
+        sourceLabel="Programs"
+        sourceName="GRAD Programs"
+        fetchedAt="2026-03-31T12:00:00.000Z"
+        view={twoProgramView}
+      />,
+    );
+
+    const sections = html.match(/class="print-group"/g) ?? [];
+    expect(sections.length).toBe(2);
+    expect(html).toContain("Program Name: Athletic Training");
+    expect(html).toContain("Program Name: Biology");
+  });
+
+  it("buildPrintColumnPickerOptions omits columns with no printable values", () => {
+    const emptyExtraField = {
+      key: "note",
+      label: "Note",
+      renderType: "text" as const,
+      textValue: "",
+      listValue: [] as string[],
+      links: [] as { label: string; href: string }[],
+      isEmpty: true,
+      hideWhenEmpty: true,
+    };
+    const r = view.rows[0]!;
+    const rowWithExtra = {
+      ...r,
+      fields: [...r.fields, emptyExtraField],
+      fieldMap: {
+        ...r.fieldMap,
+        note: emptyExtraField,
+      },
+    };
+    const v: ResolvedView = {
+      ...view,
+      fields: [...view.fields, { key: "note", label: "Note", renderType: "text" }],
+      rows: [rowWithExtra],
+    };
+    const opts = buildPrintColumnPickerOptions(v);
+    expect(opts.some((o) => o.key === "note")).toBe(false);
   });
 });

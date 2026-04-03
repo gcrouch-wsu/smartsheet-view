@@ -10,7 +10,13 @@ import { EditRowDrawer } from "@/components/public/EditRowDrawer";
 import { PublicViewRenderer } from "@/components/public/ViewRenderer";
 import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
 import { describeResolvedField, getIndexText } from "@/components/public/layout-utils";
-import { groupResolvedRows, isCampusGroupingActive } from "@/lib/campus-grouping";
+import {
+  groupResolvedRows,
+  indexLetterFromLabel,
+  isCampusGroupingActive,
+  narrowProgramGroupsToFilteredRows,
+  normalizeCampusDisplay,
+} from "@/lib/campus-grouping";
 import type { LayoutType, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import type { ContributorEditingClientConfig } from "@/lib/contributor-utils";
 
@@ -41,10 +47,7 @@ function getSearchableText(view: ResolvedView, row: ResolvedViewRow): string {
 
 function getIndexLetter(view: ResolvedView, row: ResolvedViewRow): string {
   const text = getIndexText(view, row);
-  const first = text.trim().charAt(0).toUpperCase();
-  if (/[A-Z]/.test(first)) return first;
-  if (/[0-9]/.test(first)) return "#";
-  return "#";
+  return indexLetterFromLabel(text);
 }
 
 export function ViewWithSearchAndIndex({
@@ -68,7 +71,6 @@ export function ViewWithSearchAndIndex({
   contributorEmail?: string | null;
   editingConfig?: ContributorEditingClientConfig | null;
   editableRowIds?: number[];
-  /** When true, `view` is already limited to this contributor's editable rows. */
   contributorRowsFiltered?: boolean;
   printHref?: string;
   contributorInstructionsHref?: string;
@@ -79,28 +81,61 @@ export function ViewWithSearchAndIndex({
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [editingRowId, setEditingRowId] = useState<number | null>(null);
   const editReturnFocusRef = useRef<HTMLElement | null>(null);
+  /** `null` = All campuses */
+  const [selectedCampus, setSelectedCampus] = useState<string | null>(null);
+
+  const groupingOn = isCampusGroupingActive(view.presentation);
+  const showCampusStrip = Boolean(groupingOn && view.presentation?.showCampusFilter && view.presentation?.campusFieldKey);
+
+  const campusOptions = useMemo(() => {
+    const ck = view.presentation?.campusFieldKey;
+    if (!ck) {
+      return [];
+    }
+    const set = new Set<string>();
+    for (const row of view.rows) {
+      const raw = row.fieldMap[ck]?.textValue ?? "";
+      set.add(normalizeCampusDisplay(raw));
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, "en"));
+  }, [view.rows, view.presentation?.campusFieldKey]);
+
+  const rowsAfterCampus = useMemo(() => {
+    const p = view.presentation;
+    if (!groupingOn || !p?.campusFieldKey || selectedCampus === null) {
+      return view.rows;
+    }
+    const ck = p.campusFieldKey;
+    return view.rows.filter((row) => normalizeCampusDisplay(row.fieldMap[ck]?.textValue ?? "") === selectedCampus);
+  }, [view.rows, view.presentation, groupingOn, selectedCampus]);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      return view.rows;
+      return rowsAfterCampus;
     }
-    return view.rows.filter((row) => getSearchableText(view, row).includes(q));
-  }, [view, searchQuery]);
+    return rowsAfterCampus.filter((row) => getSearchableText(view, row).includes(q));
+  }, [view, searchQuery, rowsAfterCampus]);
 
   const filteredView = useMemo(
     () => ({ ...view, rows: filteredRows, rowCount: filteredRows.length }),
     [view, filteredRows],
   );
 
-  /** Populated only when `presentation` enables campus grouping; layouts use this in Step D. Search respects same filtered rows. */
-  const programGroups = useMemo(() => {
+  const fullProgramGroups = useMemo(() => {
     const p = view.presentation;
     if (!isCampusGroupingActive(p) || !p?.programGroupFieldKey || !p?.campusFieldKey) {
       return undefined;
     }
-    return groupResolvedRows(filteredRows, p.programGroupFieldKey, p.campusFieldKey);
-  }, [view.presentation, filteredRows]);
+    return groupResolvedRows(view.rows, p.programGroupFieldKey, p.campusFieldKey);
+  }, [view.rows, view.presentation]);
+
+  const programGroups = useMemo(() => {
+    if (!fullProgramGroups) {
+      return undefined;
+    }
+    return narrowProgramGroupsToFilteredRows(fullProgramGroups, filteredRows);
+  }, [fullProgramGroups, filteredRows]);
 
   const letterToRowId = useMemo(() => {
     const map = new Map<string, number>();
@@ -113,13 +148,44 @@ export function ViewWithSearchAndIndex({
     return map;
   }, [filteredView.rows, view]);
 
-  const activeLetters = useMemo(() => {
-    const set = new Set<string>();
-    for (const row of filteredView.rows) {
-      set.add(getIndexLetter(view, row));
+  const letterToGroupId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!programGroups?.length) {
+      return map;
     }
-    return set;
-  }, [filteredView.rows, view]);
+    for (const g of programGroups) {
+      const letter = indexLetterFromLabel(g.label);
+      if (!map.has(letter)) {
+        map.set(letter, g.id);
+      }
+    }
+    return map;
+  }, [programGroups]);
+
+  const activeLetters = useMemo(() => {
+    const acc = new Set<string>();
+    if (programGroups?.length) {
+      for (const g of programGroups) {
+        acc.add(indexLetterFromLabel(g.label));
+      }
+      return acc;
+    }
+    for (const row of filteredView.rows) {
+      acc.add(getIndexLetter(view, row));
+    }
+    return acc;
+  }, [programGroups, filteredView.rows, view]);
+
+  const countSummary = useMemo(() => {
+    if (contributorRowsFiltered) {
+      return `${filteredView.rowCount} of ${view.rowCount} your rows`;
+    }
+    if (isCampusGroupingActive(view.presentation)) {
+      const pCount = programGroups?.length ?? 0;
+      return `${pCount} program${pCount === 1 ? "" : "s"} · ${filteredView.rowCount} of ${view.rowCount} listings`;
+    }
+    return `${filteredView.rowCount} of ${view.rowCount} rows`;
+  }, [contributorRowsFiltered, filteredView.rowCount, view.rowCount, programGroups, view.presentation]);
 
   const editableRowIdSet = useMemo(() => new Set(editableRowIds), [editableRowIds]);
   const editingRow = useMemo(
@@ -128,10 +194,18 @@ export function ViewWithSearchAndIndex({
   );
 
   function scrollToLetter(letter: string) {
+    if (programGroups?.length) {
+      const groupId = letterToGroupId.get(letter);
+      if (groupId != null) {
+        document.getElementById(`group-${groupId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActiveLetter(letter);
+        setTimeout(() => setActiveLetter(null), 800);
+        return;
+      }
+    }
     const rowId = letterToRowId.get(letter);
     if (rowId != null) {
-      const el = document.getElementById(`row-${rowId}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(`row-${rowId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveLetter(letter);
       setTimeout(() => setActiveLetter(null), 800);
     }
@@ -162,7 +236,6 @@ export function ViewWithSearchAndIndex({
     setEditingRowId(rowId);
   }
 
-  /** Base row count — not filtered — so the search box stays visible when a query matches nothing. */
   const showSearchAndIndex = !embed && view.rows.length > 0;
   const showAlphabetIndex = !contributorRowsFiltered || view.rows.length > 15;
   const contributorContextValue = {
@@ -222,35 +295,75 @@ export function ViewWithSearchAndIndex({
         )}
 
         {showSearchAndIndex && (
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  contributorRowsFiltered
-                    ? "Search within your assigned rows..."
-                    : "Search programs, names, emails..."
-                }
-                className="view-input w-full rounded-xl px-4 py-2.5 pl-10 text-sm"
-                aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
-              />
-              <svg
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--wsu-muted)]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          <div className="mb-4 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={
+                    contributorRowsFiltered
+                      ? "Search within your assigned rows..."
+                      : "Search programs, names, emails..."
+                  }
+                  className="view-input w-full rounded-xl px-4 py-2.5 pl-10 text-sm"
+                  aria-label={contributorRowsFiltered ? "Search your assigned rows" : "Search"}
+                />
+                <svg
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--wsu-muted)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
+                {countSummary}
+              </span>
             </div>
-            <span className="text-sm text-[color:var(--wsu-muted)]" aria-live="polite" aria-atomic="true">
-              {contributorRowsFiltered
-                ? `${filteredView.rowCount} of ${view.rowCount} your rows`
-                : `${filteredView.rowCount} of ${view.rowCount} rows`}
-            </span>
+
+            {showCampusStrip && campusOptions.length > 1 ? (
+              <div
+                className="flex flex-wrap items-center gap-2"
+                role="group"
+                aria-label="Filter by campus"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--wsu-muted)]">Campus</span>
+                <button
+                  type="button"
+                  aria-pressed={selectedCampus === null}
+                  onClick={() => setSelectedCampus(null)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    selectedCampus === null
+                      ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                      : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)]"
+                  }`}
+                >
+                  All
+                </button>
+                {campusOptions.map((campus) => {
+                  const on = selectedCampus === campus;
+                  return (
+                    <button
+                      key={campus}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setSelectedCampus(on ? null : campus)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        on
+                          ? "border-[color:var(--wsu-crimson)] bg-[color:var(--wsu-crimson)] text-white"
+                          : "border-[color:var(--wsu-border)] bg-white text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)]"
+                      }`}
+                    >
+                      {campus}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         )}
 

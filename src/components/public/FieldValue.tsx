@@ -235,12 +235,10 @@ export function FieldValue({
           <ul
             className={tx(
               field,
-              peopleStyle === "capsule" ? "grid gap-3" : "grid gap-x-6 gap-y-3",
+              peopleStyle === "capsule"
+                ? "grid grid-cols-1 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(12.5rem,1fr))]"
+                : "grid grid-cols-1 gap-3 sm:gap-x-6 sm:gap-y-3 sm:[grid-template-columns:repeat(auto-fit,minmax(12.5rem,1fr))]",
             )}
-            style={{
-              gridTemplateColumns:
-                populated.length > 1 ? "repeat(auto-fit, minmax(11rem, 1fr))" : "minmax(0, 1fr)",
-            }}
           >
             {populated.map((person) => (
               <li

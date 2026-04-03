@@ -181,6 +181,145 @@ describe("validateViewConfig", () => {
     expect(result.errors.some((e) => e.includes("non-hidden field"))).toBe(true);
   });
 
+  it("rejects campusFieldKey that does not match a field key", () => {
+    const result = validateViewConfig(
+      {
+        id: "campus-bad",
+        slug: "campus-bad",
+        sourceId: "grad-programs",
+        label: "Campus bad",
+        layout: "table",
+        public: false,
+        presentation: {
+          campusFieldKey: "missing_campus",
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("campusFieldKey"))).toBe(true);
+  });
+
+  it("accepts campusFieldKey on a hidden field", () => {
+    const result = validateViewConfig(
+      {
+        id: "campus-hidden",
+        slug: "campus-hidden",
+        sourceId: "grad-programs",
+        label: "Campus hidden",
+        layout: "table",
+        public: false,
+        presentation: {
+          campusGroupingMode: "grouped",
+          campusFieldKey: "secret_campus",
+          programGroupFieldKey: "name",
+          showCampusFilter: true,
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+          {
+            key: "secret_campus",
+            label: "Campus",
+            source: { columnTitle: "Campus" },
+            render: { type: "hidden" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.campusFieldKey).toBe("secret_campus");
+  });
+
+  it("rejects campusGroupingMode when not grouped", () => {
+    const result = validateViewConfig(
+      {
+        id: "campus-mode",
+        slug: "campus-mode",
+        sourceId: "grad-programs",
+        label: "Campus mode",
+        layout: "table",
+        public: false,
+        presentation: {
+          campusGroupingMode: "grid",
+          campusFieldKey: "c",
+          programGroupFieldKey: "name",
+        },
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            source: { columnTitle: "Name" },
+            render: { type: "text" },
+          },
+          {
+            key: "c",
+            label: "C",
+            source: { columnTitle: "C" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes("campusGroupingMode"))).toBe(true);
+  });
+
+  it("accepts full live grouped presentation", () => {
+    const result = validateViewConfig(
+      {
+        id: "live-grouped",
+        slug: "live-grouped",
+        sourceId: "grad-programs",
+        label: "Live grouped",
+        layout: "stacked",
+        public: false,
+        presentation: {
+          campusGroupingMode: "grouped",
+          campusFieldKey: "campus_col",
+          programGroupFieldKey: "prog_col",
+          showCampusFilter: true,
+        },
+        fields: [
+          {
+            key: "prog_col",
+            label: "Program",
+            source: { columnTitle: "Program" },
+            render: { type: "text" },
+          },
+          {
+            key: "campus_col",
+            label: "Campus",
+            source: { columnTitle: "Campus" },
+            render: { type: "text" },
+          },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.campusGroupingMode).toBe("grouped");
+    expect(result.data?.presentation?.showCampusFilter).toBe(true);
+  });
+
   it("rejects duplicate field keys across cardLayout rows", () => {
     const result = validateViewConfig(
       {

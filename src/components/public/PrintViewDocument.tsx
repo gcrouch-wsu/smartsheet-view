@@ -25,7 +25,7 @@ function canPrintField(field: ResolvedFieldValue | undefined) {
   return Boolean(field && !(field.hideWhenEmpty && field.isEmpty));
 }
 
-function getPrintableColumns(view: ResolvedView): PrintableColumn[] {
+function getPrintableColumns(view: ResolvedView, selectedKeys?: string[]): PrintableColumn[] {
   const firstHeading = view.rows.map((row) => getRowHeadingField(view, row)).find(Boolean);
   const headingKey = view.presentation?.headingFieldKey ?? firstHeading?.key ?? null;
   const headingLabel =
@@ -49,7 +49,19 @@ function getPrintableColumns(view: ResolvedView): PrintableColumn[] {
     }
   }
 
+  if (selectedKeys && selectedKeys.length > 0) {
+    const allow = new Set(selectedKeys);
+    return columns.filter((c) => c.heading || allow.has(c.key));
+  }
+
   return columns;
+}
+
+/** Keys and labels for the print page column picker (includes heading row). */
+export function buildPrintColumnPickerOptions(
+  view: ResolvedView,
+): Array<{ key: string; label: string; heading?: boolean }> {
+  return getPrintableColumns(view);
 }
 
 function bucketPrintRowGroups(view: ResolvedView, groupByKey: string | undefined): ResolvedViewRow[][] {
@@ -165,6 +177,9 @@ export function PrintViewDocument({
   sourceName,
   fetchedAt,
   view,
+  printColumnKeys,
+  printCompact,
+  printableColumnOptions,
 }: {
   slug: string;
   viewId: string;
@@ -173,12 +188,18 @@ export function PrintViewDocument({
   sourceName: string;
   fetchedAt: string;
   view: ResolvedView;
+  /** When set, only these column keys (plus heading) are printed. */
+  printColumnKeys?: string[];
+  /** Smaller type for dense PDFs */
+  printCompact?: boolean;
+  /** All selectable columns for the print UI (non-hidden fields that appear in default print). */
+  printableColumnOptions?: Array<{ key: string; label: string; heading?: boolean }>;
 }) {
   const printConfig = getPrintExportConfig();
   const printStyles = buildPrintExportStylesheet(printConfig);
   const preview = printConfig.screenPreview;
   const refreshedPrinted = formatFetchedAtInViewTimeZone(fetchedAt, view.displayTimeZone);
-  const columns = getPrintableColumns(view);
+  const columns = getPrintableColumns(view, printColumnKeys);
   const groupByKey = view.presentation?.printGroupByFieldKey;
   const rowGroups = bucketPrintRowGroups(view, groupByKey);
   const groupFieldLabel = groupByKey
@@ -188,12 +209,34 @@ export function PrintViewDocument({
   return (
     <ViewStyleWrapper style={view.style} themePresetId={view.themePresetId}>
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+      {printCompact ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+          .print-export.print-root.print-export--compact {
+            --print-masthead-title: 1.125rem;
+            --print-masthead-meta: 0.6875rem;
+            --print-masthead-subtitle: 0.8125rem;
+            --print-th-size: 0.65rem;
+            --print-td-size: 0.6875rem;
+            --print-td-lh: 1.35;
+            --print-td-padding: 0.35rem 0.45rem;
+          }
+        `,
+          }}
+        />
+      ) : null}
       <main
-        className="print-export print-root mx-auto px-3 py-6 sm:px-4 sm:py-8"
+        className={`print-export print-root mx-auto px-3 py-6 sm:px-4 sm:py-8${printCompact ? " print-export--compact" : ""}`}
         style={{ maxWidth: preview.rootMaxWidth }}
         lang="en"
       >
-        <PrintViewToolbar slug={slug} viewId={viewId} />
+        <PrintViewToolbar
+          slug={slug}
+          viewId={viewId}
+          columnOptions={printableColumnOptions}
+          compact={printCompact}
+        />
 
         <header className="print-masthead mb-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-6">
