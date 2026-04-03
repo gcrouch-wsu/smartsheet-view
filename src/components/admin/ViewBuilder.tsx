@@ -1581,12 +1581,120 @@ export function ViewBuilder({
 
           <SetupAccordion
             title="Campus & program grouping (live view)"
-            subtitle='JSON / Export only today: set presentation.campusGroupingMode to "grouped" plus campusFieldKey and programGroupFieldKey. Accordion, tabbed, and list/detail layouts switch to a stacked grouped presentation when grouping is on so program sections stay readable.'
+            subtitle="Group the public page into program sections with campus badges. Accordion, tabbed, and list/detail layouts switch to a stacked grouped view when this is on."
           >
-            <p className="text-xs leading-relaxed text-[color:var(--wsu-muted)]">
-              Campus chips only appear when there are two or more distinct campuses in the sheet. Program group headers show the full campus
-              set for each program even when a campus filter is active.
-            </p>
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={view.presentation?.campusGroupingMode === "grouped"}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    update("presentation", {
+                      ...view.presentation,
+                      ...(on
+                        ? {
+                            campusGroupingMode: "grouped",
+                            showCampusFilter: view.presentation?.showCampusFilter ?? true,
+                          }
+                        : {
+                            campusGroupingMode: undefined,
+                            campusFieldKey: undefined,
+                            programGroupFieldKey: undefined,
+                            showCampusFilter: undefined,
+                          }),
+                    });
+                  }}
+                  className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                  disabled={view.fields.length === 0}
+                />
+                <span>
+                  <span className="font-medium text-[color:var(--wsu-ink)]">Group by program with campus badges</span>
+                  <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                    Requires two fields below. Hidden fields are allowed (e.g. campus only used for badges).
+                  </span>
+                </span>
+              </label>
+
+              {view.presentation?.campusGroupingMode === "grouped" ? (
+                <div className="space-y-3 border-t border-[color:var(--wsu-border)] pt-4">
+                  {view.fields.length === 0 ? (
+                    <p className="text-xs text-[color:var(--wsu-muted)]">Add fields on the Fields tab first.</p>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Program field</label>
+                        <p className="mb-1.5 text-[10px] text-[color:var(--wsu-muted)]">One section per distinct value (e.g. program name).</p>
+                        <select
+                          value={view.presentation?.programGroupFieldKey ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            update("presentation", {
+                              ...view.presentation,
+                              programGroupFieldKey: v || undefined,
+                            });
+                          }}
+                          className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                        >
+                          <option value="">Select field…</option>
+                          {view.fields.map((f) => (
+                            <option key={f.key} value={f.key}>
+                              {(f.label || f.key) + (f.render.type === "hidden" ? " (hidden)" : "")}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Campus field</label>
+                        <p className="mb-1.5 text-[10px] text-[color:var(--wsu-muted)]">Drives badges and optional campus filter chips.</p>
+                        <select
+                          value={view.presentation?.campusFieldKey ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            update("presentation", {
+                              ...view.presentation,
+                              campusFieldKey: v || undefined,
+                            });
+                          }}
+                          className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                        >
+                          <option value="">Select field…</option>
+                          {view.fields.map((f) => (
+                            <option key={f.key} value={f.key}>
+                              {(f.label || f.key) + (f.render.type === "hidden" ? " (hidden)" : "")}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={view.presentation?.showCampusFilter !== false}
+                          onChange={(e) =>
+                            update("presentation", {
+                              ...view.presentation,
+                              showCampusFilter: e.target.checked,
+                            })
+                          }
+                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                        />
+                        <span>
+                          <span className="font-medium text-[color:var(--wsu-ink)]">Show campus filter chips</span>
+                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                            Shown only when the sheet has two or more distinct campus values. “All” clears the filter.
+                          </span>
+                        </span>
+                      </label>
+                    </>
+                  )}
+                </div>
+              ) : null}
+
+              <p className="text-xs leading-relaxed text-[color:var(--wsu-muted)]">
+                Program headers list every campus that appears on any row for that program, even if you filter to one campus. Import/export
+                JSON still works the same if you prefer editing backups by hand.
+              </p>
+            </div>
           </SetupAccordion>
 
           <SetupAccordion
