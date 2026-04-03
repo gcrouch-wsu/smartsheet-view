@@ -289,11 +289,9 @@ function resolveField(row: SmartsheetRow, view: ViewConfig, field: ViewFieldConf
 }
 
 function resolveRow(row: SmartsheetRow, view: ViewConfig, sourceConfig: SourceConfig) {
-  const fields = view.fields
-    .map((field) => resolveField(row, view, field, sourceConfig))
-    .filter((field) => field.renderType !== "hidden");
-
-  const fieldMap = fields.reduce<Record<string, (typeof fields)[number]>>((map, field) => {
+  const allResolved = view.fields.map((field) => resolveField(row, view, field, sourceConfig));
+  const fields = allResolved.filter((field) => field.renderType !== "hidden");
+  const fieldMap = allResolved.reduce<Record<string, (typeof allResolved)[number]>>((map, field) => {
     map[field.key] = field;
     return map;
   }, {});

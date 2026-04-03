@@ -3,8 +3,10 @@ import {
   buildContributorEditingClientConfig,
   contributorEditTargetRowId,
   getContributorEditingValidationErrors,
+  getEligibleEditableFieldDefinitions,
   hasMultiPersonValidationErrors,
   isContributorRowOrMergedEditable,
+  isEditableFieldDirectMapped,
   mergeContributorContactPayloadWithExistingRow,
   parseMultiPersonValue,
   parseMultiPersonRow,
@@ -124,6 +126,43 @@ describe("serializeContactDisplayToObjectValue", () => {
       objectType: "CONTACT",
       name: "Pat",
     });
+  });
+});
+
+describe("isEditableFieldDirectMapped and picklist / hidden campus-style fields", () => {
+  function col(partial: { id: number; title: string; type: string; options?: string[] }): SmartsheetColumn {
+    return {
+      id: partial.id,
+      index: 0,
+      title: partial.title,
+      type: partial.type,
+      options: partial.options,
+    };
+  }
+
+  it("treats single PICKLIST as editable when render type is still list (e.g. after changing column from multi to single)", () => {
+    const field = {
+      key: "campus",
+      label: "Campus",
+      source: { columnId: 101, columnTitle: "Grad Campus" },
+      render: { type: "list" as const },
+      transforms: [{ op: "split" as const, args: { delimiter: "," } }],
+    };
+    const column = col({ id: 101, title: "Grad Campus", type: "PICKLIST", options: ["Pullman", "Spokane"] });
+    expect(isEditableFieldDirectMapped(field, column)).toBe(true);
+    const eligible = getEligibleEditableFieldDefinitions({ id: "v", fields: [field] } as ViewConfig, [column]);
+    expect(eligible.some((e) => e.fieldKey === "campus" && e.columnType === "PICKLIST")).toBe(true);
+  });
+
+  it("allows hidden non-contact columns when the sheet column is editable (e.g. hidden campus)", () => {
+    const field = {
+      key: "campus",
+      label: "Campus",
+      source: { columnId: 101, columnTitle: "Grad Campus" },
+      render: { type: "hidden" as const },
+    };
+    const column = col({ id: 101, title: "Grad Campus", type: "PICKLIST", options: ["Pullman"] });
+    expect(isEditableFieldDirectMapped(field, column)).toBe(true);
   });
 });
 

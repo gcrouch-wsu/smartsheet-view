@@ -8,10 +8,19 @@ function cloneResolvedRow(row: ResolvedViewRow): ResolvedViewRow {
     links: f.links.map((l) => ({ ...l })),
     people: f.people?.map((p) => ({ ...p })),
   }));
+  const fieldMap: ResolvedViewRow["fieldMap"] = { ...row.fieldMap };
+  for (const f of fields) {
+    fieldMap[f.key] = {
+      ...f,
+      listValue: [...f.listValue],
+      links: f.links.map((l) => ({ ...l })),
+      people: f.people?.map((p) => ({ ...p })),
+    };
+  }
   return {
     id: row.id,
     fields,
-    fieldMap: Object.fromEntries(fields.map((f) => [f.key, f])),
+    fieldMap,
     mergedSourceRowIds: row.mergedSourceRowIds,
     mergedCampuses: row.mergedCampuses,
   };

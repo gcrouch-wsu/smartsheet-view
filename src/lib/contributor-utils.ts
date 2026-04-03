@@ -639,6 +639,18 @@ export function isContributorEditableRenderType(renderType: RenderType): renderT
   return CONTRIBUTOR_EDITABLE_RENDER_TYPES.has(renderType);
 }
 
+/** Non-contact columns: which render types can write back as a plain cell value. */
+function isContributorEditableNonContactRender(renderType: RenderType, columnType: string): boolean {
+  if (isContributorEditableRenderType(renderType)) {
+    return true;
+  }
+  // Config may still use "list" after changing the sheet from MULTI_PICKLIST to single PICKLIST.
+  if (renderType === "list" && columnType === "PICKLIST") {
+    return true;
+  }
+  return false;
+}
+
 function hasEditableSafeTransforms(field: ViewFieldConfig, columnType: string): { ok: boolean; contactDisplayMode?: ContactDisplayMode } {
   const transforms = field.transforms ?? [];
   if (transforms.length === 0) {
@@ -671,7 +683,6 @@ export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: Sma
   }
   if (
     typeof field.source.columnId !== "number" ||
-    field.render.type === "hidden" ||
     field.source.preferredColumnId ||
     field.source.preferredColumnTitle ||
     field.source.preferredColumnType ||
@@ -686,6 +697,16 @@ export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: Sma
   const columnType = column?.type ?? "";
   const transformCheck = hasEditableSafeTransforms(field, columnType);
 
+  if (field.render.type === "hidden") {
+    if (!column || !CONTRIBUTOR_EDITABLE_COLUMN_TYPES.has(column.type)) {
+      return false;
+    }
+    if (CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(column.type)) {
+      return false;
+    }
+    return true;
+  }
+
   if (CONTRIBUTOR_CONTACT_COLUMN_TYPES.has(columnType)) {
     return (
       transformCheck.ok &&
@@ -697,7 +718,7 @@ export function isEditableFieldDirectMapped(field: ViewFieldConfig, column?: Sma
   // affect how we show data; contributors edit the rendered text and we write that string back.
   // Requiring zero transforms incorrectly dropped admin-selected columns (e.g. "Coordinator"
   // with a trim transform) from the edit UI.
-  return isContributorEditableRenderType(field.render.type);
+  return isContributorEditableNonContactRender(field.render.type, columnType);
 }
 
 function buildDirectMappedFieldCounts(view: ViewConfig, columns: SmartsheetColumn[]) {

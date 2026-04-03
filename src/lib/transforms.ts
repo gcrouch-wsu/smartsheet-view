@@ -599,8 +599,12 @@ export function buildResolvedFieldValue(
       textValue = asText(value);
       listValue = textValue ? [textValue] : [];
       break;
-    case "hidden":
+    case "hidden": {
+      // Keep raw text for grouping, merge, and contributor edit even though the field is not shown.
+      textValue = asText(value);
+      listValue = textValue ? [textValue] : [];
       break;
+    }
     case "people_group":
       return buildResolvedPeopleGroupField(field, []);
     default: {
