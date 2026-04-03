@@ -2994,7 +2994,10 @@ export function ViewBuilder({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Filters</h2>
-                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Configure row inclusion rules.</p>
+                <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
+                  Configure row inclusion rules. For a “Public Visibility” column, use <strong className="font-medium">not in</strong> with
+                  comma-separated <code className="text-xs">Hide, Delete</code> to drop hidden rows from the public view.
+                </p>
               </div>
               <button
                 type="button"
@@ -3055,7 +3058,11 @@ export function ViewBuilder({
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
-                  {schema && filter.columnId && schema.columns.find((c) => c.id === filter.columnId)?.options ? (
+                  {schema &&
+                  filter.columnId &&
+                  schema.columns.find((c) => c.id === filter.columnId)?.options &&
+                  filter.op !== "in" &&
+                  filter.op !== "not_in" ? (
                     <select
                       value={String(filter.value ?? "")}
                       onChange={(event) => updateFilter(index, { ...filter, value: event.target.value })}
