@@ -614,6 +614,12 @@ function parsePresentationConfig(
   const showCampusFilter =
     input.showCampusFilter === undefined ? undefined : asBoolean(input.showCampusFilter, false);
   const mergeProgramRowsBySharedEmail = input.mergeProgramRowsBySharedEmail === true;
+  const mergeProgramRowsByProgramAndCampus = input.mergeProgramRowsByProgramAndCampus === true;
+  if (mergeProgramRowsBySharedEmail && mergeProgramRowsByProgramAndCampus) {
+    errors.push(
+      "presentation: turn on only one row merge mode — either merge by shared contact email or by same program and campus, not both.",
+    );
+  }
   const mergePeopleFieldKey = asOptionalString(input.mergePeopleFieldKey);
   let mergePeopleFieldKeys: string[] | undefined;
   if (Array.isArray(input.mergePeopleFieldKeys)) {
@@ -685,6 +691,12 @@ function parsePresentationConfig(
   if (hideCampusFieldInRecordDisplay && !campusFieldKey) {
     errors.push(`presentation.hideCampusFieldInRecordDisplay requires presentation.campusFieldKey.`);
   }
+  if (mergeProgramRowsByProgramAndCampus && (!programGroupFieldKey || !campusFieldKey)) {
+    errors.push(
+      "presentation.mergeProgramRowsByProgramAndCampus requires presentation.programGroupFieldKey and presentation.campusFieldKey.",
+    );
+  }
+
   if (mergeProgramRowsBySharedEmail && peopleGroupFieldKeys.size > 1) {
     const selected =
       mergePeopleFieldKeys?.length && mergePeopleFieldKeys.length > 0
@@ -774,6 +786,7 @@ function parsePresentationConfig(
       Boolean(campusGroupingMode) ||
       showCampusFilter !== undefined ||
       mergeProgramRowsBySharedEmail ||
+      mergeProgramRowsByProgramAndCampus ||
       Boolean(mergePeopleFieldKeys?.length) ||
       hideCampusFieldInRecordDisplay ||
       showCampusStripOnProgramSections !== undefined ||
@@ -821,6 +834,7 @@ function parsePresentationConfig(
             ...(campusGroupingMode ? { campusGroupingMode } : {}),
             ...(showCampusFilter !== undefined ? { showCampusFilter } : {}),
             ...(mergeProgramRowsBySharedEmail ? { mergeProgramRowsBySharedEmail: true } : {}),
+            ...(mergeProgramRowsByProgramAndCampus ? { mergeProgramRowsByProgramAndCampus: true } : {}),
             ...(mergeProgramRowsBySharedEmail && mergePeopleFieldKeys?.length
               ? { mergePeopleFieldKeys }
               : mergeProgramRowsBySharedEmail && mergePeopleFieldKey

@@ -1709,37 +1709,102 @@ export function ViewBuilder({
                     </label>
                   ) : null}
 
-                  <label className="flex items-start gap-3 border-t border-[color:var(--wsu-border)] pt-4 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={view.presentation?.mergeProgramRowsBySharedEmail === true}
-                      onChange={(e) => {
-                        const on = e.target.checked;
-                        const peopleKeys = view.fields.filter((f) => f.render.type === "people_group").map((f) => f.key);
-                        update("presentation", {
-                          ...view.presentation,
-                          mergeProgramRowsBySharedEmail: on ? true : undefined,
-                          ...(!on
-                            ? { mergePeopleFieldKey: undefined, mergePeopleFieldKeys: undefined }
-                            : peopleKeys.length > 0
-                              ? {
-                                  mergePeopleFieldKey: undefined,
-                                  mergePeopleFieldKeys: peopleKeys,
-                                }
-                              : {}),
-                        });
-                      }}
-                      className="mt-0.5 rounded border-[color:var(--wsu-border)]"
-                    />
-                    <span>
-                      <span className="font-medium text-[color:var(--wsu-ink)]">Merge rows (same program + same contact emails)</span>
-                      <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                        Smartsheet rows that share the same program and the same email address(es) on the selected people fields (all emails
-                        on the row are combined) become one listing. Campus badges can show every campus included. Applies to cards, tables,
-                        and print/PDF. Rows without any email on the selected fields are not merged with others.
-                      </span>
-                    </span>
-                  </label>
+                  <fieldset className="space-y-3 border-t border-[color:var(--wsu-border)] pt-4">
+                    <legend className="text-sm font-medium text-[color:var(--wsu-ink)]">Merge duplicate sheet rows</legend>
+                    <p className="text-xs text-[color:var(--wsu-muted)]">
+                      Requires program and campus fields above. Choose one strategy — email merge is best when one contact appears on multiple
+                      campus lines; campus merge is best when the same program+campus picklist appears on more than one sheet row.
+                    </p>
+                    {(() => {
+                      const peopleKeysAll = view.fields.filter((f) => f.render.type === "people_group").map((f) => f.key);
+                      const mergeMode =
+                        view.presentation?.mergeProgramRowsByProgramAndCampus === true
+                          ? "campus"
+                          : view.presentation?.mergeProgramRowsBySharedEmail === true
+                            ? "email"
+                            : "off";
+                      const setMergeMode = (mode: "off" | "email" | "campus") => {
+                        if (mode === "off") {
+                          update("presentation", {
+                            ...view.presentation,
+                            mergeProgramRowsBySharedEmail: undefined,
+                            mergeProgramRowsByProgramAndCampus: undefined,
+                            mergePeopleFieldKey: undefined,
+                            mergePeopleFieldKeys: undefined,
+                          });
+                        } else if (mode === "email") {
+                          update("presentation", {
+                            ...view.presentation,
+                            mergeProgramRowsBySharedEmail: true,
+                            mergeProgramRowsByProgramAndCampus: undefined,
+                            ...(peopleKeysAll.length > 0
+                              ? { mergePeopleFieldKey: undefined, mergePeopleFieldKeys: peopleKeysAll }
+                              : { mergePeopleFieldKey: undefined, mergePeopleFieldKeys: undefined }),
+                          });
+                        } else {
+                          update("presentation", {
+                            ...view.presentation,
+                            mergeProgramRowsBySharedEmail: undefined,
+                            mergeProgramRowsByProgramAndCampus: true,
+                            mergePeopleFieldKey: undefined,
+                            mergePeopleFieldKeys: undefined,
+                          });
+                        }
+                      };
+                      return (
+                        <div className="flex flex-col gap-3">
+                          <label className="flex items-start gap-3 text-sm">
+                            <input
+                              type="radio"
+                              name="merge-program-rows-mode"
+                              checked={mergeMode === "off"}
+                              onChange={() => setMergeMode("off")}
+                              className="mt-1 border-[color:var(--wsu-border)]"
+                            />
+                            <span>
+                              <span className="font-medium text-[color:var(--wsu-ink)]">Off</span>
+                              <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                                One public row per Smartsheet row.
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 text-sm">
+                            <input
+                              type="radio"
+                              name="merge-program-rows-mode"
+                              checked={mergeMode === "email"}
+                              onChange={() => setMergeMode("email")}
+                              className="mt-1 border-[color:var(--wsu-border)]"
+                            />
+                            <span>
+                              <span className="font-medium text-[color:var(--wsu-ink)]">Same program + same contact email(s)</span>
+                              <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                                Rows that share the same program and the same email address(es) on the selected people fields become one
+                                listing. Campus values are unioned into badges. Rows with no email on those fields are not merged with others.
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 text-sm">
+                            <input
+                              type="radio"
+                              name="merge-program-rows-mode"
+                              checked={mergeMode === "campus"}
+                              onChange={() => setMergeMode("campus")}
+                              className="mt-1 border-[color:var(--wsu-border)]"
+                            />
+                            <span>
+                              <span className="font-medium text-[color:var(--wsu-ink)]">Same program + same campus (picklist)</span>
+                              <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                                Rows that share the same program name and the same campus field value (after campus normalization) merge
+                                into one row. First row wins for contact and other fields; blank campus never merges. Use when duplicates
+                                differ by sheet line only, not by campus label.
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+                      );
+                    })()}
+                  </fieldset>
 
                   {view.presentation?.mergeProgramRowsBySharedEmail === true &&
                   view.fields.filter((f) => f.render.type === "people_group").length > 0 ? (
@@ -1830,8 +1895,7 @@ export function ViewBuilder({
                         <span>
                           <span className="font-medium text-[color:var(--wsu-ink)]">Show campus chips under program section titles</span>
                           <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                            Turn off when you only want campuses in custom layout badges. Chip styling lives under{" "}
-                            <strong>Appearance &amp; theme</strong> → Campus chips.
+                            Turn off when you only want campuses in custom layout badges.                             Chip styling: <strong>Appearance &amp; theme</strong> → Open theme designer → <strong>Chips</strong>.
                           </span>
                         </span>
                       </label>

@@ -406,6 +406,61 @@ describe("validateViewConfig", () => {
     expect(result.data?.presentation?.mergePeopleFieldKeys).toEqual(["staff", "secondary"]);
   });
 
+  it("rejects enabling both mergeProgramRowsBySharedEmail and mergeProgramRowsByProgramAndCampus", () => {
+    const result = validateViewConfig(
+      {
+        id: "merge-both",
+        slug: "merge-both",
+        sourceId: "grad-programs",
+        label: "Both",
+        layout: "cards",
+        public: false,
+        presentation: {
+          mergeProgramRowsBySharedEmail: true,
+          mergeProgramRowsByProgramAndCampus: true,
+          programGroupFieldKey: "prog",
+          campusFieldKey: "campus",
+          mergePeopleFieldKeys: ["staff"],
+        },
+        fields: [
+          { key: "prog", label: "Program", source: { columnTitle: "Program" }, render: { type: "text" } },
+          { key: "campus", label: "Campus", source: { columnTitle: "Campus" }, render: { type: "text" } },
+          { key: "staff", label: "Staff", source: { kind: "role_group", roleGroupId: "s" }, render: { type: "people_group" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.toLowerCase().includes("merge") && e.includes("only one"))).toBe(true);
+  });
+
+  it("accepts mergeProgramRowsByProgramAndCampus without people fields for email matching", () => {
+    const result = validateViewConfig(
+      {
+        id: "merge-campus-mode",
+        slug: "merge-campus-mode",
+        sourceId: "grad-programs",
+        label: "Merge campus",
+        layout: "cards",
+        public: false,
+        presentation: {
+          mergeProgramRowsByProgramAndCampus: true,
+          programGroupFieldKey: "prog",
+          campusFieldKey: "campus",
+        },
+        fields: [
+          { key: "prog", label: "Program", source: { columnTitle: "Program" }, render: { type: "text" } },
+          { key: "campus", label: "Campus", source: { columnTitle: "Campus" }, render: { type: "text" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.presentation?.mergeProgramRowsByProgramAndCampus).toBe(true);
+  });
+
   it("rejects duplicate field keys across cardLayout rows", () => {
     const result = validateViewConfig(
       {

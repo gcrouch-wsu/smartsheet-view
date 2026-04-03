@@ -116,13 +116,10 @@ function buildMergedRow(bucket: ResolvedViewRow[], campusKey: string): ResolvedV
  * combined contact emails on the configured people_group fields. Campus values are unioned; the
  * campus field text becomes "A; B" for table/print; card layouts can show `mergedCampuses` badges.
  */
-export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
+function mergeResolvedRowsBySharedEmail(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
   const pres = view.presentation;
-  if (!pres?.mergeProgramRowsBySharedEmail) {
-    return rows;
-  }
-  const progK = pres.programGroupFieldKey;
-  const campusK = pres.campusFieldKey;
+  const progK = pres?.programGroupFieldKey;
+  const campusK = pres?.campusFieldKey;
   const peopleKeys = resolveMergePeopleFieldKeys(view);
   if (!progK || !campusK || peopleKeys.length === 0) {
     return rows;
@@ -155,4 +152,64 @@ export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: Resol
   }
 
   return out;
+}
+
+/**
+ * Collapse rows that share the same normalized program and the same campus (picklist) value.
+ * Blank campus never merges with other rows. Multiple sheet rows with the same program+campus become one display row.
+ */
+function mergeResolvedRowsByProgramAndCampus(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
+  const pres = view.presentation;
+  const progK = pres?.programGroupFieldKey;
+  const campusK = pres?.campusFieldKey;
+  if (!progK || !campusK) {
+    return rows;
+  }
+
+  type Bucket = ResolvedViewRow[];
+  const buckets = new Map<string, Bucket>();
+
+  for (const row of rows) {
+    const programRaw = row.fieldMap[progK]?.textValue ?? "";
+    const campusRaw = row.fieldMap[campusK]?.textValue ?? "";
+    const progNorm = normalizeGroupKey(programRaw);
+    const campusTrim = campusRaw.trim();
+    const key =
+      campusTrim.length > 0
+        ? `${progNorm}\u0000${normalizeCampusDisplay(campusRaw)}`
+        : `__single__\u0000${row.id}`;
+    const list = buckets.get(key);
+    if (list) {
+      list.push(row);
+    } else {
+      buckets.set(key, [row]);
+    }
+  }
+
+  const out: ResolvedViewRow[] = [];
+  for (const bucket of buckets.values()) {
+    if (bucket.length === 1) {
+      const one = bucket[0];
+      if (one) out.push(one);
+    } else {
+      out.push(buildMergedRow(bucket, campusK));
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Row merge for program-centric views: either by shared contact emails (multi-campus same person) or by
+ * identical program + campus (e.g. duplicate Smartsheet lines for same offering).
+ */
+export function mergeResolvedRowsByProgramAndEmail(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
+  const pres = view.presentation;
+  if (pres?.mergeProgramRowsByProgramAndCampus) {
+    return mergeResolvedRowsByProgramAndCampus(view, rows);
+  }
+  if (!pres?.mergeProgramRowsBySharedEmail) {
+    return rows;
+  }
+  return mergeResolvedRowsBySharedEmail(view, rows);
 }

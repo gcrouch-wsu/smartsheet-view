@@ -255,9 +255,15 @@ export interface ViewPresentationConfig {
   /**
    * When true, merge resolved rows that share the same program field value and the same contact email(s)
    * across `mergePeopleFieldKeys` (or legacy `mergePeopleFieldKey`, or the sole people_group field). Campuses are unioned.
-   * Requires programGroupFieldKey + campusFieldKey.
+   * Requires programGroupFieldKey + campusFieldKey. Mutually exclusive with `mergeProgramRowsByProgramAndCampus`.
    */
   mergeProgramRowsBySharedEmail?: boolean;
+  /**
+   * When true, merge resolved rows that share the same program field value and the same campus value
+   * (after `normalizeCampusDisplay`; blank campus rows are never merged with each other). First row wins for non-campus fields.
+   * Requires programGroupFieldKey + campusFieldKey. Mutually exclusive with `mergeProgramRowsBySharedEmail`.
+   */
+  mergeProgramRowsByProgramAndCampus?: boolean;
   /**
    * people_group fields used for email matching when merging (union of all emails on the row from these fields).
    * If empty/unset, falls back to `mergePeopleFieldKey`, then to the sole people_group field.

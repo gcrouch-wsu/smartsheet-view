@@ -124,6 +124,46 @@ describe("mergeResolvedRowsByProgramAndEmail", () => {
     expect(mergeResolvedRowsByProgramAndEmail(view, rows)).toHaveLength(2);
   });
 
+  it("merges by same program and campus when mergeProgramRowsByProgramAndCampus is set", () => {
+    const view: ViewConfig = {
+      ...viewBase,
+      presentation: {
+        programGroupFieldKey: "program_name",
+        campusFieldKey: "campus",
+        mergeProgramRowsByProgramAndCampus: true,
+        mergeProgramRowsBySharedEmail: undefined,
+        mergePeopleFieldKey: undefined,
+      },
+    };
+    const rows = [
+      row(1, "Biology", "Pullman", "staff", ["a@x.edu"]),
+      row(2, "Biology", "Pullman", "staff", ["b@x.edu"]),
+      row(3, "Chem", "Spokane", "staff", ["c@x.edu"]),
+    ];
+    const out = mergeResolvedRowsByProgramAndEmail(view, rows);
+    expect(out).toHaveLength(2);
+    const bio = out.find((r) => r.fieldMap.program_name?.textValue === "Biology");
+    expect(bio?.mergedSourceRowIds?.sort()).toEqual([1, 2]);
+    expect(bio?.mergedCampuses).toEqual(["Pullman"]);
+  });
+
+  it("does not merge campus mode when campus values differ", () => {
+    const view: ViewConfig = {
+      ...viewBase,
+      presentation: {
+        programGroupFieldKey: "program_name",
+        campusFieldKey: "campus",
+        mergeProgramRowsByProgramAndCampus: true,
+        mergeProgramRowsBySharedEmail: undefined,
+      },
+    };
+    const rows = [
+      row(1, "Biology", "Pullman", "staff", ["a@x.edu"]),
+      row(2, "Biology", "Spokane", "staff", ["a@x.edu"]),
+    ];
+    expect(mergeResolvedRowsByProgramAndEmail(view, rows)).toHaveLength(2);
+  });
+
   it("merges when matching emails come from two different selected people fields", () => {
     const dualStaffView: ViewConfig = {
       ...viewBase,
