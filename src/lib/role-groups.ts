@@ -15,7 +15,7 @@ export function isRoleGroupFieldSource(source: ViewFieldSourceConfig): source is
 type ParsedNumberedTitle = { baseLabel: string; slot: string; attr: "name" | "email" | "phone" };
 
 /**
- * Detects numbered slot columns per build.md: trailing slot number, optional Name / Email / Phone suffix,
+ * Detects numbered slot columns: trailing slot number, optional Name / Email / Phone suffix,
  * or bare role label as the name column.
  */
 export function parseNumberedRoleColumnTitle(title: string): ParsedNumberedTitle | null {

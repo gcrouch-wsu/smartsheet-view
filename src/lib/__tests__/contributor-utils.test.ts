@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildContributorEditingClientConfig,
+  collectResolvableRowIdsForUnrestrictedEditing,
   contributorEditTargetRowId,
   getContributorEditingValidationErrors,
   getEligibleEditableFieldDefinitions,
@@ -104,6 +105,16 @@ describe("isContributorRowOrMergedEditable and contributorEditTargetRowId", () =
     const row: ResolvedViewRow = { ...baseRow(), id: 10, mergedSourceRowIds: [10, 20] };
     expect(isContributorRowOrMergedEditable(row, new Set([99]))).toBe(false);
     expect(contributorEditTargetRowId(row, new Set([99]))).toBe(10);
+  });
+});
+
+describe("collectResolvableRowIdsForUnrestrictedEditing", () => {
+  it("dedupes display and merged source ids", () => {
+    const rows: ResolvedViewRow[] = [
+      { id: 1, fields: [], fieldMap: {}, mergedSourceRowIds: [1, 2] },
+      { id: 3, fields: [], fieldMap: {} },
+    ];
+    expect(collectResolvableRowIdsForUnrestrictedEditing(rows).sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 });
 

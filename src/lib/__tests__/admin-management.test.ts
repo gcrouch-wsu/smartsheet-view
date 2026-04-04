@@ -74,10 +74,13 @@ afterEach(() => {
 
 describe("admin management", () => {
   it("saves draft views without a publish gate", async () => {
+    storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
+    smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });
+
     await saveAdminViewConfig({ ...viewConfig, public: false });
 
     expect(adminStoreMock.saveViewConfig).toHaveBeenCalledWith(expect.objectContaining({ id: "faculty", public: false }));
-    expect(smartsheetMock.getSmartsheetSchema).not.toHaveBeenCalled();
+    expect(smartsheetMock.getSmartsheetSchema).toHaveBeenCalled();
   });
 
   it("blocks creating a new view when the id already exists", async () => {

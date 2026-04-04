@@ -108,6 +108,25 @@ export function AdminGuideTabs() {
               Contributor passwords are stored as one-way hashes. Admins cannot view them. If someone forgets a password, use a reset link from the Contributors area instead.
             </p>
           </div>
+
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Admin session cookies</h3>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Admin sign-in uses stateless, signed httpOnly cookies. Set a dedicated{" "}
+              <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET</code> in production.
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Rotate the secret</strong> to log every admin out immediately after an incident or suspected cookie leak.
+              </li>
+              <li>
+                If the secret is <strong className="text-[color:var(--wsu-ink)]">unset</strong>, the app derives signing material from the bootstrap username and password — changing the password then invalidates all admin sessions.
+              </li>
+              <li>
+                On hosts with multiple environments, configure the secret per environment so Preview and Production behave predictably.
+              </li>
+            </ul>
+          </div>
         </section>
       )}
 
@@ -387,6 +406,14 @@ export function AdminGuideTabs() {
               <li><strong className="text-[color:var(--wsu-ink)]">Show contributor instructions link</strong> adds a public help link that opens in a new window.</li>
               <li>Hiding those links does not remove editing for people who already have the direct URL or an active session.</li>
             </ul>
+          </div>
+
+          <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-5 text-sm text-sky-950 sm:text-base">
+            <p className="font-semibold">Administrators on the live public page</p>
+            <p className="mt-2 leading-relaxed">
+              If you stay signed in to Admin and open the published public view in the <strong className="text-sky-950">same browser</strong>, you may be able to edit{" "}
+              <strong className="text-sky-950">any row</strong> when contributor editing is enabled — same fields as contributors, but no contact-column filter. Use for support; sign out when finished. Writes still go to Smartsheet.
+            </p>
           </div>
         </section>
       )}

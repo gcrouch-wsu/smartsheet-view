@@ -14,6 +14,9 @@ import type { LayoutType, ResolvedView } from "@/lib/config/types";
 export interface PublicRowEditingProps {
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
+  editingRowId?: number | null;
+  onCancelEdit?: () => void;
+  slug?: string;
 }
 
 export function formatLayoutLabel(layout: LayoutType) {
@@ -29,6 +32,9 @@ export function PublicViewRenderer({
   programGroups,
   editableRowIds,
   onEditRow,
+  editingRowId,
+  onCancelEdit,
+  slug,
 }: {
   layout: LayoutType;
   view: ResolvedView;
@@ -42,17 +48,65 @@ export function PublicViewRenderer({
 
   const body =
     layout === "cards" ? (
-      <DataCards view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataCards
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : layout === "list" ? (
-      <DataList view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataList
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : layout === "stacked" ? (
-      <DataStacked view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataStacked
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : layout === "accordion" ? (
-      <DataAccordion view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataAccordion
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : layout === "tabbed" ? (
-      <DataTabbed view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataTabbed
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : layout === "list_detail" ? (
-      <DataListDetail view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
+      <DataListDetail
+        view={view}
+        programGroups={programGroups}
+        editableRowIds={editableRowIds}
+        onEditRow={onEditRow}
+        editingRowId={editingRowId}
+        onCancelEdit={onCancelEdit}
+        slug={slug}
+      />
     ) : (
       <DataTable view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     );

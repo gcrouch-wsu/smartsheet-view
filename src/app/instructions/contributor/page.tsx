@@ -64,6 +64,17 @@ export default function ContributorInstructionsPage() {
             </ul>
           </section>
 
+          <section aria-labelledby="s-need">
+            <h2 id="s-need" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              What you need
+            </h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>The page link you were sent</li>
+              <li>Your WSU email address</li>
+              <li>A contributor password (separate from your WSU password)</li>
+            </ul>
+          </section>
+
           <section aria-labelledby="s-account">
             <h2 id="s-account" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
               First-time access
@@ -113,11 +124,17 @@ export default function ContributorInstructionsPage() {
               Edit your information
             </h2>
             <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>Sign in.</li>
               <li>Find your row.</li>
               <li>Click <strong className="text-[color:var(--wsu-ink)]">Edit</strong>.</li>
               <li>Update the fields shown.</li>
               <li>Click <strong className="text-[color:var(--wsu-ink)]">Save changes</strong>.</li>
             </ol>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Editable fields usually appear as <strong className="text-[color:var(--wsu-ink)]">white boxes with a visible border</strong>. On{" "}
+              <strong className="text-[color:var(--wsu-ink)]">table</strong> layouts, the editor may open in a{" "}
+              <strong className="text-[color:var(--wsu-ink)]">side panel</strong> instead of on the row — the steps are the same.
+            </p>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               You can edit only the rows tied to your email address, and only the fields your administrator made editable.
             </p>
@@ -131,16 +148,63 @@ export default function ContributorInstructionsPage() {
               Some pages use grouped contact editing for repeated people such as coordinators, assistants, or program contacts.
             </p>
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              <li>You will see one block per person instead of one long text field.</li>
+              <li>You will see one block per person instead of one long text field; some pages show those blocks in a compact horizontal layout.</li>
               <li>Use <strong className="text-[color:var(--wsu-ink)]">Add person</strong> to add another person.</li>
               <li>Use <strong className="text-[color:var(--wsu-ink)]">Remove</strong> to remove one person.</li>
               <li>Some groups also show <strong className="text-[color:var(--wsu-ink)]">Clear everyone</strong>.</li>
-              <li>If a group shows both name and email, both are required to save that person.</li>
+              <li>Some groups use fixed role slots and will not show <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or <strong className="text-[color:var(--wsu-ink)]">Remove</strong>.</li>
+              <li>Some legacy grouped roles may be display-only if the administrator marked them read-only for safety.</li>
+              <li>If a group shows both name and email, both are required to save that person; phone is usually optional unless you were told otherwise.</li>
               <li>You do not need to type comma-separated or semicolon-separated lists when the grouped editor is shown.</li>
             </ul>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
-              When you save, the app writes the people back to Smartsheet in the same order they appear in the editor.
+              When you save, numbered role groups write back to the matching Smartsheet slot columns. Trusted legacy grouped roles write back in the same order they appear in the editor.
             </p>
+          </section>
+
+          <section aria-labelledby="s-reset">
+            <h2 id="s-reset" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Password reset
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              There is no self-service password reset. If you cannot sign in, contact{" "}
+              <a href="mailto:gradschool@wsu.edu" className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2">
+                gradschool@wsu.edu
+              </a>{" "}
+              and ask for a password reset link from the administrator for your page.
+            </p>
+          </section>
+
+          <section aria-labelledby="s-trouble">
+            <h2 id="s-trouble" className="text-xl font-semibold text-[color:var(--wsu-ink)] sm:text-2xl">
+              Troubleshooting
+            </h2>
+            <div className="mt-4 space-y-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <div>
+                <h3 className="font-semibold text-[color:var(--wsu-ink)]">I cannot create an account</h3>
+                <p className="mt-2">
+                  In most cases your WSU email is not listed on the Smartsheet row for that page. Contact{" "}
+                  <a href="mailto:gradschool@wsu.edu" className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2">
+                    gradschool@wsu.edu
+                  </a>{" "}
+                  if you believe that is wrong.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--wsu-ink)]">I cannot see the Edit button</h3>
+                <p className="mt-2">Confirm your WSU email is on the correct row, contributor editing is enabled, and the fields you need are marked editable.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--wsu-ink)]">My save failed</h3>
+                <p className="mt-2">
+                  Try again after reading the error message. If it still fails, email{" "}
+                  <a href="mailto:gradschool@wsu.edu" className="font-medium text-[color:var(--wsu-crimson)] underline underline-offset-2">
+                    gradschool@wsu.edu
+                  </a>{" "}
+                  with the page URL, the row you were editing, the exact error text, and the time of the attempt.
+                </p>
+              </div>
+            </div>
           </section>
 
           <section aria-labelledby="s-help" className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">

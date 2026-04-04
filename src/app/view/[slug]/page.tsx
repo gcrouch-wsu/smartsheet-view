@@ -11,6 +11,7 @@ import { ViewTabs } from "@/components/public/ViewTabs";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
 import { mergeThemeTokens } from "@/lib/config/themes";
+import { ADMIN_SESSION_COOKIE_NAME, readAdminSessionToken } from "@/lib/admin-auth";
 import {
   CONTRIBUTOR_SESSION_COOKIE_NAME,
   getContributorConfigurationError,
@@ -18,7 +19,9 @@ import {
 } from "@/lib/contributor-auth";
 import {
   buildContributorEditingClientConfig,
+  collectResolvableRowIdsForUnrestrictedEditing,
   getEditableRowIdsForView,
+  isContributorRowOrMergedEditable,
   isContributorStillInSheet,
 } from "@/lib/contributor-utils";
 import { CONTRIBUTOR_DATASET_OPTIONS, loadContributorDataset } from "@/lib/contributor-view";
@@ -172,26 +175,45 @@ export default async function PublicViewPage({
   let contributorEmail: string | null = null;
   let editingConfig = null;
   let editableRowIds: number[] = [];
+  let adminUnrestrictedEditing = false;
+  let adminEditingLabel: string | null = null;
 
   if (editingEnabled) {
     const cookieStore = await cookies();
-    const session = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
+    const adminSession = await readAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
 
-    if (session.ok && session.payload) {
+    if (adminSession.ok && adminSession.payload) {
       const dataset = await loadContributorDataset(page.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
-      if (isContributorStillInSheet(dataset.rows, session.payload.email, activeViewConfig.editing!.contactColumnIds)) {
-        contributorEmail = session.payload.email;
-        editingConfig = buildContributorEditingClientConfig(activeViewConfig, dataset.columns, page.sourceConfig);
-        editableRowIds = getEditableRowIdsForView(dataset.rows, activeViewConfig, contributorEmail);
+      const built = buildContributorEditingClientConfig(activeViewConfig, dataset.columns, page.sourceConfig);
+      if (built) {
+        adminUnrestrictedEditing = true;
+        editingConfig = built;
+        editableRowIds = collectResolvableRowIdsForUnrestrictedEditing(activeView.rows);
+        adminEditingLabel = adminSession.payload.username || "Administrator";
+      }
+    }
+
+    if (!adminUnrestrictedEditing) {
+      const session = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
+
+      if (session.ok && session.payload) {
+        const dataset = await loadContributorDataset(page.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
+        if (isContributorStillInSheet(dataset.rows, session.payload.email, activeViewConfig.editing!.contactColumnIds)) {
+          contributorEmail = session.payload.email;
+          editingConfig = buildContributorEditingClientConfig(activeViewConfig, dataset.columns, page.sourceConfig);
+          editableRowIds = getEditableRowIdsForView(dataset.rows, activeViewConfig, contributorEmail);
+        }
       }
     }
   }
 
+  const showPublicEditingChrome = Boolean(contributorEmail || adminUnrestrictedEditing);
+
   /** Signed-in contributors only see rows they are allowed to edit (no scrolling through everyone). */
   let viewForDisplay = activeView;
-  if (contributorEmail && editableRowIds.length > 0) {
+  if (!adminUnrestrictedEditing && contributorEmail && editableRowIds.length > 0) {
     const editableSet = new Set(editableRowIds);
-    const rows = activeView.rows.filter((row) => editableSet.has(row.id));
+    const rows = activeView.rows.filter((row) => isContributorRowOrMergedEditable(row, editableSet));
     viewForDisplay = { ...activeView, rows, rowCount: rows.length };
   }
 
@@ -215,15 +237,25 @@ export default async function PublicViewPage({
                 <div className="min-w-0 flex-1 space-y-3">
                   <PublicHeaderBrandStrip presentation={activeView.presentation} />
                   {!activeView.presentation?.hideHeaderBackLink &&
-                    (contributorEmail ? (
+                    (showPublicEditingChrome ? (
                       <p className="text-sm text-[color:var(--wsu-muted)]">
                         <Link href="/" className="link-inline">
                           All views
                         </Link>
                         <span className="mt-1 block text-xs text-[color:var(--wsu-muted)]">
-                          Use <strong className="font-medium text-[color:var(--wsu-ink)]">Sign out</strong> below to
-                          change accounts. Browser Back may go to other sites you opened earlier—use this link to stay
-                          in public views.
+                          {adminUnrestrictedEditing ? (
+                            <>
+                              End your admin session from the{" "}
+                              <strong className="font-medium text-[color:var(--wsu-ink)]">Admin</strong> area. Browser
+                              Back may leave this site—use this link to return to the catalog.
+                            </>
+                          ) : (
+                            <>
+                              Use <strong className="font-medium text-[color:var(--wsu-ink)]">Sign out</strong> below to
+                              change accounts. Browser Back may go to other sites you opened earlier—use this link to
+                              stay in public views.
+                            </>
+                          )}
                         </span>
                       </p>
                     ) : (
@@ -289,7 +321,7 @@ export default async function PublicViewPage({
                     !activeView.presentation?.hideHeaderRows ||
                     !activeView.presentation?.hideHeaderRefreshed)) ||
                   layoutSwitcher ||
-                  ((loginHref && !contributorEmail) || printHref || contributorInstructionsHref)) && (
+                  ((loginHref && !showPublicEditingChrome) || printHref || contributorInstructionsHref)) && (
                   <div className="shrink-0">
                     <div className="view-surface-muted min-w-[18rem] rounded-[1.75rem] border border-[color:var(--wsu-border)] px-4 py-4 text-sm text-[color:var(--wsu-muted)]">
                       {!activeView.presentation?.hideHeaderInfoBox &&
@@ -339,7 +371,7 @@ export default async function PublicViewPage({
                         </div>
                       ) : null}
 
-                      {!contributorEmail && (loginHref || printHref || contributorInstructionsHref) ? (
+                      {!showPublicEditingChrome && (loginHref || printHref || contributorInstructionsHref) ? (
                         <div className={`${(!activeView.presentation?.hideHeaderInfoBox || layoutSwitcher) ? "mt-4 border-t border-[color:var(--wsu-border)]/60 pt-4" : ""}`}>
                           <div className="flex flex-col gap-2">
                             {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary compact /> : null}
@@ -385,7 +417,10 @@ export default async function PublicViewPage({
                     )}
                   </>
                 )}
-                {!embed && !contributorEmail && activeView.presentation?.hideHeader && (loginHref || printHref || contributorInstructionsHref) && (
+                {!embed &&
+                  !showPublicEditingChrome &&
+                  activeView.presentation?.hideHeader &&
+                  (loginHref || printHref || contributorInstructionsHref) && (
                   <div className={`${!activeView.presentation?.hideViewTitleSection ? "mt-3 " : ""}flex flex-wrap gap-2`}>
                     {loginHref ? <PublicActionLink href={loginHref} label="Contributor sign in" primary /> : null}
                     {printHref ? <PublicActionLink href={printHref} label="Print / PDF" /> : null}
@@ -408,6 +443,8 @@ export default async function PublicViewPage({
                 contributorEmail={contributorEmail}
                 editingConfig={editingConfig}
                 editableRowIds={editableRowIds}
+                adminUnrestrictedEditing={adminUnrestrictedEditing}
+                adminEditingLabel={adminEditingLabel}
                 contributorRowsFiltered={Boolean(contributorEmail && editableRowIds.length > 0)}
                 printHref={printHref ?? undefined}
                 contributorInstructionsHref={contributorInstructionsHref ?? undefined}

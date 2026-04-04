@@ -1,6 +1,29 @@
 # Smartsheet + Vercel: Build Guide
 
-Supplement to **`README.md`** (install, env, deployment checklist). Use this file for Smartsheet API quirks, Vercel runtime edge cases, and long-form notes that would clutter the main readme. Update it when live behavior contradicts an older assumption.
+**Maintainer-only pitfall log.** Record and consult this file when debugging **Vercel** or **Smartsheet API** behavior that has already caused production or CI surprises. It is intentionally **not** linked from **`README.md`** (onboarding stays self-contained there). **`PROJECT_SPEC.md`** (private, gitignored) points maintainers here.
+
+Each section is readable on its own. Update when live behavior contradicts an older assumption.
+
+---
+
+## Failures and near-misses (this repo)
+
+Symptoms that have already burned time on **Vercel builds** or **production-like** behavior. Use as a pre-deploy mental checklist; add new rows when a deploy fails for a *new* root cause.
+
+| Symptom | Likely cause | What to do |
+|--------|----------------|------------|
+| **Vercel build fails** with bundler errors mentioning native modules, `pg`, or opaque TipTap / ProseMirror resolution | Next.js 16 default **Turbopack** for `next build` is a bad fit here | Keep **`npm run build` → `next build --webpack`** in `package.json`. Do not drop `--webpack` without a full prod build + smoke test. |
+| **Vercel build fails** on TypeScript | `next build` type-checks the whole project | Run **`npx tsc --noEmit`** or **`npm run build`** locally before pushing; fix every error — Vercel matches this. |
+| **Vercel install fails** at `npm ci` | `package-lock.json` out of sync with `package.json` | Regenerate lockfile locally, commit it; **`vercel.json` uses `npm ci`**, not `npm install`. |
+| **Deploy “succeeds” but behavior unchanged** | Uncommitted / unpushed local fixes | Vercel only sees **git**. Verify the deployment’s commit SHA matches what you expect. |
+| **Public page stale after contributor save (local only)** | **`revalidatePath`** does not behave like production inside **`next dev`** | Re-test cache refresh on a Preview/Production URL; do not assume dev mirrors prod. |
+| **Contributor PATCH returns 400** on report-backed views | Report row lacks **`sheetId`** needed to target the underlying sheet | Fix Report in Smartsheet to expose sheet metadata, or use a **sheet** source for editable rows. |
+| **Smartsheet 1012** on multi-contact columns | Clearing **`MULTI_CONTACT_LIST`** with **`values: []`** | Clear with **`value: ""`** only (see cell-shape section below). |
+| **Config or users “reset”** after deploy | **No `DATABASE_URL`** on Vercel — filesystem not durable | Set Postgres for any real deployment; see database section. |
+| **Database “too many connections”** or flaky 5xx on burst | **Pool `max` too high** for serverless | Prefer a small serverless-friendly pool (this app’s defaults are tuned for that). |
+| **All admin users logged out** after password change | **`SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` unset** — signing key derived from bootstrap password | Set a dedicated session secret in **each** Vercel env; rotate it deliberately, separate from password rotation. |
+| **Preview admin sessions weird after env tweaks** | **Preview** missing its own `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` — falls back to derived secret for Preview | Set explicit secrets per environment (Production **and** Preview). |
+| **Smartsheet writes return 502** | Upstream Smartsheet error mapped to bad gateway | Read **Smartsheet `errorCode`** and body — do not assume an app crash (see HTTP mapping table below). |
 
 ---
 
@@ -213,6 +236,10 @@ If your schema relies on `gen_random_uuid()`, verify the target Postgres version
 | `SMARTSHEETS_VIEW_ADMIN_USERNAME` | Yes | Bootstrap admin username |
 | `SMARTSHEETS_VIEW_ADMIN_PASSWORD` | Yes | Must satisfy your local password policy |
 | `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` | Strongly recommended | Cookie-signing secret; never set to an empty string |
+
+Admin sessions are **stateless** (no server session table). **Global sign-out / incident response** = rotate `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` to a new random value and redeploy — all existing admin cookies fail verification immediately. If this variable is **unset**, the signing key is **derived from** bootstrap admin username/password, so **password changes invalidate all admin cookies**.
+
+**Vercel env scopes:** set `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` for **every Vercel environment you care about** (at minimum **Production** and **Preview**, plus **Development** if you use linked local env). Omitting it on **Preview** means Preview silently uses the **derived** secret, so a **Preview** password rotation can invalidate Preview admin sessions without an obvious cause. Rotating the explicit secret takes effect **immediately** when new instances pick up the new value — there is **no** session grace period (see runbook).
 
 ### Contributor editing
 

@@ -8,6 +8,8 @@ export interface ContributorContextValue {
   viewId: string;
   editingConfig: ContributorEditingClientConfig | null;
   editableRowIds: number[];
+  /** Public view: valid admin session — same field contracts as contributors, any row may be saved. */
+  isAdminUnrestrictedEditing?: boolean;
   signOut: () => Promise<void>;
 }
 

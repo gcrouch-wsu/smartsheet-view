@@ -14,21 +14,11 @@ Staff manage data in Smartsheet as they always have - no changes to their workfl
 - **Schema Drift Protection**: Automatic checks block publishing if Smartsheet columns are renamed or removed.
 - **Universal Embed**: Standalone pages or iframe embeds for WordPress/CMS with automatic height reporting.
 - **Grouped Role Fields**: Sources can define reusable role groups from numbered Smartsheet columns and add them to views as a single `people_group` field under one shared header.
-- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and grouped role fields). Numbered-slot role groups are deterministic by structure; legacy multi-attribute delimited role groups stay read-only unless explicitly trusted at the source level. Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production.
+- **Contributor Row Editing**: Smartsheet contacts (e.g., coordinators) can edit assigned rows on the public view (WSU email + password; row scope from contact columns; per-view editable fields and grouped role fields). Numbered-slot role groups are deterministic by structure; legacy multi-attribute delimited role groups stay read-only unless explicitly trusted at the source level. Requires Postgres and `CONTRIBUTOR_SESSION_SECRET` in production. **Table** layout uses a slide-out drawer; **other layouts** edit inline on the same card/list (card-faithful). **Administrators** signed in via the Admin app can edit **any** row on the same public view when editing is enabled (same allowed fields as contributors; no contact-column row restriction). Admin sessions use signed httpOnly cookies; set a dedicated `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` in production — see **Admin session cookies** below.
 - **Print / PDF Phase 1**: Public views include a print-friendly route that defaults to a landscape-friendly semantic table for browser print or save-as-PDF.
 - **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
 - **Header branding (admin)**: In **Setup** > **Page header & branding**, optional PNG/JPEG logo (at most 256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical rule - stored in view config. Shown at the top of the public header when visible.
 - **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) - static, accessible guides that deploy with the app.
-
-## Documentation
-
-| What | Where |
-|------|--------|
-| Install, env, Vercel deployment, go-live checklist | **This file (`README.md`)** — intended to be self-contained. |
-| Admin narrative (markdown) | **`Admin_Instruction.md`** (tracked). |
-| In-app admin + contributor guides | **`/instructions/admin`**, **`/instructions/contributor`** (ship with the app). |
-| Smartsheet API / Vercel edge cases | **`VERCEL_DEPLOYMENT.md`** when your clone tracks it (see `.gitignore` exceptions). |
-| Personal roadmap / “what shipped when” | **`PROJECT_SPEC.md`** — **gitignored**; keep locally if you want a private history; not required for the team. |
 
 ## Getting Started
 
@@ -49,6 +39,7 @@ Edit `.env` with your Smartsheet and Admin credentials:
 - `SMARTSHEET_API_TOKEN`: Your Smartsheet API token.
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`: Initial admin username.
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`: Initial admin password.
+- `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` (strongly recommended in production): Signs admin session cookies. If omitted, signing is derived from the bootstrap username and password — changing the password then invalidates all admin sessions. Prefer a long random secret independent of the password (see **Admin session cookies** below).
 - `DATABASE_URL` (Optional): Connect to Postgres for durable admin users and config (sources/views) on Vercel. When set, sources and views are stored in Postgres instead of config files, enabling create/edit/delete on serverless deployments.
 - `CONTRIBUTOR_SESSION_SECRET` (Required for contributor editing): Secret used to sign contributor session cookies.
 
@@ -65,7 +56,7 @@ Postgres requirement:
 npm run dev
 ```
 
-(`next dev` should use `--webpack` in this repo; see **Vercel deployment** below.)
+(`next dev` should use `--webpack` in this repo; see **Production deployment** below.)
 
 ### 4. Admin: Creating a Source
 
@@ -98,9 +89,9 @@ Views can then add a grouped role field as one public header instead of mapping 
 
 Grouped role display defaults to a compact plain inline layout so multiple people use horizontal space better in cards, stacked rows, tables, and print views. Admins can switch each grouped role field between horizontal and vertical layouts and choose either plain or capsule styling in the view builder.
 
-## Vercel deployment
+## Production deployment
 
-Use this section for production hosting on Vercel (similar constraints apply to other serverless Node hosts).
+Routine checklist for shipping this app (Vercel is the usual host; similar constraints apply on other serverless Node hosts).
 
 ### Source control and builds
 
@@ -119,7 +110,7 @@ Set these in the Vercel project (Production and Preview as appropriate):
 | `SMARTSHEET_API_TOKEN` | Smartsheet API access |
 | `SMARTSHEETS_VIEW_ADMIN_USERNAME` | Bootstrap admin username |
 | `SMARTSHEETS_VIEW_ADMIN_PASSWORD` | Bootstrap admin password |
-| `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` | Signs admin session cookies (strong secret; never empty) |
+| `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` | Signs admin session cookies (strong secret; never empty). Rotation logs all admins out immediately; see **Admin session cookies** above |
 | `DATABASE_URL` | Postgres for durable sources, views, admin users, contributors, and login rate-limit data on serverless |
 | `CONTRIBUTOR_SESSION_SECRET` | Signs contributor cookies (required if contributor editing is enabled) |
 | `SMARTSHEET_CONNECTIONS_JSON` | Optional multi-connection Smartsheet config |

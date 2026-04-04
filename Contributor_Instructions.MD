@@ -55,7 +55,7 @@ You can edit only the row or rows tied to your email address, and only the field
 1. Sign in.
 2. Find your row.
 3. Click `Edit`.
-4. Update the fields shown. Editable fields appear as **white boxes with a visible border**; read-only text usually has no box.
+4. Update the fields shown. Editable fields appear as **white boxes with a visible border**; read-only text usually has no box. On **table** layouts, the editor may open in a **side panel** instead of on the row — behavior is the same.
 5. Click `Save changes`.
 
 ## Grouped Contacts

@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
@@ -26,8 +26,9 @@ export function canOpenContributorEditor(
   embed: boolean,
   contributorEmail?: string | null,
   editingConfig?: ContributorEditingClientConfig | null,
+  adminUnrestrictedEditing?: boolean,
 ) {
-  return !embed && Boolean(contributorEmail && editingConfig);
+  return !embed && Boolean(editingConfig && (contributorEmail || adminUnrestrictedEditing));
 }
 
 function getSearchableText(view: ResolvedView, row: ResolvedViewRow): string {
@@ -59,6 +60,8 @@ export function ViewWithSearchAndIndex({
   contributorEmail = null,
   editingConfig = null,
   editableRowIds = [],
+  adminUnrestrictedEditing = false,
+  adminEditingLabel = null,
   contributorRowsFiltered = false,
   printHref,
   contributorInstructionsHref,
@@ -71,6 +74,8 @@ export function ViewWithSearchAndIndex({
   contributorEmail?: string | null;
   editingConfig?: ContributorEditingClientConfig | null;
   editableRowIds?: number[];
+  adminUnrestrictedEditing?: boolean;
+  adminEditingLabel?: string | null;
   contributorRowsFiltered?: boolean;
   printHref?: string;
   contributorInstructionsHref?: string;
@@ -86,6 +91,17 @@ export function ViewWithSearchAndIndex({
 
   const groupingOn = isCampusGroupingActive(view.presentation);
   const showCampusStrip = Boolean(groupingOn && view.presentation?.showCampusFilter && view.presentation?.campusFieldKey);
+
+  // Leave guard for unsaved changes
+  useEffect(() => {
+    if (editingRowId == null) return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [editingRowId]);
 
   const campusOptions = useMemo(() => {
     const ck = view.presentation?.campusFieldKey;
@@ -111,11 +127,26 @@ export function ViewWithSearchAndIndex({
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) {
-      return rowsAfterCampus;
+    
+    // §12.10 Filter interlock: ensure editing row stays visible
+    const isEditingMatch = (row: ResolvedViewRow) =>
+      editingRowId !== null && (row.id === editingRowId || row.mergedSourceRowIds?.includes(editingRowId));
+
+    let filtered = rowsAfterCampus;
+    if (q) {
+      filtered = rowsAfterCampus.filter((row) => getSearchableText(view, row).includes(q));
     }
-    return rowsAfterCampus.filter((row) => getSearchableText(view, row).includes(q));
-  }, [view, searchQuery, rowsAfterCampus]);
+
+    if (editingRowId !== null) {
+      const editingRow = view.rows.find(isEditingMatch);
+      if (editingRow && !filtered.some(r => r.id === editingRow.id)) {
+        // Add back to the end or keep in place? Let's append for simplicity in this milestone.
+        filtered = [...filtered, editingRow];
+      }
+    }
+
+    return filtered;
+  }, [view, searchQuery, rowsAfterCampus, editingRowId]);
 
   const filteredView = useMemo(
     () => ({ ...view, rows: filteredRows, rowCount: filteredRows.length }),
@@ -193,11 +224,11 @@ export function ViewWithSearchAndIndex({
       return null;
     }
     return (
-      filteredView.rows.find(
+      view.rows.find(
         (row) => row.id === editingRowId || row.mergedSourceRowIds?.includes(editingRowId),
       ) ?? null
     );
-  }, [editingRowId, filteredView.rows]);
+  }, [editingRowId, view.rows]);
 
   function scrollToLetter(letter: string) {
     if (programGroups?.length) {
@@ -218,6 +249,10 @@ export function ViewWithSearchAndIndex({
   }
 
   async function handleSignOut() {
+    if (adminUnrestrictedEditing) {
+      toast.addToast("End your admin session from the Admin sign-out control.", "info");
+      return;
+    }
     if (!slug) {
       return;
     }
@@ -249,8 +284,13 @@ export function ViewWithSearchAndIndex({
     viewId,
     editingConfig,
     editableRowIds,
+    isAdminUnrestrictedEditing: adminUnrestrictedEditing,
     signOut: handleSignOut,
   };
+
+  // For CF-1 through CF-4: Inline editing for all row/card layouts; Table stays in drawer.
+  const isInlineLayout = layout !== "table";
+  const showDrawer = editingRowId !== null && !isInlineLayout;
 
   return (
     <ContributorProvider value={contributorContextValue}>
@@ -262,14 +302,24 @@ export function ViewWithSearchAndIndex({
           }}
         >
           <div className="relative">
-        {!embed && contributorEmail && (
+        {!embed && editingConfig && (contributorEmail || adminUnrestrictedEditing) && (
           <div className="view-surface-muted mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[color:var(--wsu-border)] px-4 py-3 text-sm text-[color:var(--wsu-muted)]">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="font-medium text-[color:var(--wsu-ink)]">Editing as {contributorEmail}</span>
+              <span className="font-medium text-[color:var(--wsu-ink)]">
+                {adminUnrestrictedEditing ? (
+                  <>
+                    Administrator: {adminEditingLabel ?? "signed in"} — all rows editable (same fields as contributors)
+                  </>
+                ) : (
+                  <>Editing as {contributorEmail}</>
+                )}
+              </span>
               <span>
-                {contributorRowsFiltered
-                  ? `Showing only your ${editableRowIds.length} assigned row${editableRowIds.length === 1 ? "" : "s"}`
-                  : `${editableRowIds.length} editable row${editableRowIds.length === 1 ? "" : "s"} in this view`}
+                {adminUnrestrictedEditing
+                  ? "Row contact restrictions are not applied for administrators."
+                  : contributorRowsFiltered
+                    ? `Showing only your ${editableRowIds.length} assigned row${editableRowIds.length === 1 ? "" : "s"}`
+                    : `${editableRowIds.length} editable row${editableRowIds.length === 1 ? "" : "s"} in this view`}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -289,13 +339,17 @@ export function ViewWithSearchAndIndex({
                   Contributor instructions
                 </Link>
               ) : null}
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                className="link-pill-muted px-3 py-1.5 text-sm"
-              >
-                Sign out
-              </button>
+              {!adminUnrestrictedEditing ? (
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="link-pill-muted px-3 py-1.5 text-sm"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <span className="text-xs text-[color:var(--wsu-muted)]">Use Admin to sign out</span>
+              )}
             </div>
           </div>
         )}
@@ -380,7 +434,14 @@ export function ViewWithSearchAndIndex({
               view={filteredView}
               programGroups={programGroups}
               editableRowIds={editableRowIdSet}
-              onEditRow={canOpenContributorEditor(embed, contributorEmail, editingConfig) ? handleEditRow : undefined}
+              onEditRow={
+                canOpenContributorEditor(embed, contributorEmail, editingConfig, adminUnrestrictedEditing)
+                  ? handleEditRow
+                  : undefined
+              }
+              editingRowId={editingRowId}
+              onCancelEdit={() => setEditingRowId(null)}
+              slug={slug}
             />
           </div>
 
@@ -422,7 +483,7 @@ export function ViewWithSearchAndIndex({
           slug={slug}
           view={filteredView}
           row={editingRow}
-          open={editingRow != null}
+          open={showDrawer}
           onClose={() => setEditingRowId(null)}
           returnFocusRef={editReturnFocusRef}
         />

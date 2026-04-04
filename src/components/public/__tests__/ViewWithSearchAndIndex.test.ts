@@ -27,4 +27,16 @@ describe("canOpenContributorEditor", () => {
       }),
     ).toBe(true);
   });
+
+  it("allows administrators with a valid session when unrestricted editing is enabled", () => {
+    const cfg = {
+      contactColumnIds: [1],
+      editableColumnIds: [2],
+      fieldColumnMap: {},
+      editableFields: [],
+      editableFieldGroups: [],
+    };
+    expect(canOpenContributorEditor(false, null, null, true)).toBe(false);
+    expect(canOpenContributorEditor(false, null, cfg, true)).toBe(true);
+  });
 });

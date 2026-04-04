@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { ADMIN_SESSION_COOKIE_NAME, readAdminSessionToken } from "@/lib/admin-auth";
 import {
   CONTRIBUTOR_SESSION_COOKIE_NAME,
   getContributorConfigurationError,
@@ -36,8 +37,12 @@ export async function PATCH(
   }
 
   const cookieStore = await cookies();
-  const session = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
-  if (!session.ok || !session.payload) {
+  const contributorSession = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
+  const adminSession = await readAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
+  const isAdminEditor = Boolean(adminSession.ok && adminSession.payload);
+  const isContributor = Boolean(contributorSession.ok && contributorSession.payload);
+
+  if (!isAdminEditor && !isContributor) {
     return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
   }
 
@@ -67,10 +72,12 @@ export async function PATCH(
   }
 
   const dataset = await loadContributorDataset(collection.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
-  const email = session.payload.email;
 
-  if (!isContributorStillInSheet(dataset.rows, email, view.editing.contactColumnIds)) {
-    return NextResponse.json({ error: "Your access has been removed. Contact your coordinator." }, { status: 403 });
+  if (isContributor && !isAdminEditor) {
+    const email = contributorSession.payload!.email;
+    if (!isContributorStillInSheet(dataset.rows, email, view.editing.contactColumnIds)) {
+      return NextResponse.json({ error: "Your access has been removed. Contact your coordinator." }, { status: 403 });
+    }
   }
 
   const filteredRows = applyViewFilters(dataset.rows, view.filters);
@@ -79,8 +86,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Row not found." }, { status: 404 });
   }
 
-  if (!isContributorInRow(row, email, view.editing.contactColumnIds)) {
-    return NextResponse.json({ error: "You cannot edit this row." }, { status: 403 });
+  if (!isAdminEditor) {
+    const email = contributorSession.payload!.email;
+    if (!isContributorInRow(row, email, view.editing.contactColumnIds)) {
+      return NextResponse.json({ error: "You cannot edit this row." }, { status: 403 });
+    }
   }
 
   const editingConfig = buildContributorEditingClientConfig(view, dataset.columns, collection.sourceConfig);

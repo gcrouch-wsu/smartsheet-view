@@ -688,6 +688,23 @@ export function getEditableRowIdsForView(rows: SmartsheetRow[], view: ViewConfig
     .map((row) => row.id);
 }
 
+/**
+ * Display row ids plus merged source ids — every Smartsheet row id that may be selected as an edit target
+ * for this rendered view. Used when administrators edit with no per-row contact restriction.
+ */
+export function collectResolvableRowIdsForUnrestrictedEditing(rows: ResolvedViewRow[]): number[] {
+  const set = new Set<number>();
+  for (const row of rows) {
+    set.add(row.id);
+    for (const id of row.mergedSourceRowIds ?? []) {
+      if (typeof id === "number" && Number.isFinite(id)) {
+        set.add(id);
+      }
+    }
+  }
+  return [...set];
+}
+
 export function isContributorEditableRenderType(renderType: RenderType): renderType is "text" | "multiline_text" | "badge" | "phone" | "mailto" | "mailto_list" {
   return CONTRIBUTOR_EDITABLE_RENDER_TYPES.has(renderType);
 }

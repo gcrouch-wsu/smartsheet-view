@@ -26,7 +26,16 @@ Required environment values:
 - `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`
 - `DATABASE_URL`
 - `CONTRIBUTOR_SESSION_SECRET` if contributor editing is enabled
-- `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` — optional; set to `true` only if Postgres TLS verification fails and you accept relaxed SSL after review (see `README.md`)
+- `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` — optional; set to `true` only if Postgres TLS verification fails after review and you deliberately accept relaxed TLS. Prefer fixing `DATABASE_URL` or provider certificates first. When `false` or unset, the app strips `sslmode=no-verify` from the URL unless this flag is `true`.
+
+### Admin session cookies
+
+Admin sign-in uses **stateless** httpOnly cookies: HMAC-signed with `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`, or with material **derived from** bootstrap username + password when that variable is unset. There is **no** server session table — you cannot revoke one stolen cookie without changing verification for everyone.
+
+- **Production:** Always set `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` to a strong random value (never empty). **Rotating** this secret **immediately** invalidates **all** admin sessions everywhere that uses the new value — use this after incidents or suspected cookie leaks.
+- **If the secret is unset:** Changing the bootstrap admin **password** changes the derived key and **invalidates all admin cookies** — keep that in mind during password rotations.
+- **Vercel:** Set the secret per environment (Production, Preview, Development as used). Preview without its own secret falls back to the password-derived model for Preview.
+- **Sign out** in the admin UI only clears the cookie on that browser.
 
 If you use Supabase for Postgres:
 
@@ -220,7 +229,7 @@ When a view contains a grouped role field:
 - fixed-slot groups keep each person tied to slot `1`, `2`, `3`, and so on
 - fixed-slot groups do not show `Add person` or `Remove` because the slots are defined by the source columns
 - trusted legacy delimited groups may still show add/remove behavior because they are serialized back as ordered delimited values
-- unsafe multi-attribute delimited groups stay read-only in the contributor drawer
+- unsafe multi-attribute delimited groups stay read-only in the contributor editor (inline or table drawer)
 
 This protects against Smartsheet reordering parallel delimited columns and breaking name/email alignment.
 
@@ -249,6 +258,10 @@ The Editing tab also controls:
 - `Show contributor instructions link`
 
 Hiding those links does not remove editing for someone who already has the direct URL or an active session.
+
+### Administrators on the live public page
+
+If you remain signed in to **Admin** and open the **published** public view in the same browser, the page can offer **unrestricted row editing** when contributor editing is enabled: same allowed fields as contributors, but **no** contact-column row filter. Use this for support and data fixes; changes still write to Smartsheet. Sign out of Admin when done. Emergency invalidation of **all** admin sessions: rotate `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` and redeploy (see **Admin session cookies** above). Ensure Preview and Production each have the secrets you expect so behavior is not confused across environments.
 
 ## Preview And Publish
 
@@ -297,9 +310,3 @@ Optional **Print / PDF grouping** (Setup) splits the print page into multiple ta
    - read-only behavior for unsafe delimited grouped roles, if any exist
    - trusted pairing behavior if any source role group uses legacy delimited columns
 5. Commit and push changes before expecting Vercel to deploy them.
-
-## Reference docs
-
-- `README.md` — primary reference for environment variables, Vercel, Postgres TLS, and go-live steps.
-- `VERCEL_DEPLOYMENT.md` — optional extra detail (Smartsheet/CORS/Vercel pitfalls) when your clone includes it.
-- `/instructions/contributor` and `/instructions/admin` — guides that deploy with the app.

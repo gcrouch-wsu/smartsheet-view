@@ -1,6 +1,7 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
+import { ContributorCardEditShell } from "@/components/public/ContributorCardEditShell";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
@@ -27,11 +28,17 @@ export function DataStacked({
   programGroups,
   editableRowIds,
   onEditRow,
+  editingRowId,
+  onCancelEdit,
+  slug = "",
 }: {
   view: ResolvedView;
   programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
+  editingRowId?: number | null;
+  onCancelEdit?: () => void;
+  slug?: string;
 }) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
@@ -50,6 +57,19 @@ export function DataStacked({
       : "";
 
   function renderStackedRow(row: ResolvedViewRow) {
+    const isEditingThisRow = editingRowId === row.id || (row.mergedSourceRowIds?.includes(editingRowId ?? -1) ?? false);
+
+    if (isEditingThisRow && onCancelEdit) {
+      return (
+        <ContributorCardEditShell
+          key={`edit-${row.id}`}
+          slug={slug ?? ""}
+          view={view}
+          row={row}
+          onCancel={onCancelEdit}
+        />
+      );
+    }
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
     const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
     const editTargetId = contributorEditTargetRowId(row, editableRowIds);

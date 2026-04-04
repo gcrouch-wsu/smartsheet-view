@@ -1,5 +1,6 @@
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 import { CampusBadgeStrip } from "@/components/public/CampusBadgeStrip";
+import { ContributorCardEditShell } from "@/components/public/ContributorCardEditShell";
 import { ContributorEditButton, ContributorEditableBadge, getContributorRowAccentClass } from "@/components/public/ContributorRowControls";
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
@@ -34,11 +35,17 @@ export function DataList({
   programGroups,
   editableRowIds,
   onEditRow,
+  editingRowId,
+  onCancelEdit,
+  slug = "",
 }: {
   view: ResolvedView;
   programGroups?: ProgramGroup[];
   editableRowIds?: Set<number>;
   onEditRow?: (rowId: number, triggerElement?: HTMLElement | null) => void;
+  editingRowId?: number | null;
+  onCancelEdit?: () => void;
+  slug?: string;
 }) {
   if (view.rows.length === 0) {
     return <EmptyState label={`No ${view.label.toLowerCase()} records found.`} />;
@@ -49,6 +56,16 @@ export function DataList({
     dividerStyle === "none" ? "" : dividerStyle === "subtle" ? "divide-y divide-[color:var(--wsu-border)]/40" : "divide-y divide-[color:var(--wsu-border)]/70";
 
   function renderListItem(row: ResolvedViewRow) {
+    const isEditingThisRow = editingRowId === row.id || (row.mergedSourceRowIds?.includes(editingRowId ?? -1) ?? false);
+
+    if (isEditingThisRow && onCancelEdit) {
+      return (
+        <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24 list-none px-5 py-5">
+          <ContributorCardEditShell slug={slug} view={view} row={row} onCancel={onCancelEdit} />
+        </li>
+      );
+    }
+
     const customRows = hasCustomCardLayout(view) ? getCardLayoutRows(view, row) : [];
     const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
     const editTargetId = contributorEditTargetRowId(row, editableRowIds);
