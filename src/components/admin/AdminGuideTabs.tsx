@@ -254,6 +254,24 @@ export function AdminGuideTabs() {
             </ul>
           </div>
 
+          <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Campus, sections, and merged rows</h3>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Use <strong className="text-[color:var(--wsu-ink)]">Campus &amp; program grouping (live view)</strong> in Setup for program and campus fields, optional section grouping, and optional row merge.
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Merge by shared email</strong> is for the same contacts on multiple campus lines; other columns should match—the app unions campuses and uses the first row for remaining fields.
+              </li>
+              <li>
+                <strong className="text-[color:var(--wsu-ink)]">Merge by same program and campus</strong> collapses duplicate sheet rows; first row wins for contacts and other fields.
+              </li>
+              <li>
+                After merge, <strong className="text-[color:var(--wsu-ink)]">custom card layout</strong> shows each field key once (repeated layout slots collapse) on the public page and in the contributor editor.
+              </li>
+            </ul>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-white p-5">
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Theme preset</h3>

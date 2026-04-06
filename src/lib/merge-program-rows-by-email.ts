@@ -116,6 +116,10 @@ function buildMergedRow(bucket: ResolvedViewRow[], campusKey: string): ResolvedV
  * Collapse multiple resolved rows when they share the same program (normalized) and the same
  * combined contact emails on the configured people_group fields. Campus values are unioned; the
  * campus field text becomes "A; B" for table/print; card layouts can show `mergedCampuses` badges.
+ *
+ * Operator assumption: sheet rows that merge are the same logical program + same people; only campus
+ * (and intentionally duplicate layout cells) may differ. Non-campus column values are taken from the
+ * first row in the bucket; the public card and editor dedupe repeated field keys in custom layouts.
  */
 function mergeResolvedRowsBySharedEmail(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
   const pres = view.presentation;
@@ -158,6 +162,8 @@ function mergeResolvedRowsBySharedEmail(view: ViewConfig, rows: ResolvedViewRow[
 /**
  * Collapse rows that share the same normalized program and the same campus (picklist) value.
  * Blank campus never merges with other rows. Multiple sheet rows with the same program+campus become one display row.
+ * Treat merged lines as duplicates (same contacts and metadata); first row wins for non-campus fields. Custom card layouts
+ * dedupe repeated field keys on the merged public row and in the contributor editor.
  */
 function mergeResolvedRowsByProgramAndCampus(view: ViewConfig, rows: ResolvedViewRow[]): ResolvedViewRow[] {
   const pres = view.presentation;

@@ -32,6 +32,8 @@ export function CardLayoutCellRenderer({
     errors?: Record<number, MultiPersonFieldErrors>;
     onChangeValue?: (val: string) => void;
     onChangePersons?: (persons: MultiPersonEntry[]) => void;
+    /** When the grid already rendered `field.label` in the header row (aligned card edit), hide the control's title to avoid duplicate labels. */
+    suppressDuplicateTitle?: boolean;
   };
 }) {
   const baseClass = flexClass ?? "min-w-0 flex-1";
@@ -94,6 +96,7 @@ export function CardLayoutCellRenderer({
   }
 
   if (mode === "edit" && editProps) {
+    const suppressDup = editProps.suppressDuplicateTitle === true;
     return (
       <div key={`${cell.field.key}-edit`} className={baseClass}>
         {editProps.group ? (
@@ -102,6 +105,7 @@ export function CardLayoutCellRenderer({
             persons={editProps.persons ?? []}
             onChange={editProps.onChangePersons ?? (() => {})}
             errors={editProps.errors}
+            suppressDuplicateGroupTitle={suppressDup}
           />
         ) : editProps.editableDef ? (
           <ContributorSingleFieldControl
@@ -109,9 +113,10 @@ export function CardLayoutCellRenderer({
             editableDef={editProps.editableDef}
             value={editProps.value ?? ""}
             onChange={editProps.onChangeValue ?? (() => {})}
+            suppressDuplicateTitle={suppressDup}
           />
         ) : (
-          <ContributorReadOnlyField field={cell.field} />
+          <ContributorReadOnlyField field={cell.field} suppressTitle={suppressDup} />
         )}
       </div>
     );

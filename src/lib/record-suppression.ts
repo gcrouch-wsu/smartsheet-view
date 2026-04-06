@@ -1,4 +1,4 @@
-import type { ResolvedFieldValue, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
+import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
 import { splitTokens } from "@/lib/transforms";
 
 /** Default status tokens that trigger hiding file/link fields (case-insensitive). */
@@ -107,4 +107,16 @@ export function applyRecordSuppressionToResolvedRows(
     return rows;
   }
   return rows.map((r) => applyRecordSuppressionToResolvedRow(view, r));
+}
+
+/**
+ * Strip rows flagged with `recordSuppression` (Hide/Delete status, etc.) for anonymous public URLs,
+ * print, and public JSON. Contributors and admins receive the full resolved view instead.
+ */
+export function omitRecordSuppressedRowsFromResolvedView(view: ResolvedView): ResolvedView {
+  const rows = view.rows.filter((r) => !r.recordSuppression);
+  if (rows.length === view.rows.length) {
+    return view;
+  }
+  return { ...view, rows, rowCount: rows.length };
 }

@@ -9,6 +9,7 @@ import {
   resolveRequestedResolvedView,
   resolveRequestedViewConfig,
 } from "@/lib/public-view";
+import { omitRecordSuppressedRowsFromResolvedView } from "@/lib/record-suppression";
 import { humanizeSlug } from "@/lib/utils";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -98,20 +99,21 @@ export default async function PrintExportPage({
         .filter(Boolean)
     : undefined;
   const printCompact = firstValue(resolvedSearchParams.compact) === "1";
-  const printableColumnOptions = buildPrintColumnPickerOptions(activeView);
+  const printView = omitRecordSuppressedRowsFromResolvedView(activeView);
+  const printableColumnOptions = buildPrintColumnPickerOptions(printView);
 
   return (
     <div className="min-h-screen bg-[color:var(--wsu-stone)] px-4 py-6 sm:px-6">
-      <DisplayTimezoneProvider timeZone={activeView.displayTimeZone}>
+      <DisplayTimezoneProvider timeZone={printView.displayTimeZone}>
         <Suspense fallback={<PrintExportFallback />}>
           <PrintViewDocument
             slug={slug}
-            viewId={activeView.id}
+            viewId={printView.id}
             pageTitle={page.title}
             sourceLabel={page.sourceConfig.label}
             sourceName={page.sourceName}
             fetchedAt={page.fetchedAt}
-            view={activeView}
+            view={printView}
             printColumnKeys={printColumnKeys && printColumnKeys.length > 0 ? printColumnKeys : undefined}
             printCompact={printCompact}
             printableColumnOptions={printableColumnOptions}

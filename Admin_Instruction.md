@@ -136,6 +136,17 @@ Optional Setup controls:
 - **Print / PDF grouping** — pick a **non-hidden** field so the print route (`/view/.../print`) can show **one table per group** when values differ (for example program name).
 - **Link email addresses** / **Link phone numbers** — turn `mailto:` / `tel:` on for the **interactive** public page; print / save-as-PDF output stays **plain text**.
 
+### Campus, program sections, and merged rows
+
+In **Setup**, open **Campus & program grouping (live view)** when you use a program field and campus field together.
+
+- **Group into sections by program** stacks one section per program and can show campus chips or filters.
+- **Merge duplicate sheet rows** combines multiple Smartsheet lines into one public row:
+  - **Same program + same contact email(s)** — for one coordinator (or the same set of people emails) listed on separate campus lines. Only campus should differ; other columns are expected to match. The app unions campuses and keeps data from the first matching sheet row for non-campus fields.
+  - **Same program + same campus** — for true duplicate lines (same offering repeated on the sheet); first row wins for contacts and other fields.
+
+If **custom card layout** repeats the program (or other) column in more than one layout row, those repeats are shown **once** after a merge so the public card and contributor editor are not duplicated. Design Smartsheet data so merged lines stay consistent; conflicting values are not merged field-by-field.
+
 ### Theme preset and Customize look & feel
 
 Use `Theme preset` first. A preset gives you a complete baseline palette so the page feels coherent before you start fine-tuning tokens.

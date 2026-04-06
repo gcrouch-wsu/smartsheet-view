@@ -138,6 +138,11 @@ export default function ContributorInstructionsPage() {
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               You can edit only the rows tied to your email address, and only the fields your administrator made editable.
             </p>
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
+              Some pages merge several Smartsheet lines into one listing when the same program and contacts appear on more than one campus. You
+              still get a single form: each field (such as program name) appears once; campuses may show as a combined list or badges. Your save
+              updates the sheet row the page uses for editing—duplicate lines in Smartsheet should match except where campus differs.
+            </p>
           </section>
 
           <section aria-labelledby="s-groups">

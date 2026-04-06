@@ -31,6 +31,7 @@ import {
   resolveRequestedResolvedView,
   resolveRequestedViewConfig,
 } from "@/lib/public-view";
+import { omitRecordSuppressedRowsFromResolvedView } from "@/lib/record-suppression";
 import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -217,6 +218,11 @@ export default async function PublicViewPage({
     viewForDisplay = { ...activeView, rows, rowCount: rows.length };
   }
 
+  /** Hide/delete-status rows are omitted entirely for anonymous public (not for contributors or admin editing). */
+  if (!showPublicEditingChrome) {
+    viewForDisplay = omitRecordSuppressedRowsFromResolvedView(viewForDisplay);
+  }
+
   return (
     <main className={mainClassName} style={mainStyle}>
       {!embed && (
@@ -394,12 +400,15 @@ export default async function PublicViewPage({
             {showViewTabs && (
               <ViewTabs
                 slug={slug}
-                views={page.resolvedViews.map((view) => ({
-                  id: view.id,
-                  label: view.presentation?.viewTabLabel ?? view.label,
-                  rowCount: view.rowCount,
-                  hideCount: view.presentation?.hideViewTabCount,
-                }))}
+                views={page.resolvedViews.map((raw) => {
+                  const view = showPublicEditingChrome ? raw : omitRecordSuppressedRowsFromResolvedView(raw);
+                  return {
+                    id: view.id,
+                    label: view.presentation?.viewTabLabel ?? view.label,
+                    rowCount: view.rowCount,
+                    hideCount: view.presentation?.hideViewTabCount,
+                  };
+                })}
                 activeViewId={activeView.id}
                 layout={layout}
                 embed={embed}

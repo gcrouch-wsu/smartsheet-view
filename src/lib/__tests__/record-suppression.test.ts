@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   applyRecordSuppressionToResolvedRow,
   buildRecordSuppressionRedactFieldKeySet,
+  omitRecordSuppressedRowsFromResolvedView,
   statusRawTriggersRecordSuppression,
 } from "@/lib/record-suppression";
-import type { ResolvedFieldValue, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
+import type { LayoutType, ResolvedFieldValue, ResolvedView, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
 
 function linkField(key: string, href: string): ResolvedFieldValue {
   return {
@@ -92,5 +93,30 @@ describe("record-suppression", () => {
     expect(out.fieldMap.file?.isEmpty).toBe(true);
     expect(out.fieldMap.status?.textValue).toBe("Hide");
     expect(out.fields.some((f) => f.key === "status")).toBe(false);
+  });
+
+  it("omitRecordSuppressedRowsFromResolvedView drops suppressed rows for anonymous public", () => {
+    const view: ResolvedView = {
+      id: "v",
+      label: "L",
+      layout: "cards" as LayoutType,
+      displayTimeZone: "UTC",
+      linkEmailsInView: true,
+      linkPhonesInView: false,
+      rowCount: 2,
+      fields: [],
+      rows: [
+        { id: 1, fields: [], fieldMap: {} },
+        {
+          id: 2,
+          fields: [],
+          fieldMap: {},
+          recordSuppression: { statusDisplay: "Delete", redactedFieldKeys: ["f"], statusFieldKey: "s" },
+        },
+      ],
+    };
+    const out = omitRecordSuppressedRowsFromResolvedView(view);
+    expect(out.rows.map((r) => r.id)).toEqual([1]);
+    expect(out.rowCount).toBe(1);
   });
 });

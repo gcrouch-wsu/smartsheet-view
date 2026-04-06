@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadPublicPage } from "@/lib/public-view";
+import { omitRecordSuppressedRowsFromResolvedView } from "@/lib/record-suppression";
 
 export async function GET(
   _request: Request,
@@ -13,5 +14,8 @@ export async function GET(
     return NextResponse.json({ error: `View slug \"${slug}\" was not found.` }, { status: 404 });
   }
 
-  return NextResponse.json(page);
+  return NextResponse.json({
+    ...page,
+    views: page.views.map(omitRecordSuppressedRowsFromResolvedView),
+  });
 }

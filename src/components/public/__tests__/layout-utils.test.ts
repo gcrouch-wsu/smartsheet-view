@@ -150,6 +150,33 @@ describe("getCardLayoutRows", () => {
     expect(campusCell?.type === "field" && campusCell.field.key).toBe("campus");
   });
 
+  it("dedupes repeated field keys and campus badge rows when display row merges multiple sheet rows", () => {
+    const row = makeRow(
+      {
+        program_name: textField("program_name", "Program", "Biology"),
+        campus: textField("campus", "Campus", "Pullman; Spokane"),
+        notes: textField("notes", "Notes", "Hello"),
+      },
+      { mergedSourceRowIds: [10, 20], mergedCampuses: ["Pullman", "Spokane"] },
+    );
+    const view = makeView({
+      presentation: {
+        campusFieldKey: "campus",
+        cardLayout: [
+          { fieldKeys: ["program_name", "campus"] },
+          { fieldKeys: ["program_name", "notes"] },
+        ],
+      },
+    });
+    const rows = getCardLayoutRows(view, row);
+    expect(rows).toHaveLength(2);
+    const keysR0 = rows[0]?.filter((c) => c.type === "field").map((c) => (c.type === "field" ? c.field.key : ""));
+    expect(keysR0).toEqual(["program_name", "campus"]);
+    const keysR1 = rows[1]?.filter((c) => c.type === "field").map((c) => (c.type === "field" ? c.field.key : ""));
+    expect(keysR1).toEqual(["notes"]);
+    expect(rows[1]?.some((c) => c.type === "placeholder")).toBe(true);
+  });
+
   it("renders campus as a field when hideCampusFieldInRecordDisplay is on and campus is only in contributorEditableByKey", () => {
     const row = makeRow({
       prog: textField("prog", "Program", "Biology"),

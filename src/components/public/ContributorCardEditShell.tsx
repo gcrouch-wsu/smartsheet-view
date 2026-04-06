@@ -358,6 +358,7 @@ export function ContributorCardEditShell({
                               errors: group ? multiPersonValidation[group.id] : undefined,
                               onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
                               onChangePersons: group ? (next) => setGroupValues(prev => ({ ...prev, [group.id]: next })) : undefined,
+                              suppressDuplicateTitle: true,
                             }}
                           />
                         );

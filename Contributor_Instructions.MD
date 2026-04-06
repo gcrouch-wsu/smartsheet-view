@@ -50,6 +50,8 @@ The page may also show `Print / PDF` and `Contributor instructions` as matching 
 
 You can edit only the row or rows tied to your email address, and only the fields your administrator made editable.
 
+Some pages **merge** several Smartsheet lines into one listing when the same program and the same contacts appear on more than one campus. You still edit a single form: each field (for example program name) appears once, campuses may show as a combined list or badges, and your save updates the underlying sheet row the page uses for editing—your administrator should keep duplicate lines in Smartsheet identical except where campus differs.
+
 ## Editing Your Information
 
 1. Sign in.

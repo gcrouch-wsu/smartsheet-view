@@ -1593,7 +1593,7 @@ export function ViewBuilder({
 
           <SetupAccordion
             title="Hide file links (row status)"
-            subtitle="Setup tab → scroll to this section (not on Fields). When a status field matches Hide, Delete, or your list, link-type file columns are cleared on the public URL and omitted from contributor saves unless the row status changes."
+            subtitle="Anonymous visitors and print/JSON do not see the whole row when status matches. Signed-in contributors (and admin editors) still see the row with an amber status chip and collapsed details so they can change status and file links."
           >
             <div className="space-y-4 text-sm">
               {view.fields.length === 0 ? (
@@ -1814,8 +1814,10 @@ export function ViewBuilder({
                   <fieldset className="space-y-3 border-t border-[color:var(--wsu-border)] pt-4">
                     <legend className="text-sm font-medium text-[color:var(--wsu-ink)]">Merge duplicate sheet rows</legend>
                     <p className="text-xs text-[color:var(--wsu-muted)]">
-                      Requires program and campus fields above. Choose one strategy — email merge is best when one contact appears on multiple
-                      campus lines; campus merge is best when the same program+campus picklist appears on more than one sheet row.
+                      Requires program and campus fields above. Choose one strategy — email merge is best when the same person appears on multiple
+                      campus lines; campus merge is best when the same program+campus picklist appears on more than one sheet row. Design for
+                      identical contacts and matching non-campus data across lines that merge; the app unions campuses and shows each other field once
+                      on the card and in the contributor editor (repeated slots in custom card layout collapse after merge).
                     </p>
                     {(() => {
                       const peopleKeysAll = view.fields.filter((f) => f.render.type === "people_group").map((f) => f.key);
@@ -1882,7 +1884,8 @@ export function ViewBuilder({
                               <span className="font-medium text-[color:var(--wsu-ink)]">Same program + same contact email(s)</span>
                               <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
                                 Rows that share the same program and the same email address(es) on the selected people fields become one
-                                listing. Campus values are unioned into badges. Rows with no email on those fields are not merged with others.
+                                listing. Campus values are unioned. Only use when the same coordinator (or other contacts) and the same program
+                                metadata apply on each line—Smartsheet rows should match except campus. Rows with no email on those fields are not merged with others.
                               </span>
                             </span>
                           </label>

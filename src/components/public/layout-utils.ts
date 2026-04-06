@@ -20,6 +20,47 @@ export type CardLayoutCell =
   | { type: "text"; label: string }
   | { type: "campus_badges"; campuses: string[]; style?: CampusBadgePresentationStyle };
 
+/**
+ * Merged display rows combine several Smartsheet lines (same program + shared contacts, or same program + campus).
+ * Custom card layouts often repeat the program (and other) columns per visual block; after merge those values are
+ * identical except campus. Collapse later occurrences to placeholders so view and contributor editor list each field once.
+ */
+function dedupeCardLayoutRowsForMergedRow(row: ResolvedViewRow, rows: CardLayoutCell[][]): CardLayoutCell[][] {
+  if (!row.mergedSourceRowIds || row.mergedSourceRowIds.length < 2) {
+    return rows;
+  }
+  const seenFieldKeys = new Set<string>();
+  let seenCampusBadges = false;
+  const next = rows.map((cells) =>
+    cells.map((cell): CardLayoutCell => {
+      if (cell.type === "field") {
+        const k = cell.field.key;
+        if (seenFieldKeys.has(k)) {
+          return { type: "placeholder" };
+        }
+        seenFieldKeys.add(k);
+        return cell;
+      }
+      if (cell.type === "campus_badges") {
+        if (seenCampusBadges) {
+          return { type: "placeholder" };
+        }
+        seenCampusBadges = true;
+        return cell;
+      }
+      return cell;
+    }),
+  );
+  return next.filter((cells) =>
+    cells.some(
+      (c) =>
+        c.type === "field" ||
+        c.type === "text" ||
+        (c.type === "campus_badges" && c.campuses.length > 0),
+    ),
+  );
+}
+
 function fieldCanRender(field: ResolvedFieldValue) {
   return !(field.hideWhenEmpty && field.isEmpty);
 }
@@ -167,7 +208,7 @@ export function getCardLayoutRows(
   const contribAllowsKey = (k: string) =>
     (contrib?.has(k) ?? false) || (contribEditable?.has(k) ?? false);
 
-  return layout
+  const mapped = layout
     .map((layoutRow) =>
       layoutRow.fieldKeys.map((key): CardLayoutCell => {
         if (key === CARD_LAYOUT_PLACEHOLDER) {
@@ -244,6 +285,7 @@ export function getCardLayoutRows(
           (c.type === "campus_badges" && c.campuses.length > 0),
       ),
     );
+  return dedupeCardLayoutRowsForMergedRow(row, mapped);
 }
 
 /** Get first field from a row of cells (for accordion/tabbed summary). */

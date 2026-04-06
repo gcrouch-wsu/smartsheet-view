@@ -53,6 +53,11 @@ interface ContributorSingleFieldControlProps {
   editableDef: ContributorEditableFieldDefinition;
   value: string;
   onChange: (value: string) => void;
+  /**
+   * Aligned card edit already shows the field title in the row above (from `field.label`). Omit the
+   * repeated title here — it was often the same as the header or mixed columnTitle vs view label.
+   */
+  suppressDuplicateTitle?: boolean;
 }
 
 export function ContributorSingleFieldControl({
@@ -60,23 +65,43 @@ export function ContributorSingleFieldControl({
   editableDef,
   value,
   onChange,
+  suppressDuplicateTitle = false,
 }: ContributorSingleFieldControlProps) {
   const isContact =
     editableDef.columnType === "CONTACT_LIST" || editableDef.columnType === "MULTI_CONTACT_LIST";
   const fieldLabel = editableDef.columnTitle || editableDef.label;
+  const showTitleRow = !field.hideLabel && !suppressDuplicateTitle;
+  const showCompactEditMeta = !field.hideLabel && suppressDuplicateTitle && isContact;
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        {!field.hideLabel && (
-          <p className={fieldLabelClassName(field)}>
-            {fieldLabel}{" "}
+      {(showTitleRow || showCompactEditMeta) && (
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          {showTitleRow ? (
+            <p className={fieldLabelClassName(field)}>
+              {fieldLabel}{" "}
+              <span className="rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                Editable
+              </span>
+            </p>
+          ) : showCompactEditMeta ? (
             <span className="rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
               Editable
             </span>
-          </p>
-        )}
-        {isContact && (
+          ) : null}
+          {isContact && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+            >
+              Clear this role
+            </button>
+          )}
+        </div>
+      )}
+      {!showTitleRow && !showCompactEditMeta && isContact && (
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={() => onChange("")}
@@ -84,8 +109,8 @@ export function ContributorSingleFieldControl({
           >
             Clear this role
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {editableDef.columnType === "PICKLIST" && editableDef.options && editableDef.options.length > 0 ? (
         <select
@@ -170,6 +195,8 @@ interface ContributorGroupFieldControlProps {
   persons: MultiPersonEntry[];
   onChange: (persons: MultiPersonEntry[]) => void;
   errors?: Record<number, MultiPersonFieldErrors>;
+  /** Aligned card edit shows the role title in the header row above — omit repeating `group.label`. */
+  suppressDuplicateGroupTitle?: boolean;
 }
 
 export function ContributorGroupFieldControl({
@@ -177,6 +204,7 @@ export function ContributorGroupFieldControl({
   persons,
   onChange,
   errors = {},
+  suppressDuplicateGroupTitle = false,
 }: ContributorGroupFieldControlProps) {
   const fixedSlotCount = countFixedSlotsInEditableGroup(group);
   const fixedSlotOrder = fixedSlotCount > 0 ? slotOrderForEditableGroup(group) : [];
@@ -187,8 +215,10 @@ export function ContributorGroupFieldControl({
   return (
     <div className="space-y-3">
       <div>
-        <p className={labelClass}>{group.label}</p>
-        <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+        {!suppressDuplicateGroupTitle && <p className={labelClass}>{group.label}</p>}
+        <p
+          className={`text-xs text-[color:var(--wsu-muted)] ${suppressDuplicateGroupTitle ? "" : "mt-1"}`}
+        >
           {fixedSlotCount > 0
             ? `This role has ${fixedSlotCount} numbered positions in Smartsheet (shown below as 1–${fixedSlotCount}). Fill each row you use; leave unused rows blank or clear values before saving if your workflow allows.`
             : "One block per person. Name and email are both required when your sheet has both columns."}{" "}
@@ -373,16 +403,19 @@ interface ContributorReadOnlyFieldProps {
   field: ResolvedFieldValue;
   labelOverride?: string;
   message?: string;
+  /** When the card layout header row already showed this field's title. */
+  suppressTitle?: boolean;
 }
 
 export function ContributorReadOnlyField({
   field,
   labelOverride,
   message,
+  suppressTitle = false,
 }: ContributorReadOnlyFieldProps) {
   return (
     <div className="space-y-1">
-      {!field.hideLabel && (
+      {!field.hideLabel && !suppressTitle && (
         <p className={fieldLabelClassName(field)}>{labelOverride || field.label}</p>
       )}
       {message && <p className="text-xs text-amber-900/90">{message}</p>}
