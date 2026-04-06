@@ -1,4 +1,5 @@
-import type { ResolvedViewRow } from "@/lib/config/types";
+import type { ResolvedFieldValue, ResolvedViewRow } from "@/lib/config/types";
+import { splitTokens } from "@/lib/transforms";
 import { slugify } from "@/lib/utils";
 
 /** One program (or empty-key bucket) with all underlying Smartsheet rows preserved. */
@@ -47,6 +48,18 @@ function rowFieldText(row: ResolvedViewRow, fieldKey: string): string {
   return row.fieldMap[fieldKey]?.textValue?.trim() ?? "";
 }
 
+/**
+ * Raw campus tokens from a resolved field: prefers `listValue` (e.g. MULTI_PICKLIST + badge),
+ * otherwise splits `textValue` on comma / semicolon / newline like badge resolution.
+ */
+export function campusTokensFromResolvedField(field: ResolvedFieldValue | undefined): string[] {
+  if (!field) {
+    return [];
+  }
+  const source = field.listValue.length > 0 ? field.listValue : field.textValue;
+  return splitTokens(source);
+}
+
 /** Campus labels for badge strips: merged union when present, else parsed campus field text. */
 export function resolvedRowCampusBadgeLabels(row: ResolvedViewRow, campusFieldKey: string | undefined): string[] {
   if (row.mergedCampuses?.length) {
@@ -55,14 +68,8 @@ export function resolvedRowCampusBadgeLabels(row: ResolvedViewRow, campusFieldKe
   if (!campusFieldKey) {
     return [];
   }
-  const raw = row.fieldMap[campusFieldKey]?.textValue ?? "";
-  if (!raw.trim()) {
-    return [];
-  }
-  return raw
-    .split(";")
-    .map((s) => normalizeCampusDisplay(s.trim()))
-    .filter((s) => s.length > 0);
+  const tokens = campusTokensFromResolvedField(row.fieldMap[campusFieldKey]);
+  return tokens.map((s) => normalizeCampusDisplay(s)).filter((s) => s.length > 0);
 }
 
 /**
@@ -98,7 +105,9 @@ export function groupResolvedRows(
     const bucket = buckets.get(key)!;
     const campusSet = new Set<string>();
     for (const r of bucket.rows) {
-      campusSet.add(normalizeCampusDisplay(rowFieldText(r, campusFieldKey)));
+      for (const t of campusTokensFromResolvedField(r.fieldMap[campusFieldKey])) {
+        campusSet.add(normalizeCampusDisplay(t));
+      }
     }
     const campuses = [...campusSet].sort((a, b) => a.localeCompare(b, "en"));
     const baseId = key === "__empty__" ? "no-program" : slugify(bucket.norm || "no-program");

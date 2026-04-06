@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  campusTokensFromResolvedField,
   groupResolvedRows,
   indexLetterFromLabel,
   isCampusGroupingActive,
   narrowProgramGroupsToFilteredRows,
   normalizeCampusDisplay,
   normalizeGroupKey,
+  resolvedRowCampusBadgeLabels,
   suppressMergedRowCampusBadgesWhenSectionStripShows,
 } from "@/lib/campus-grouping";
+import type { ResolvedFieldValue } from "@/lib/config/types";
 import type { ResolvedViewRow } from "@/lib/config/types";
 
 function makeRow(id: number, program: string, campus: string): ResolvedViewRow {
@@ -44,6 +47,73 @@ describe("campus-grouping", () => {
   it("normalizeGroupKey trims and lowercases", () => {
     expect(normalizeGroupKey("  Computer Science  ")).toBe("computer science");
     expect(normalizeGroupKey("")).toBe("");
+  });
+
+  it("resolvedRowCampusBadgeLabels uses listValue for MULTI_PICKLIST-style badge fields", () => {
+    const campusKey = "campus";
+    const campusField: ResolvedFieldValue = {
+      key: campusKey,
+      label: "Campus",
+      renderType: "badge",
+      textValue: "Global, Pullman",
+      listValue: ["Global", "Pullman"],
+      links: [],
+      isEmpty: false,
+      hideWhenEmpty: false,
+    };
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [campusField],
+      fieldMap: { [campusKey]: campusField },
+    };
+    expect(resolvedRowCampusBadgeLabels(row, campusKey)).toEqual(["Global", "Pullman"]);
+  });
+
+  it("resolvedRowCampusBadgeLabels splits comma-joined text when listValue is empty", () => {
+    const campusKey = "campus";
+    const campusField: ResolvedFieldValue = {
+      key: campusKey,
+      label: "Campus",
+      renderType: "text",
+      textValue: "Global, Pullman",
+      listValue: [],
+      links: [],
+      isEmpty: false,
+      hideWhenEmpty: false,
+    };
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [campusField],
+      fieldMap: { [campusKey]: campusField },
+    };
+    expect(resolvedRowCampusBadgeLabels(row, campusKey)).toEqual(["Global", "Pullman"]);
+  });
+
+  it("campusTokensFromResolvedField matches listValue and text splitting", () => {
+    expect(
+      campusTokensFromResolvedField({
+        key: "c",
+        label: "C",
+        renderType: "badge",
+        textValue: "a, b",
+        listValue: ["Global", "Pullman"],
+        links: [],
+        isEmpty: false,
+        hideWhenEmpty: false,
+      }),
+    ).toEqual(["Global", "Pullman"]);
+    expect(
+      campusTokensFromResolvedField({
+        key: "c",
+        label: "C",
+        renderType: "text",
+        textValue: "Spokane; Vancouver",
+        listValue: [],
+        links: [],
+        isEmpty: false,
+        hideWhenEmpty: false,
+      }),
+    ).toEqual(["Spokane", "Vancouver"]);
   });
 
   it("normalizeCampusDisplay maps Global, blank, and whitespace-only", () => {
@@ -90,6 +160,39 @@ describe("campus-grouping", () => {
     expect(groups[0].rows.map((r) => r.id)).toEqual([1, 2]);
     expect(groups[1].label).toBe("Biology");
     expect(groups[1].campuses).toEqual(["Pullman"]);
+  });
+
+  it("groupResolvedRows expands multi-campus on one row (comma in text or badge listValue)", () => {
+    const programKey = "program_name";
+    const campusKey = "grad_campus";
+    const dualCampus: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {
+        [programKey]: {
+          key: programKey,
+          label: "Program",
+          renderType: "text",
+          textValue: "Anthropology",
+          listValue: [],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+        [campusKey]: {
+          key: campusKey,
+          label: "Campus",
+          renderType: "badge",
+          textValue: "Global, Pullman",
+          listValue: ["Global", "Pullman"],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+        },
+      },
+    };
+    const groups = groupResolvedRows([dualCampus], programKey, campusKey);
+    expect(groups[0].campuses).toEqual(["Global", "Pullman"]);
   });
 
   it("merges programs that differ only by whitespace/case in key", () => {

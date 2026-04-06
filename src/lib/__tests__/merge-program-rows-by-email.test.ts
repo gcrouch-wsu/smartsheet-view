@@ -40,6 +40,19 @@ function textField(key: string, value: string): ResolvedFieldValue {
   };
 }
 
+function badgeCampusField(key: string, values: string[]): ResolvedFieldValue {
+  return {
+    key,
+    label: "Campus",
+    renderType: "badge",
+    textValue: values.join(", "),
+    listValue: values,
+    links: [],
+    isEmpty: values.length === 0,
+    hideWhenEmpty: false,
+  };
+}
+
 function row(
   id: number,
   program: string,
@@ -49,6 +62,20 @@ function row(
 ): ResolvedViewRow {
   const prog = textField("program_name", program);
   const camp = textField("campus", campus);
+  const ppl = peopleField(peopleKey, emails);
+  const fields = [prog, camp, ppl];
+  return { id, fields, fieldMap: Object.fromEntries(fields.map((f) => [f.key, f])) };
+}
+
+function rowWithBadgeCampus(
+  id: number,
+  program: string,
+  campuses: string[],
+  peopleKey: string,
+  emails: string[],
+): ResolvedViewRow {
+  const prog = textField("program_name", program);
+  const camp = badgeCampusField("campus", campuses);
   const ppl = peopleField(peopleKey, emails);
   const fields = [prog, camp, ppl];
   return { id, fields, fieldMap: Object.fromEntries(fields.map((f) => [f.key, f])) };
@@ -103,6 +130,18 @@ describe("mergeResolvedRowsByProgramAndEmail", () => {
     expect(bio?.mergedCampuses?.sort()).toEqual(["Pullman", "Spokane"]);
     expect(bio?.fieldMap.campus?.textValue).toContain("Pullman");
     expect(bio?.fieldMap.campus?.textValue).toContain("Spokane");
+  });
+
+  it("merge unions each MULTI_PICKLIST-style campus listValue, not one comma-joined label", () => {
+    const rows = [
+      rowWithBadgeCampus(1, "Biology", ["Global", "Pullman"], "staff", ["alice@wsu.edu"]),
+      rowWithBadgeCampus(2, "Biology", ["Spokane"], "staff", ["alice@wsu.edu"]),
+    ];
+    const out = mergeResolvedRowsByProgramAndEmail(viewBase, rows);
+    expect(out).toHaveLength(1);
+    const merged = out[0];
+    expect(merged?.mergedCampuses?.sort()).toEqual(["Global", "Pullman", "Spokane"]);
+    expect(merged?.fieldMap.campus?.listValue.slice().sort()).toEqual(["Global", "Pullman", "Spokane"]);
   });
 
   it("does not merge when emails differ", () => {

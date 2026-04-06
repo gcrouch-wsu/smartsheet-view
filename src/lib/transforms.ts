@@ -150,7 +150,7 @@ function normalizeToStringList(value: unknown): string[] {
   return [String(value)];
 }
 
-function splitTokens(value: unknown, delimiters?: string[]) {
+export function splitTokens(value: unknown, delimiters?: string[]) {
   // When value is ContactValue[], normalizeToStringList yields individual tokens (name, email, ...)
   // with no delimiters between contacts, so split has no effect. Convert to a single string first
   // (e.g. "Lisa Lujan, Deb Marsh") so the delimiter can actually split it.

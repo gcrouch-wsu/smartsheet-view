@@ -1,4 +1,4 @@
-import { normalizeCampusDisplay, normalizeGroupKey } from "@/lib/campus-grouping";
+import { campusTokensFromResolvedField, normalizeCampusDisplay, normalizeGroupKey } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedViewRow, ViewConfig } from "@/lib/config/types";
 
 function cloneResolvedRow(row: ResolvedViewRow): ResolvedViewRow {
@@ -90,8 +90,9 @@ function buildMergedRow(bucket: ResolvedViewRow[], campusKey: string): ResolvedV
   const all = bucket;
   const campusSet = new Set<string>();
   for (const r of all) {
-    const raw = r.fieldMap[campusKey]?.textValue ?? "";
-    campusSet.add(normalizeCampusDisplay(raw));
+    for (const t of campusTokensFromResolvedField(r.fieldMap[campusKey])) {
+      campusSet.add(normalizeCampusDisplay(t));
+    }
   }
   const campuses = [...campusSet].sort((a, b) => a.localeCompare(b, "en"));
   const dup = cloneResolvedRow(primary);
