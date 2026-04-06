@@ -389,3 +389,13 @@ a {
   height: 0;
   pointer-events: none;
 }
+
+/* Record suppression: collapsed on screen; full body when printing */
+@media print {
+  .rsup-collapsible > .rsup-collapsible-summary {
+    display: none !important;
+  }
+  .rsup-collapsible > .rsup-collapsible-body {
+    display: block !important;
+  }
+}

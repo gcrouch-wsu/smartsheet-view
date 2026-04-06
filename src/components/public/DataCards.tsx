@@ -5,6 +5,7 @@ import { ContributorCardEditShell } from "@/components/public/ContributorCardEdi
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
+import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
@@ -114,32 +115,36 @@ export function DataCards({
               presentation={view.presentation}
             />
           ) : null}
-          {customRows.map((cells, rowIndex) => {
-            const paddedCells = useAlignedGrid ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })] : cells;
-            const gridInner = (
-              <div className={gridClass} style={gridStyle}>
-                {useAlignedGrid ? (
-                  <>
-                    {paddedCells.map((cell, i) => (
-                      <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
-                    ))}
-                    {paddedCells.map((cell, i) => (
-                      <CardLayoutCellRenderer key={`v-${i}`} cell={cell} flexClass="min-w-0" mode="value" />
-                    ))}
-                  </>
-                ) : (
-                  paddedCells.map((cell, i) => (
-                    <CardLayoutCellRenderer key={i} cell={cell} flexClass="w-full" />
-                  ))
-                )}
-              </div>
-            );
-            return (
-              <div key={rowIndex} className={rowDividerClass(rowIndex)}>
-                {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
-              </div>
-            );
-          })}
+          <RecordSuppressionCollapsible view={view} row={row}>
+            {customRows.map((cells, rowIndex) => {
+              const paddedCells = useAlignedGrid
+                ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })]
+                : cells;
+              const gridInner = (
+                <div className={gridClass} style={gridStyle}>
+                  {useAlignedGrid ? (
+                    <>
+                      {paddedCells.map((cell, i) => (
+                        <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
+                      ))}
+                      {paddedCells.map((cell, i) => (
+                        <CardLayoutCellRenderer key={`v-${i}`} cell={cell} flexClass="min-w-0" mode="value" />
+                      ))}
+                    </>
+                  ) : (
+                    paddedCells.map((cell, i) => (
+                      <CardLayoutCellRenderer key={i} cell={cell} flexClass="w-full" />
+                    ))
+                  )}
+                </div>
+              );
+              return (
+                <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                  {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
+                </div>
+              );
+            })}
+          </RecordSuppressionCollapsible>
         </article>
       );
     }
@@ -167,32 +172,36 @@ export function DataCards({
             presentation={view.presentation}
           />
         ) : null}
-        {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
-          <div className="border-b border-[color:var(--wsu-border)] pb-4">
-            {!heading.hideLabel ? (
-              <>
-                <p className={fieldLabelClassName(heading)}>{heading.label}</p>
-                <div className="view-row-heading mt-2">
-                  <FieldValue field={heading} />
-                </div>
-              </>
-            ) : (
-              <div className="view-row-heading">
-                <FieldValue field={heading} />
+        <RecordSuppressionCollapsible view={view} row={row}>
+          <>
+            {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
+              <div className="border-b border-[color:var(--wsu-border)] pb-4">
+                {!heading.hideLabel ? (
+                  <>
+                    <p className={fieldLabelClassName(heading)}>{heading.label}</p>
+                    <div className="view-row-heading mt-2">
+                      <FieldValue field={heading} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="view-row-heading">
+                    <FieldValue field={heading} />
+                  </div>
+                )}
+                {summary && (
+                  <div className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+                    <FieldValue field={summary} />
+                  </div>
+                )}
               </div>
             )}
-            {summary && (
-              <div className="mt-2 text-sm text-[color:var(--wsu-muted)]">
-                <FieldValue field={summary} />
-              </div>
-            )}
-          </div>
-        )}
-        <div className="mt-4 space-y-4">
-          {remaining.map((field) => (
-            <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
-          ))}
-        </div>
+            <div className="mt-4 space-y-4">
+              {remaining.map((field) => (
+                <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
+              ))}
+            </div>
+          </>
+        </RecordSuppressionCollapsible>
       </article>
     );
   }

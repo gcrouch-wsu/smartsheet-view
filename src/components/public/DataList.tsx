@@ -21,6 +21,7 @@ import {
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
+import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
@@ -91,8 +92,9 @@ export function DataList({
             </div>
           )}
           {mergeBadges}
-          <div className="space-y-4">
-            {customRows.map((cells, rowIndex) => {
+          <RecordSuppressionCollapsible view={view} row={row}>
+            <div className="space-y-4">
+              {customRows.map((cells, rowIndex) => {
               const rowDividerClass =
                 rowIndex > 0
                   ? dividerStyle === "none"
@@ -131,7 +133,8 @@ export function DataList({
                 </div>
               );
             })}
-          </div>
+            </div>
+          </RecordSuppressionCollapsible>
         </li>
       );
     }
@@ -145,13 +148,15 @@ export function DataList({
           </div>
         )}
         {mergeBadges}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {row.fields
-            .filter((field) => !(field.hideWhenEmpty && field.isEmpty))
-            .map((field) => (
-              <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
-            ))}
-        </div>
+        <RecordSuppressionCollapsible view={view} row={row}>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {row.fields
+              .filter((field) => !(field.hideWhenEmpty && field.isEmpty))
+              .map((field) => (
+                <FieldBlock key={`${row.id}-${field.key}`} rowId={row.id} field={field} />
+              ))}
+          </div>
+        </RecordSuppressionCollapsible>
       </li>
     );
   }

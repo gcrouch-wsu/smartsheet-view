@@ -203,6 +203,25 @@ export function getCardLayoutRows(
           }
           return { type: "placeholder" };
         }
+        const statusSupKey = view.presentation?.recordSuppressedFileStatusFieldKey;
+        if (
+          statusSupKey &&
+          key === statusSupKey &&
+          row.recordSuppression &&
+          view.presentation?.recordSuppressedFileHideStatusFieldInPublicBody !== false
+        ) {
+          if (contribAllowsKey(statusSupKey)) {
+            const statusField = row.fieldMap[statusSupKey];
+            if (statusField) {
+              return { type: "field", field: statusField };
+            }
+            const stub = contributorStubForLayoutKey(view, statusSupKey, contrib, contribEditable);
+            if (stub) {
+              return { type: "field", field: stub };
+            }
+          }
+          return { type: "placeholder" };
+        }
         const field = row.fieldMap[key];
         if (field && (fieldCanRender(field) || contribAllowsKey(key))) {
           return { type: "field", field };
@@ -268,10 +287,12 @@ export function getEditDrawerOrderedFields(
   contributorFieldKeys: Set<string>,
   contributorEditableByKey?: Map<string, ContributorEditableFieldDefinition>,
 ): ResolvedFieldValue[] {
+  const redactedKeys = new Set(row.recordSuppression?.redactedFieldKeys ?? []);
   const shouldShow = (field: ResolvedFieldValue) =>
-    contributorFieldKeys.has(field.key) ||
-    contributorEditableByKey?.has(field.key) ||
-    fieldCanRender(field);
+    !redactedKeys.has(field.key) &&
+    (contributorFieldKeys.has(field.key) ||
+      contributorEditableByKey?.has(field.key) ||
+      fieldCanRender(field));
 
   const appendMissingContributorFields = (ordered: ResolvedFieldValue[]) => {
     const seen = new Set(ordered.map((f) => f.key));
@@ -281,6 +302,7 @@ export function getEditDrawerOrderedFields(
     }
     for (const key of keysToAdd) {
       if (seen.has(key)) continue;
+      if (redactedKeys.has(key)) continue;
       const field =
         row.fieldMap[key] ??
         contributorStubForLayoutKey(view, key, contributorFieldKeys, contributorEditableByKey);

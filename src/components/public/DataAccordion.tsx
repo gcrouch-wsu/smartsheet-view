@@ -107,11 +107,18 @@ export function DataAccordion({
             <details
               key={row.id}
               id={`row-${row.id}`}
-              open={index === 0}
+              open={row.recordSuppression ? false : index === 0}
               className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
             >
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div>
+                  {row.recordSuppression ? (
+                    <p className="mb-2">
+                      <span className="inline-flex rounded-full border border-amber-300/90 bg-amber-100/90 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950">
+                        {row.recordSuppression.statusDisplay}
+                      </span>
+                    </p>
+                  ) : null}
                   <p className="view-row-heading">
                     {firstField ? describeResolvedField(firstField) : getRowHeadingText(view, row)}
                   </p>
@@ -180,11 +187,18 @@ export function DataAccordion({
           <details
             key={row.id}
             id={`row-${row.id}`}
-            open={index === 0}
+            open={row.recordSuppression ? false : index === 0}
             className={`group scroll-mt-24 overflow-hidden rounded-[1.75rem] ${cardBorderClass} ${getContributorRowAccentClass(isEditable)} bg-[color:var(--wsu-paper)] shadow-[0_16px_40px_rgba(35,31,32,0.06)]`}
           >
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div>
+                {row.recordSuppression ? (
+                  <p className="mb-2">
+                    <span className="inline-flex rounded-full border border-amber-300/90 bg-amber-100/90 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950">
+                      {row.recordSuppression.statusDisplay}
+                    </span>
+                  </p>
+                ) : null}
                 <p className="view-row-heading">{getRowHeadingText(view, row)}</p>
                 {summary && <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">{describeResolvedField(summary) || summary.label}</p>}
               </div>

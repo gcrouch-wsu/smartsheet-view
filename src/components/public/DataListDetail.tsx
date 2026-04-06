@@ -26,6 +26,7 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
+import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
 import type { ProgramGroup } from "@/lib/campus-grouping";
 import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
@@ -119,6 +120,7 @@ export function DataListDetail({
             const rowSummary = getRowSummaryField(view, row, rowHeading?.key);
             const active = row.id === activeRow.id;
             const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
+            const sup = row.recordSuppression;
 
             return (
               <li key={row.id} id={`row-${row.id}`} className="scroll-mt-24">
@@ -133,7 +135,14 @@ export function DataListDetail({
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold">{rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`}</p>
+                    <p className="font-semibold">
+                      {sup ? (
+                        <span className="mb-1 mr-2 inline-flex align-middle rounded-full border border-amber-300/80 bg-amber-100/50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-950">
+                          {sup.statusDisplay}
+                        </span>
+                      ) : null}
+                      {rowHeading ? describeResolvedField(rowHeading) || `Row ${row.id}` : `Row ${row.id}`}
+                    </p>
                     {isEditable && <ContributorEditableBadge className={active ? "bg-white/15 text-white" : ""} />}
                   </div>
                   {rowSummary && (
@@ -187,16 +196,17 @@ export function DataListDetail({
                   )}
                 </div>
               </div>
-              {!cardLayoutIncludesCampusBadges(view) ? (
-                <MergedRowCampusBadges
-                  row={activeRow}
-                  suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
-                  presentation={view.presentation}
-                />
-              ) : null}
-              {hasCustomCardLayout(view) ? (
-                <div className="mt-5 space-y-4">
-                  {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => {
+              <RecordSuppressionCollapsible view={view} row={activeRow}>
+                {!cardLayoutIncludesCampusBadges(view) ? (
+                  <MergedRowCampusBadges
+                    row={activeRow}
+                    suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
+                    presentation={view.presentation}
+                  />
+                ) : null}
+                {hasCustomCardLayout(view) ? (
+                  <div className="mt-5 space-y-4">
+                    {getCardLayoutRows(view, activeRow).map((cells, rowIndex) => {
                     const colCount = getCardLayoutColumnCount(view);
                     const useAlignedGrid = colCount > 1;
                     const gridClass = useAlignedGrid ? "grid gap-4" : "space-y-4";
@@ -227,22 +237,23 @@ export function DataListDetail({
                       </div>
                     );
                   })}
-                </div>
-              ) : (
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
-                    <div className="space-y-1">
-                      {!heading.hideLabel && (
-                        <p className={fieldLabelClassName(heading)}>{heading.label}</p>
-                      )}
-                      <FieldValue field={heading} stacked />
-                    </div>
-                  )}
-                  {bodyFields.map((field) => (
-                    <FieldBlock key={`${activeRow.id}-${field.key}`} rowId={activeRow.id} field={field} />
-                  ))}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {heading && !(heading.hideWhenEmpty && heading.isEmpty) && (
+                      <div className="space-y-1">
+                        {!heading.hideLabel && (
+                          <p className={fieldLabelClassName(heading)}>{heading.label}</p>
+                        )}
+                        <FieldValue field={heading} stacked />
+                      </div>
+                    )}
+                    {bodyFields.map((field) => (
+                      <FieldBlock key={`${activeRow.id}-${field.key}`} rowId={activeRow.id} field={field} />
+                    ))}
+                  </div>
+                )}
+              </RecordSuppressionCollapsible>
             </>
           );
         })()}

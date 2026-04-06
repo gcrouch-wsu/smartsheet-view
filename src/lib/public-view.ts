@@ -35,6 +35,7 @@ import {
   normalizedValueToRoleAttributeText,
 } from "@/lib/transforms";
 import { mergeResolvedRowsByProgramAndEmail } from "@/lib/merge-program-rows-by-email";
+import { applyRecordSuppressionToResolvedRows } from "@/lib/record-suppression";
 import { humanizeSlug } from "@/lib/utils";
 
 export interface AdminViewPreview {
@@ -422,6 +423,8 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
       }))
     : mergedRows;
 
+  const rowsWithSuppression = applyRecordSuppressionToResolvedRows(view, rowsForDisplay);
+
   return {
     id: view.id,
     label: view.label,
@@ -434,7 +437,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
     displayTimeZone: effectiveViewDisplayTimeZone(view),
     linkEmailsInView: linkFlags.linkEmailsInView,
     linkPhonesInView: linkFlags.linkPhonesInView,
-    rowCount: rowsForDisplay.length,
+    rowCount: rowsWithSuppression.length,
     fields: view.fields
       .filter((field) => field.render.type !== "hidden")
       .filter((field) => !(hideCampusCol && campusKey && field.key === campusKey))
@@ -446,7 +449,7 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
         textStyle: field.render.textStyle,
         labelStyle: field.render.labelStyle,
       })),
-    rows: rowsForDisplay,
+    rows: rowsWithSuppression,
   };
 }
 

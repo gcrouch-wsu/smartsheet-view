@@ -1959,6 +1959,115 @@ export function ViewBuilder({
           </SetupAccordion>
 
           <SetupAccordion
+            title="Record / file visibility (status)"
+            subtitle="When a status field is Hide or Delete (or your custom values), link-style file fields are cleared on the public page and hidden from the contributor form. Cards start collapsed with an amber status chip."
+          >
+            <div className="space-y-4 text-sm">
+              {view.fields.length === 0 ? (
+                <p className="text-xs text-[color:var(--wsu-muted)]">Add fields on the Fields tab first.</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">Status field</label>
+                    <p className="mb-1.5 text-[10px] text-[color:var(--wsu-muted)]">
+                      Picklist (or text) on each row — e.g. <strong>Hide</strong>, <strong>Delete</strong>, Published.
+                    </p>
+                    <select
+                      value={view.presentation?.recordSuppressedFileStatusFieldKey ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        update("presentation", {
+                          ...view.presentation,
+                          recordSuppressedFileStatusFieldKey: v || undefined,
+                        });
+                      }}
+                      className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">Off</option>
+                      {view.fields.map((f) => (
+                        <option key={f.key} value={f.key}>
+                          {(f.label || f.key) + (f.render.type === "hidden" ? " (hidden)" : "")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {view.presentation?.recordSuppressedFileStatusFieldKey ? (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">
+                          Status values that hide file links
+                        </label>
+                        <p className="mb-1.5 text-[10px] text-[color:var(--wsu-muted)]">
+                          Comma-separated; comparison is case-insensitive. Default when empty: hide, delete.
+                        </p>
+                        <input
+                          value={(view.presentation.recordSuppressedFileStatusValues ?? ["hide", "delete"]).join(", ")}
+                          onChange={(e) => {
+                            const parts = e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            update("presentation", {
+                              ...view.presentation,
+                              recordSuppressedFileStatusValues: parts.length ? parts : undefined,
+                            });
+                          }}
+                          className="w-full max-w-md rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm"
+                          placeholder="hide, delete"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-[color:var(--wsu-muted)]">
+                          Field keys to redact (optional)
+                        </label>
+                        <p className="mb-1.5 text-[10px] text-[color:var(--wsu-muted)]">
+                          Comma-separated field keys. Leave empty to redact every field with display type <strong>link</strong>.
+                        </p>
+                        <input
+                          value={(view.presentation.recordSuppressedFileRedactFieldKeys ?? []).join(", ")}
+                          onChange={(e) => {
+                            const parts = e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean)
+                              .filter((k) => view.fields.some((f) => f.key === k));
+                            update("presentation", {
+                              ...view.presentation,
+                              recordSuppressedFileRedactFieldKeys: parts.length ? parts : undefined,
+                            });
+                          }}
+                          className="w-full max-w-lg rounded-lg border border-[color:var(--wsu-border)] bg-white px-3 py-2 font-mono text-xs"
+                          placeholder="handbook_pdf, resource_url"
+                        />
+                      </div>
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={view.presentation.recordSuppressedFileHideStatusFieldInPublicBody !== false}
+                          onChange={(e) =>
+                            update("presentation", {
+                              ...view.presentation,
+                              recordSuppressedFileHideStatusFieldInPublicBody: e.target.checked ? true : false,
+                            })
+                          }
+                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                        />
+                        <span>
+                          <span className="font-medium text-[color:var(--wsu-ink)]">Hide status column from record body</span>
+                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                            Status still shows on the collapsed chip; contributors editing the row can still change status in the form when
+                            that column is editable.
+                          </span>
+                        </span>
+                      </label>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </SetupAccordion>
+
+          <SetupAccordion
             title="Page header & branding"
             subtitle="Logo, custom text, and which lines appear in the public masthead."
           >

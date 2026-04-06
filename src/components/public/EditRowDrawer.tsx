@@ -242,8 +242,11 @@ export function EditRowDrawer({
     const isContactColumn = (colType: string) =>
       colType === "CONTACT_LIST" || colType === "MULTI_CONTACT_LIST";
 
+    const redactedKeys = new Set(row.recordSuppression?.redactedFieldKeys ?? []);
     const cells: Array<{ columnId: number; value?: string; objectValue?: unknown }> = [
-      ...editableFields.map((field) => {
+      ...editableFields
+        .filter((field) => !redactedKeys.has(field.fieldKey))
+        .map((field) => {
         const raw = formValues[field.columnId] ?? "";
         if (isContactColumn(field.columnType) && field.contactDisplayMode) {
           const objectValue = serializeContactDisplayToObjectValue(

@@ -53,15 +53,25 @@ export function DataTable({
     return rows.map((row) => {
       const isEditable = isContributorRowOrMergedEditable(row, editableRowIds);
       const editTargetId = contributorEditTargetRowId(row, editableRowIds);
+      const sup = row.recordSuppression;
       return (
         <tr
           key={row.id}
           id={`row-${row.id}`}
-          className={`border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0 scroll-mt-24 ${getContributorRowAccentClass(isEditable)}`}
+          className={`border-b border-[color:var(--wsu-border)]/70 align-top last:border-b-0 scroll-mt-24 ${getContributorRowAccentClass(isEditable)} ${sup ? "bg-amber-50/30" : ""}`}
         >
-          {row.fields.map((field) => (
+          {row.fields.map((field, colIndex) => (
             <td key={`${row.id}-${field.key}`} className="px-4 py-4 text-sm">
-              <FieldValue field={field} />
+              <div className="space-y-2">
+                {colIndex === 0 && sup ? (
+                  <p className="m-0">
+                    <span className="inline-flex rounded-full border border-amber-300/90 bg-amber-100/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950">
+                      {sup.statusDisplay}
+                    </span>
+                  </p>
+                ) : null}
+                <FieldValue field={field} />
+              </div>
             </td>
           ))}
           {actionCol ? (

@@ -666,6 +666,36 @@ function parsePresentationConfig(
     input.showMergedCampusBadgesOnRecords === undefined ? undefined : asBoolean(input.showMergedCampusBadgesOnRecords, true);
   const campusBadgeStyle = parseCampusBadgeStyle(input.campusBadgeStyle);
 
+  let recordSuppressedFileStatusFieldKey = asOptionalString(input.recordSuppressedFileStatusFieldKey);
+  if (recordSuppressedFileStatusFieldKey && !fieldKeys.has(recordSuppressedFileStatusFieldKey)) {
+    recordSuppressedFileStatusFieldKey = undefined;
+  }
+  let recordSuppressedFileStatusValues: string[] | undefined;
+  if (Array.isArray(input.recordSuppressedFileStatusValues)) {
+    recordSuppressedFileStatusValues = input.recordSuppressedFileStatusValues
+      .filter((v: unknown): v is string => typeof v === "string")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (recordSuppressedFileStatusValues.length === 0) {
+      recordSuppressedFileStatusValues = undefined;
+    }
+  }
+  let recordSuppressedFileRedactFieldKeys: string[] | undefined;
+  if (Array.isArray(input.recordSuppressedFileRedactFieldKeys)) {
+    recordSuppressedFileRedactFieldKeys = input.recordSuppressedFileRedactFieldKeys
+      .filter((v: unknown): v is string => typeof v === "string")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .filter((k) => fieldKeys.has(k));
+    if (recordSuppressedFileRedactFieldKeys.length === 0) {
+      recordSuppressedFileRedactFieldKeys = undefined;
+    }
+  }
+  const recordSuppressedFileHideStatusFieldInPublicBody =
+    input.recordSuppressedFileHideStatusFieldInPublicBody === undefined
+      ? undefined
+      : asBoolean(input.recordSuppressedFileHideStatusFieldInPublicBody, true);
+
   const rawLogoUrl =
     typeof input.headerLogoDataUrl === "string" && input.headerLogoDataUrl.trim()
       ? input.headerLogoDataUrl.trim()
@@ -796,7 +826,11 @@ function parsePresentationConfig(
       showCampusStripOnProgramSections !== undefined ||
       showProgramSectionHeaders !== undefined ||
       showMergedCampusBadgesOnRecords !== undefined ||
-      Boolean(campusBadgeStyle)
+      Boolean(campusBadgeStyle) ||
+      Boolean(recordSuppressedFileStatusFieldKey) ||
+      Boolean(recordSuppressedFileStatusValues?.length) ||
+      Boolean(recordSuppressedFileRedactFieldKeys?.length) ||
+      recordSuppressedFileHideStatusFieldInPublicBody !== undefined
   );
 
   return {
@@ -850,6 +884,12 @@ function parsePresentationConfig(
             ...(showProgramSectionHeaders !== undefined ? { showProgramSectionHeaders } : {}),
             ...(showMergedCampusBadgesOnRecords !== undefined ? { showMergedCampusBadgesOnRecords } : {}),
             ...(campusBadgeStyle ? { campusBadgeStyle } : {}),
+            ...(recordSuppressedFileStatusFieldKey ? { recordSuppressedFileStatusFieldKey } : {}),
+            ...(recordSuppressedFileStatusValues?.length ? { recordSuppressedFileStatusValues } : {}),
+            ...(recordSuppressedFileRedactFieldKeys?.length ? { recordSuppressedFileRedactFieldKeys } : {}),
+            ...(recordSuppressedFileHideStatusFieldInPublicBody !== undefined
+              ? { recordSuppressedFileHideStatusFieldInPublicBody }
+              : {}),
           },
   };
 }

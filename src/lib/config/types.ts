@@ -291,6 +291,23 @@ export interface ViewPresentationConfig {
   showMergedCampusBadgesOnRecords?: boolean;
   /** Typography and colors for campus chips (`__campus_badges__`, merged badges, section strips). */
   campusBadgeStyle?: CampusBadgePresentationStyle;
+
+  /**
+   * When set, rows whose status field matches `recordSuppressedFileStatusValues` (default: hide, delete)
+   * have link/file fields redacted on the public view and in contributor forms; cards use a collapsed shell with a status chip.
+   */
+  recordSuppressedFileStatusFieldKey?: string;
+  /** Normalized match tokens; default is hide + delete if unset. */
+  recordSuppressedFileStatusValues?: string[];
+  /**
+   * Field keys to clear when suppressed. If omitted, every view field with render type `link` is redacted.
+   */
+  recordSuppressedFileRedactFieldKeys?: string[];
+  /**
+   * When true (default), the status field is omitted from public record body (custom layout uses a placeholder);
+   * the status still appears on the collapsed summary chip.
+   */
+  recordSuppressedFileHideStatusFieldInPublicBody?: boolean;
 }
 
 export interface ViewStyleConfig {
@@ -581,6 +598,13 @@ export interface ResolvedFieldValue {
   dateSourceRaw?: string;
 }
 
+/** Set when `presentation.recordSuppressedFileStatusFieldKey` matches suppressed values (e.g. Hide / Delete). */
+export interface ResolvedRecordSuppression {
+  statusDisplay: string;
+  redactedFieldKeys: string[];
+  statusFieldKey: string;
+}
+
 export interface ResolvedViewRow {
   id: number;
   fields: ResolvedFieldValue[];
@@ -589,6 +613,8 @@ export interface ResolvedViewRow {
   mergedSourceRowIds?: number[];
   /** Canonical campus labels for merged row badge strip (and campus cell text). */
   mergedCampuses?: string[];
+  /** Row-level file/link suppression for public + contributor UX. */
+  recordSuppression?: ResolvedRecordSuppression;
 }
 
 export interface ResolvedViewField {

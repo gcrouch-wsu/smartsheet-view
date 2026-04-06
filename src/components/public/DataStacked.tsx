@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/public/EmptyState";
 import { FieldBlock } from "@/components/public/FieldBlock";
 import { FieldValue } from "@/components/public/FieldValue";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
+import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
 import {
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
@@ -98,7 +99,8 @@ export function DataStacked({
               presentation={view.presentation}
             />
           ) : null}
-          {customRows.map((cells, rowIndex) => {
+          <RecordSuppressionCollapsible view={view} row={row}>
+            {customRows.map((cells, rowIndex) => {
             const colCount = getCardLayoutColumnCount(view);
             const useAlignedGrid = colCount > 1;
             const gridClass = useAlignedGrid ? "grid gap-2 sm:gap-3 md:gap-4" : "space-y-2 sm:space-y-3 md:space-y-4";
@@ -129,6 +131,7 @@ export function DataStacked({
               </div>
             );
           })}
+          </RecordSuppressionCollapsible>
         </article>
       );
     }
@@ -178,13 +181,15 @@ export function DataStacked({
             </div>
           )}
         </div>
-        <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {bodyFields.map((field) => (
-            <div key={`${row.id}-${field.key}`}>
-              <FieldBlock field={field} compact />
-            </div>
-          ))}
-        </div>
+        <RecordSuppressionCollapsible view={view} row={row}>
+          <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {bodyFields.map((field) => (
+              <div key={`${row.id}-${field.key}`}>
+                <FieldBlock field={field} compact />
+              </div>
+            ))}
+          </div>
+        </RecordSuppressionCollapsible>
       </article>
     );
   }
