@@ -149,6 +149,60 @@ describe("ContributorGroupFieldControl", () => {
     expect(html).toContain('one@wsu.edu');
     expect(html).toContain('Coordinators — person 1');
   });
+
+  it("uses each numbered slot Smartsheet column title for labels (not slot 1 for every row)", () => {
+    const twoSlotGroup: EditableFieldGroup = {
+      id: "rg-chair",
+      label: "Department Chair or School Director",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "chairs",
+      attributes: [
+        {
+          attribute: "name",
+          fieldKey: "chairs",
+          columnId: 101,
+          columnType: "TEXT_NUMBER",
+          columnTitle: "Department Chair or School Director Name 1",
+          slot: "1",
+        },
+        {
+          attribute: "email",
+          fieldKey: "chairs",
+          columnId: 102,
+          columnType: "CONTACT_LIST",
+          columnTitle: "Department Chair or School Director Email 1",
+          slot: "1",
+        },
+        {
+          attribute: "name",
+          fieldKey: "chairs",
+          columnId: 201,
+          columnType: "TEXT_NUMBER",
+          columnTitle: "Department Chair or School Director Name 2",
+          slot: "2",
+        },
+        {
+          attribute: "email",
+          fieldKey: "chairs",
+          columnId: 202,
+          columnType: "CONTACT_LIST",
+          columnTitle: "Department Chair or School Director Email 2",
+          slot: "2",
+        },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [
+      { name: "Alice", email: "a@wsu.edu", phone: "" },
+      { name: "Bob", email: "b@wsu.edu", phone: "" },
+    ];
+    const html = renderToStaticMarkup(
+      <ContributorGroupFieldControl group={twoSlotGroup} persons={persons} onChange={() => {}} />
+    );
+    expect(html).toContain("Department Chair or School Director Name 1");
+    expect(html).toContain("Department Chair or School Director Name 2");
+    expect(html).toContain("Department Chair or School Director Email 1");
+    expect(html).toContain("Department Chair or School Director Email 2");
+  });
 });
 
 describe("ContributorReadOnlyField", () => {

@@ -19,6 +19,35 @@ export const contributorEditControlClass =
 
 const labelClass = "view-field-label text-[color:var(--wsu-muted)]";
 
+/** Numbered role groups store per-slot attributes; slot ids should match but tolerate "2" vs 2 from JSON. */
+function slotsMatch(slotOnAttr: string | undefined, slotForRow: string | undefined): boolean {
+  if (slotOnAttr == null || slotForRow == null) {
+    return false;
+  }
+  if (slotOnAttr === slotForRow) {
+    return true;
+  }
+  const a = Number(slotOnAttr);
+  const b = Number(slotForRow);
+  return Number.isFinite(a) && Number.isFinite(b) && a === b;
+}
+
+function attributeForPersonRow(
+  group: EditableFieldGroup,
+  personIndex: number,
+  kind: "name" | "email" | "phone",
+  fixedSlotOrder: string[],
+): (typeof group.attributes)[number] | undefined {
+  if (group.usesFixedSlots && fixedSlotOrder.length > 0) {
+    const slotId = fixedSlotOrder[personIndex];
+    if (slotId == null) {
+      return undefined;
+    }
+    return group.attributes.find((a) => slotsMatch(a.slot, slotId) && a.attribute === kind);
+  }
+  return group.attributes.find((a) => a.attribute === kind);
+}
+
 interface ContributorSingleFieldControlProps {
   field: ResolvedFieldValue;
   editableDef: ContributorEditableFieldDefinition;
@@ -176,10 +205,8 @@ export function ContributorGroupFieldControl({
         {persons.map((person, idx) => {
           const rowErr = errors[idx];
           const slotId = fixedSlotOrder[idx];
-          const smartsheetSlotTitle =
-            slotId != null
-              ? group.attributes.find((a) => a.slot === slotId && a.attribute === "name")?.columnTitle?.trim()
-              : undefined;
+          const nameAttrForRow = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
+          const smartsheetSlotTitle = nameAttrForRow?.columnTitle?.trim();
           const positionLabel =
             fixedSlotCount > 0
               ? smartsheetSlotTitle || `${group.label} — ${idx + 1} of ${fixedSlotCount}`
@@ -218,7 +245,7 @@ export function ContributorGroupFieldControl({
               <div className="grid gap-2">
                 {hasName &&
                   (() => {
-                    const attr = group.attributes.find((a) => a.attribute === "name");
+                    const attr = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
                     const colLabel = attr?.columnTitle ?? "Name";
                     return (
                       <div key="name" className="space-y-0.5">
@@ -253,7 +280,7 @@ export function ContributorGroupFieldControl({
                   })()}
                 {hasEmail &&
                   (() => {
-                    const attr = group.attributes.find((a) => a.attribute === "email");
+                    const attr = attributeForPersonRow(group, idx, "email", fixedSlotOrder);
                     const colLabel = attr?.columnTitle ?? "Email";
                     return (
                       <div key="email" className="space-y-0.5">
@@ -289,7 +316,7 @@ export function ContributorGroupFieldControl({
                   })()}
                 {hasPhone &&
                   (() => {
-                    const attr = group.attributes.find((a) => a.attribute === "phone");
+                    const attr = attributeForPersonRow(group, idx, "phone", fixedSlotOrder);
                     const colLabel = attr?.columnTitle ?? "Phone";
                     return (
                       <div key="phone" className="space-y-0.5">
