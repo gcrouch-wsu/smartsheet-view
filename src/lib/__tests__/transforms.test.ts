@@ -193,4 +193,23 @@ describe("transforms", () => {
       listValue: [],
     });
   });
+
+  it("badge render splits comma- and semicolon-separated values into listValue for multiple pills", () => {
+    const field: ViewFieldConfig = {
+      key: "campus",
+      label: "Campus",
+      source: { columnTitle: "Campus" },
+      render: { type: "badge" },
+    };
+    expect(buildResolvedFieldValue(field, "Global, Pullman")).toMatchObject({
+      textValue: "Global, Pullman",
+      listValue: ["Global", "Pullman"],
+    });
+    expect(buildResolvedFieldValue(field, "Global; Pullman")).toMatchObject({
+      listValue: ["Global", "Pullman"],
+    });
+    expect(buildResolvedFieldValue(field, ["Global", "Pullman"])).toMatchObject({
+      listValue: ["Global", "Pullman"],
+    });
+  });
 });

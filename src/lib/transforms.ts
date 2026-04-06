@@ -595,10 +595,12 @@ export function buildResolvedFieldValue(
       listValue = textValue ? [textValue] : [];
       break;
     }
-    case "badge":
-      textValue = asText(value);
-      listValue = textValue ? [textValue] : [];
+    case "badge": {
+      // One pill per token: MULTI_PICKLIST arrays, merged "A; B", and comma-joined Smartsheet text all become multiple entries.
+      listValue = splitTokens(value);
+      textValue = listValue.join(", ");
       break;
+    }
     case "hidden": {
       // Keep raw text for grouping, merge, and contributor edit even though the field is not shown.
       textValue = asText(value);
