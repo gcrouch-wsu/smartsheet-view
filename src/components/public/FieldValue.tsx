@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useDisplayTimezone } from "@/components/public/DisplayTimezoneContext";
 import type { ResolvedFieldValue } from "@/lib/config/types";
 import { fieldValueTypographyClass } from "@/lib/field-typography";
@@ -326,14 +327,39 @@ export function FieldValue({
   }
 
   if (field.renderType === "badge") {
+    const chipClass = tx(
+      field,
+      "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
+    );
+    const chipStyle: CSSProperties = {
+      borderColor: "var(--view-border, var(--wsu-border))",
+      backgroundColor: "var(--view-badge-bg, #f3f4f6)",
+      color: "var(--view-badge-text, #374151)",
+    };
+    const splitFromText =
+      primaryText && primaryText.includes(";")
+        ? primaryText
+            .split(";")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+    const badgeEntries =
+      field.listValue.length > 1 ? field.listValue : splitFromText.length > 1 ? splitFromText : null;
+    if (badgeEntries) {
+      return (
+        <span className={tx(field, "inline-flex flex-wrap items-center gap-1.5")} role="group">
+          {badgeEntries.map((entry, i) => (
+            <span key={`${entry}-${i}`} className={chipClass} style={chipStyle} suppressHydrationWarning={Boolean(field.dateSourceRaw)}>
+              {entry}
+            </span>
+          ))}
+        </span>
+      );
+    }
     return primaryText ? (
       <span
-        className={tx(field, "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]")}
-        style={{
-          borderColor: "var(--view-border, var(--wsu-border))",
-          backgroundColor: "var(--view-badge-bg, #f3f4f6)",
-          color: "var(--view-badge-text, #374151)",
-        }}
+        className={chipClass}
+        style={chipStyle}
         suppressHydrationWarning={Boolean(field.dateSourceRaw)}
       >
         {primaryText}

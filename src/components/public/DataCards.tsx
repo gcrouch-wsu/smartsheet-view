@@ -17,7 +17,11 @@ import {
   hasCustomCardLayout,
 } from "@/components/public/layout-utils";
 import type { ProgramGroup } from "@/lib/campus-grouping";
-import { isCampusGroupingActive, showCampusStripOnProgramSections } from "@/lib/campus-grouping";
+import {
+  showCampusStripOnProgramSections,
+  showProgramSectionHeaders,
+  suppressMergedRowCampusBadgesWhenSectionStripShows,
+} from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { fieldLabelClassName } from "@/lib/field-typography";
@@ -106,7 +110,7 @@ export function DataCards({
           {!cardLayoutIncludesCampusBadges(view) ? (
             <MergedRowCampusBadges
               row={row}
-              suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+              suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
               presentation={view.presentation}
             />
           ) : null}
@@ -159,7 +163,7 @@ export function DataCards({
         {!cardLayoutIncludesCampusBadges(view) ? (
           <MergedRowCampusBadges
             row={row}
-            suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+            suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
             presentation={view.presentation}
           />
         ) : null}
@@ -198,12 +202,14 @@ export function DataCards({
       <div className="space-y-8 md:space-y-10">
         {programGroups.map((group) => (
           <section key={group.id} id={`group-${group.id}`} className="scroll-mt-24 space-y-4">
-            <header className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/35 px-4 py-3 sm:px-5">
-              <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)] sm:text-xl">{group.label}</h2>
-              {showCampusStripOnProgramSections(view.presentation) ? (
-                <CampusBadgeStrip campuses={group.campuses} badgeStyle={view.presentation?.campusBadgeStyle} />
-              ) : null}
-            </header>
+            {showProgramSectionHeaders(view.presentation) ? (
+              <header className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/35 px-4 py-3 sm:px-5">
+                <h2 className="font-view-heading text-lg font-semibold text-[color:var(--wsu-ink)] sm:text-xl">{group.label}</h2>
+                {showCampusStripOnProgramSections(view.presentation) ? (
+                  <CampusBadgeStrip campuses={group.campuses} badgeStyle={view.presentation?.campusBadgeStyle} />
+                ) : null}
+              </header>
+            ) : null}
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{group.rows.map((row) => renderCardRow(row))}</div>
           </section>
         ))}

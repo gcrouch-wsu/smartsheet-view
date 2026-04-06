@@ -6,6 +6,7 @@ import {
   narrowProgramGroupsToFilteredRows,
   normalizeCampusDisplay,
   normalizeGroupKey,
+  suppressMergedRowCampusBadgesWhenSectionStripShows,
 } from "@/lib/campus-grouping";
 import type { ResolvedViewRow } from "@/lib/config/types";
 
@@ -48,8 +49,25 @@ describe("campus-grouping", () => {
   it("normalizeCampusDisplay maps Global, blank, and whitespace-only", () => {
     expect(normalizeCampusDisplay("")).toBe("Unspecified");
     expect(normalizeCampusDisplay("   ")).toBe("Unspecified");
-    expect(normalizeCampusDisplay("global")).toBe("Global Campus");
+    expect(normalizeCampusDisplay("global")).toBe("Global");
+    expect(normalizeCampusDisplay("Global Campus")).toBe("Global");
     expect(normalizeCampusDisplay("Unknown College")).toBe("Unknown College");
+  });
+
+  it("suppressMergedRowCampusBadgesWhenSectionStripShows respects headers and strip toggles", () => {
+    const grouped = {
+      campusGroupingMode: "grouped" as const,
+      programGroupFieldKey: "p",
+      campusFieldKey: "c",
+    };
+    expect(suppressMergedRowCampusBadgesWhenSectionStripShows(undefined)).toBe(false);
+    expect(suppressMergedRowCampusBadgesWhenSectionStripShows(grouped)).toBe(true);
+    expect(
+      suppressMergedRowCampusBadgesWhenSectionStripShows({ ...grouped, showProgramSectionHeaders: false }),
+    ).toBe(false);
+    expect(
+      suppressMergedRowCampusBadgesWhenSectionStripShows({ ...grouped, showCampusStripOnProgramSections: false }),
+    ).toBe(false);
   });
 
   it("indexLetterFromLabel uses # for digits and non-ASCII letters", () => {

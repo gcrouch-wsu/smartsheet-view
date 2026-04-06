@@ -19,9 +19,10 @@ const CAMPUS_LABEL_BY_NORMALIZED: Record<string, string> = {
   "tri cities": "Tri-Cities",
   vancouver: "Vancouver",
   everett: "Everett",
-  global: "Global Campus",
-  "global campus": "Global Campus",
-  "global campus (online)": "Global Campus",
+  /** Canonical online / distance label — matches modern Smartsheet picklists that use "Global" only. */
+  global: "Global",
+  "global campus": "Global",
+  "global campus (online)": "Global",
 };
 
 /** Trim + lowercase for program identity grouping (not for display). */
@@ -158,4 +159,33 @@ export function isCampusGroupingActive(presentation: {
 /** When false, program section headings omit the campus chip row (default: show). */
 export function showCampusStripOnProgramSections(presentation: { showCampusStripOnProgramSections?: boolean } | undefined): boolean {
   return presentation?.showCampusStripOnProgramSections !== false;
+}
+
+/** When false, grouped views omit the program section header block (title + optional campus strip); rows still group for order and anchors. */
+export function showProgramSectionHeaders(presentation: { showProgramSectionHeaders?: boolean } | undefined): boolean {
+  return presentation?.showProgramSectionHeaders !== false;
+}
+
+/**
+ * Suppress duplicate merged-row campus chips only when the program section header is showing the union strip.
+ * If section headers are hidden or the strip under titles is off, show merged campuses on each card instead.
+ */
+export function suppressMergedRowCampusBadgesWhenSectionStripShows(
+  presentation:
+    | {
+        campusGroupingMode?: string;
+        programGroupFieldKey?: string;
+        campusFieldKey?: string;
+        showProgramSectionHeaders?: boolean;
+        showCampusStripOnProgramSections?: boolean;
+      }
+    | undefined,
+): boolean {
+  if (!isCampusGroupingActive(presentation)) {
+    return false;
+  }
+  if (!showProgramSectionHeaders(presentation)) {
+    return false;
+  }
+  return showCampusStripOnProgramSections(presentation);
 }

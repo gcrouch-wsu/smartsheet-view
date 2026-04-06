@@ -27,7 +27,7 @@ import {
 } from "@/components/public/layout-utils";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import type { ProgramGroup } from "@/lib/campus-grouping";
-import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 import { fieldLabelClassName } from "@/lib/field-typography";
@@ -190,7 +190,7 @@ export function DataListDetail({
               {!cardLayoutIncludesCampusBadges(view) ? (
                 <MergedRowCampusBadges
                   row={activeRow}
-                  suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                  suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
                   presentation={view.presentation}
                 />
               ) : null}

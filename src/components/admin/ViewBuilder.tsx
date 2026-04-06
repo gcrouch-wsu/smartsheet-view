@@ -1873,25 +1873,56 @@ export function ViewBuilder({
                           </span>
                         </span>
                       </label>
-                      <label className="flex items-start gap-3 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={view.presentation?.showCampusStripOnProgramSections !== false}
-                          onChange={(e) =>
-                            update("presentation", {
-                              ...view.presentation,
-                              showCampusStripOnProgramSections: e.target.checked ? true : false,
-                            })
-                          }
-                          className="mt-0.5 rounded border-[color:var(--wsu-border)]"
-                        />
-                        <span>
-                          <span className="font-medium text-[color:var(--wsu-ink)]">Show campus chips under program section titles</span>
-                          <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
-                            Turn off when you only want campuses in custom layout badges.                             Chip styling: <strong>Appearance &amp; theme</strong> → Open theme designer → <strong>Chips</strong>.
-                          </span>
-                        </span>
-                      </label>
+                      {view.presentation?.campusGroupingMode === "grouped" ? (
+                        <div className="space-y-3 rounded-xl border border-[color:var(--wsu-border)]/80 bg-[color:var(--wsu-stone)]/15 px-3 py-3 sm:px-4">
+                          <p className="text-xs font-semibold text-[color:var(--wsu-ink)]">Program section header (live view)</p>
+                          <p className="text-[10px] leading-snug text-[color:var(--wsu-muted)]">
+                            Shown only when <strong className="text-[color:var(--wsu-ink)]">Group into sections by program</strong> is on.
+                            Turn both off below if you want cards in a group listed back‑to‑back with no grey title bar.
+                          </p>
+                          <label className="flex items-start gap-3 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={view.presentation?.showProgramSectionHeaders !== false}
+                              onChange={(e) =>
+                                update("presentation", {
+                                  ...view.presentation,
+                                  showProgramSectionHeaders: e.target.checked ? true : false,
+                                })
+                              }
+                              className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                            />
+                            <span>
+                              <span className="font-medium text-[color:var(--wsu-ink)]">Show program name title band</span>
+                              <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                                The grey bar with the program name above each group of cards or rows. Off = no bar; cards stack with normal
+                                spacing only.
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={view.presentation?.showCampusStripOnProgramSections !== false}
+                              onChange={(e) =>
+                                update("presentation", {
+                                  ...view.presentation,
+                                  showCampusStripOnProgramSections: e.target.checked ? true : false,
+                                })
+                              }
+                              className="mt-0.5 rounded border-[color:var(--wsu-border)]"
+                            />
+                            <span>
+                              <span className="font-medium text-[color:var(--wsu-ink)]">Show campus chips under program title</span>
+                              <span className="mt-0.5 block text-xs text-[color:var(--wsu-muted)]">
+                                Campus pills below the program name on that bar (union of campuses for that program). Turn off if you only want
+                                campuses on each card or in custom layout (<code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">{CARD_LAYOUT_CAMPUS_BADGES}</code>
+                                ). Chip styling: <strong>Appearance &amp; theme</strong> → theme designer → <strong>Chips</strong>.
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+                      ) : null}
                       <label className="flex items-start gap-3 text-sm">
                         <input
                           type="checkbox"
@@ -1917,8 +1948,10 @@ export function ViewBuilder({
                   ) : null}
 
                   <p className="text-xs leading-relaxed text-[color:var(--wsu-muted)]">
-                    Section headers list every campus on any row for that program even when filtering (unless chips under titles are turned
-                    off). Merged cards can add a campus badge row when multiple campuses were combined.
+                    With <strong className="text-[color:var(--wsu-ink)]">Group into sections by program</strong>, the{" "}
+                    <strong className="text-[color:var(--wsu-ink)]">Program section header</strong> box controls the title band and campus chips.
+                    Email-merge can union several campuses; turn off the title band or chips there if you prefer chips only on each card
+                    (and keep <strong className="text-[color:var(--wsu-ink)]">Show automatic merged-row campus badges</strong> on).
                   </p>
                 </>
               )}

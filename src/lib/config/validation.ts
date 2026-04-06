@@ -660,6 +660,8 @@ function parsePresentationConfig(
   const hideCampusFieldInRecordDisplay = input.hideCampusFieldInRecordDisplay === true;
   const showCampusStripOnProgramSections =
     input.showCampusStripOnProgramSections === undefined ? undefined : asBoolean(input.showCampusStripOnProgramSections, true);
+  const showProgramSectionHeaders =
+    input.showProgramSectionHeaders === undefined ? undefined : asBoolean(input.showProgramSectionHeaders, true);
   const showMergedCampusBadgesOnRecords =
     input.showMergedCampusBadgesOnRecords === undefined ? undefined : asBoolean(input.showMergedCampusBadgesOnRecords, true);
   const campusBadgeStyle = parseCampusBadgeStyle(input.campusBadgeStyle);
@@ -792,6 +794,7 @@ function parsePresentationConfig(
       Boolean(mergePeopleFieldKeys?.length) ||
       hideCampusFieldInRecordDisplay ||
       showCampusStripOnProgramSections !== undefined ||
+      showProgramSectionHeaders !== undefined ||
       showMergedCampusBadgesOnRecords !== undefined ||
       Boolean(campusBadgeStyle)
   );
@@ -844,6 +847,7 @@ function parsePresentationConfig(
                 : {}),
             ...(hideCampusFieldInRecordDisplay ? { hideCampusFieldInRecordDisplay: true } : {}),
             ...(showCampusStripOnProgramSections !== undefined ? { showCampusStripOnProgramSections } : {}),
+            ...(showProgramSectionHeaders !== undefined ? { showProgramSectionHeaders } : {}),
             ...(showMergedCampusBadgesOnRecords !== undefined ? { showMergedCampusBadgesOnRecords } : {}),
             ...(campusBadgeStyle ? { campusBadgeStyle } : {}),
           },

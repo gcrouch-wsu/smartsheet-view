@@ -277,6 +277,10 @@ export interface ViewPresentationConfig {
    */
   hideCampusFieldInRecordDisplay?: boolean;
   /**
+   * When false, grouped layouts omit the program section header (title + strip). Rows stay grouped. Default true when unset.
+   */
+  showProgramSectionHeaders?: boolean;
+  /**
    * When false, program section headers omit the campus chip row. Default true when unset.
    */
   showCampusStripOnProgramSections?: boolean;

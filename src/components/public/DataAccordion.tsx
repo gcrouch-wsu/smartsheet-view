@@ -21,7 +21,7 @@ import {
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import { fieldLabelClassName } from "@/lib/field-typography";
 import type { ProgramGroup } from "@/lib/campus-grouping";
-import { isCampusGroupingActive } from "@/lib/campus-grouping";
+import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 
@@ -133,7 +133,7 @@ export function DataAccordion({
               <div className={`border-t ${innerBorderClass} px-5 py-5`}>
                 <MergedRowCampusBadges
                   row={row}
-                  suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                  suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
                   presentation={view.presentation}
                 />
                 {customRows.map((cells, rowIndex) => {
@@ -203,7 +203,7 @@ export function DataAccordion({
               {!cardLayoutIncludesCampusBadges(view) ? (
                 <MergedRowCampusBadges
                   row={row}
-                  suppressWhenProgramSections={isCampusGroupingActive(view.presentation)}
+                  suppressWhenProgramSections={suppressMergedRowCampusBadgesWhenSectionStripShows(view.presentation)}
                   presentation={view.presentation}
                 />
               ) : null}
