@@ -22,14 +22,14 @@ import {
 } from "@/lib/contributor-utils";
 import {
   getEditDrawerOrderedFields,
-  getRowHeadingField,
-  getRowSummaryField,
-  getVisibleRowFields,
   hasCustomCardLayout,
   getCardLayoutRows,
   getCardLayoutColumnCount,
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
+  getContributorEditorAdditionalOnlyFieldKeys,
+  stripCardLayoutRowsForContributorMainEditor,
+  sortContributorEditorAdditionalFields,
 } from "@/components/public/layout-utils";
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 
@@ -118,24 +118,19 @@ export function ContributorCardEditShell({
     });
   }, [view, row, contributorFieldKeys, editableByFieldKey]);
 
-  const visibleFieldKeys = useMemo(() => {
-    const keys = new Set<string>();
-    if (customRows.length > 0) {
-      for (const r of customRows) {
-        for (const cell of r) {
-          if (cell.type === "field") keys.add(cell.field.key);
-        }
-      }
-    } else {
-      const heading = getRowHeadingField(view, row);
-      const summary = getRowSummaryField(view, row, heading?.key);
-      if (heading) keys.add(heading.key);
-      if (summary) keys.add(summary.key);
-      const body = getVisibleRowFields(row, [heading?.key ?? "", summary?.key ?? ""]);
-      for (const f of body) keys.add(f.key);
-    }
-    return keys;
-  }, [view, row, customRows]);
+  const contributorAdditionalOnlyKeys = useMemo(
+    () => getContributorEditorAdditionalOnlyFieldKeys(view),
+    [view],
+  );
+
+  const editorMainCustomRows = useMemo(() => {
+    if (customRows.length === 0) return [];
+    return stripCardLayoutRowsForContributorMainEditor(
+      customRows,
+      contributorAdditionalOnlyKeys,
+      view.presentation?.campusFieldKey,
+    );
+  }, [customRows, contributorAdditionalOnlyKeys, view.presentation?.campusFieldKey]);
 
   const allOrderedFields = useMemo(
     () => getEditDrawerOrderedFields(view, row, contributorFieldKeys, editableByFieldKey),
@@ -152,21 +147,48 @@ export function ContributorCardEditShell({
       if (group) {
         if (groupsSeen.has(group.id)) continue;
         groupsSeen.add(group.id);
-        if (group.attributes.some(a => visibleFieldKeys.has(a.fieldKey))) {
-          incard.push(f);
-        } else {
-          additional.push(f);
-        }
+        incard.push(f);
+        continue;
+      }
+      if (contributorAdditionalOnlyKeys.has(f.key)) {
+        additional.push(f);
       } else {
-        if (visibleFieldKeys.has(f.key)) {
-          incard.push(f);
-        } else {
-          additional.push(f);
-        }
+        incard.push(f);
       }
     }
-    return [incard, additional];
-  }, [allOrderedFields, visibleFieldKeys, groupByFieldKey]);
+    return [incard, sortContributorEditorAdditionalFields(additional, view)];
+  }, [allOrderedFields, groupByFieldKey, contributorAdditionalOnlyKeys, view]);
+
+  /** Field keys still rendered inside the custom card grid (after campus / visibility stripped). */
+  const mainCustomLayoutFieldKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of editorMainCustomRows) {
+      for (const c of r) {
+        if (c.type === "field") s.add(c.field.key);
+      }
+    }
+    return s;
+  }, [editorMainCustomRows]);
+
+  /**
+   * Main-editor fields not assigned a slot in custom card layout (e.g. editable helper columns).
+   * Without this, custom-layout views would hide them from the main area entirely.
+   */
+  const inCardFieldsOutsideCustomLayout = useMemo(() => {
+    const out: ResolvedFieldValue[] = [];
+    const groupsSeen = new Set<string>();
+    for (const f of inCardFields) {
+      const group = groupByFieldKey.get(f.key);
+      if (group) {
+        if (groupsSeen.has(group.id)) continue;
+        groupsSeen.add(group.id);
+        if (!mainCustomLayoutFieldKeys.has(f.key)) out.push(f);
+        continue;
+      }
+      if (!mainCustomLayoutFieldKeys.has(f.key)) out.push(f);
+    }
+    return out;
+  }, [inCardFields, groupByFieldKey, mainCustomLayoutFieldKeys]);
 
   async function handleSave() {
     if (isSaving || isPending) return;
@@ -325,84 +347,97 @@ export function ContributorCardEditShell({
 
       <div className="space-y-6">
         {/* Main Area */}
-        {customRows.length > 0 ? (
-          <div className="space-y-6">
-            {customRows.map((cells, rowIndex) => {
-              const paddedCells = useAlignedGrid
-                ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })]
-                : cells;
-              
-              const gridInner = (
-                <div className={useAlignedGrid ? "grid gap-4" : "space-y-6"} style={gridStyle}>
-                  {useAlignedGrid ? (
-                    <>
-                      {paddedCells.map((cell, i) => (
-                        <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
-                      ))}
-                      {paddedCells.map((cell, i) => {
-                        const fieldKey = cell.type === "field" ? cell.field.key : null;
-                        const ed = fieldKey ? editableByFieldKey.get(fieldKey) : null;
-                        const group = fieldKey ? groupByFieldKey.get(fieldKey) : null;
-                        
-                        return (
-                          <CardLayoutCellRenderer
-                            key={`edit-${i}`}
-                            cell={cell}
-                            flexClass="min-w-0"
-                            mode="edit"
-                            editProps={{
-                              editableDef: ed ?? undefined,
-                              group: group ?? undefined,
-                              value: ed ? formValues[ed.columnId] : undefined,
-                              persons: group ? groupValues[group.id] : undefined,
-                              errors: group ? multiPersonValidation[group.id] : undefined,
-                              onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
-                              onChangePersons: group ? (next) => setGroupValues(prev => ({ ...prev, [group.id]: next })) : undefined,
-                              suppressDuplicateTitle: true,
-                            }}
-                          />
-                        );
-                      })}
-                    </>
-                  ) : (
-                    paddedCells.map((cell, i) => {
-                      const fieldKey = cell.type === "field" ? cell.field.key : null;
-                      const ed = fieldKey ? editableByFieldKey.get(fieldKey) : null;
-                      const group = fieldKey ? groupByFieldKey.get(fieldKey) : null;
+        {hasCustomCardLayout(view) ? (
+          <>
+            {editorMainCustomRows.length > 0 ? (
+              <div className="space-y-6">
+                {editorMainCustomRows.map((cells, rowIndex) => {
+                  const paddedCells = useAlignedGrid
+                    ? [...cells.slice(0, colCount), ...Array(Math.max(0, colCount - cells.length)).fill({ type: "placeholder" as const })]
+                    : cells;
 
-                      return (
-                        <CardLayoutCellRenderer
-                          key={i}
-                          cell={cell}
-                          flexClass="w-full"
-                          mode="edit"
-                          editProps={{
-                            editableDef: ed ?? undefined,
-                            group: group ?? undefined,
-                            value: ed ? formValues[ed.columnId] : undefined,
-                            persons: group ? groupValues[group.id] : undefined,
-                            errors: group ? multiPersonValidation[group.id] : undefined,
-                            onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
-                            onChangePersons: group ? (next) => setGroupValues(prev => ({ ...prev, [group.id]: next })) : undefined,
-                          }}
-                        />
-                      );
-                    })
-                  )}
-                </div>
-              );
+                  const gridInner = (
+                    <div className={useAlignedGrid ? "grid gap-4" : "space-y-6"} style={gridStyle}>
+                      {useAlignedGrid ? (
+                        <>
+                          {paddedCells.map((cell, i) => (
+                            <CardLayoutCellRenderer key={`h-${i}`} cell={cell} flexClass="min-w-0" mode="header" />
+                          ))}
+                          {paddedCells.map((cell, i) => {
+                            const fieldKey = cell.type === "field" ? cell.field.key : null;
+                            const ed = fieldKey ? editableByFieldKey.get(fieldKey) : null;
+                            const group = fieldKey ? groupByFieldKey.get(fieldKey) : null;
 
-              return (
-                <div key={rowIndex} className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)]/40 pt-6" : ""}>
-                  {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
-                </div>
-              );
-            })}
-          </div>
+                            return (
+                              <CardLayoutCellRenderer
+                                key={`edit-${i}`}
+                                cell={cell}
+                                flexClass="min-w-0"
+                                mode="edit"
+                                editProps={{
+                                  editableDef: ed ?? undefined,
+                                  group: group ?? undefined,
+                                  value: ed ? formValues[ed.columnId] : undefined,
+                                  persons: group ? groupValues[group.id] : undefined,
+                                  errors: group ? multiPersonValidation[group.id] : undefined,
+                                  onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
+                                  onChangePersons: group
+                                    ? (next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))
+                                    : undefined,
+                                  suppressDuplicateTitle: true,
+                                }}
+                              />
+                            );
+                          })}
+                        </>
+                      ) : (
+                        paddedCells.map((cell, i) => {
+                          const fieldKey = cell.type === "field" ? cell.field.key : null;
+                          const ed = fieldKey ? editableByFieldKey.get(fieldKey) : null;
+                          const group = fieldKey ? groupByFieldKey.get(fieldKey) : null;
+
+                          return (
+                            <CardLayoutCellRenderer
+                              key={i}
+                              cell={cell}
+                              flexClass="w-full"
+                              mode="edit"
+                              editProps={{
+                                editableDef: ed ?? undefined,
+                                group: group ?? undefined,
+                                value: ed ? formValues[ed.columnId] : undefined,
+                                persons: group ? groupValues[group.id] : undefined,
+                                errors: group ? multiPersonValidation[group.id] : undefined,
+                                onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
+                                onChangePersons: group
+                                  ? (next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))
+                                  : undefined,
+                              }}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  );
+
+                  return (
+                    <div key={rowIndex} className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)]/40 pt-6" : ""}>
+                      {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+            {inCardFieldsOutsideCustomLayout.length > 0 ? (
+              <div
+                className={`space-y-6 ${editorMainCustomRows.length > 0 ? "border-t border-[color:var(--wsu-border)]/40 pt-6" : ""}`}
+              >
+                {inCardFieldsOutsideCustomLayout.map(renderField)}
+              </div>
+            ) : null}
+          </>
         ) : (
-          <div className="space-y-6">
-            {inCardFields.map(renderField)}
-          </div>
+          <div className="space-y-6">{inCardFields.map(renderField)}</div>
         )}
 
         {/* Additional fields toggle */}
@@ -428,7 +463,7 @@ export function ContributorCardEditShell({
             {showAdditional && (
               <div className="mt-6 space-y-6 border-l-2 border-[color:var(--wsu-stone)]/20 pl-4 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
                 <p className="text-xs text-[color:var(--wsu-muted)] italic">
-                  These fields are not typically visible on the public card but are available for editing.
+                  Campus and Public Visibility (when this view includes them) — use the main editor above for program and contact fields.
                 </p>
                 {additionalFields.map(renderField)}
               </div>

@@ -319,6 +319,76 @@ export function cardLayoutIncludesCampusBadges(view: ResolvedView): boolean {
   return layout.some((row) => row.fieldKeys.includes(CARD_LAYOUT_CAMPUS_BADGES));
 }
 
+/** Common view field key when label is not matched (grad programs). */
+const PUBLIC_VISIBILITY_FIELD_KEY = "public_visibility";
+
+/**
+ * Field backing the “Public Visibility” picklist: exact label match, or `public_visibility` key.
+ */
+export function resolvePublicVisibilityFieldKey(view: ResolvedView): string | undefined {
+  const byLabel = view.fields.find(
+    (f) => (f.label || "").trim().toLowerCase() === "public visibility",
+  );
+  if (byLabel) return byLabel.key;
+  const byKey = view.fields.find((f) => f.key === PUBLIC_VISIBILITY_FIELD_KEY);
+  return byKey?.key;
+}
+
+/**
+ * Contributor **card** editor: campus (when configured) and Public Visibility go under “Additional fields”;
+ * program, contacts, and everything else stay in the main editor.
+ */
+export function getContributorEditorAdditionalOnlyFieldKeys(view: ResolvedView): Set<string> {
+  const keys = new Set<string>();
+  const campus = view.presentation?.campusFieldKey;
+  if (campus) keys.add(campus);
+  const pub = resolvePublicVisibilityFieldKey(view);
+  if (pub) keys.add(pub);
+  return keys;
+}
+
+/** Remove campus / visibility cells from custom layout rows for the contributor main editor (placeholders keep column alignment). */
+export function stripCardLayoutRowsForContributorMainEditor(
+  rows: CardLayoutCell[][],
+  additionalOnlyKeys: Set<string>,
+  campusFieldKey: string | undefined,
+): CardLayoutCell[][] {
+  const suppressCampusBadges = Boolean(campusFieldKey && additionalOnlyKeys.has(campusFieldKey));
+  const mapped = rows.map((cells) =>
+    cells.map((cell): CardLayoutCell => {
+      if (cell.type === "field" && additionalOnlyKeys.has(cell.field.key)) {
+        return { type: "placeholder" };
+      }
+      if (cell.type === "campus_badges" && suppressCampusBadges) {
+        return { type: "placeholder" };
+      }
+      return cell;
+    }),
+  );
+  return mapped.filter((cells) =>
+    cells.some(
+      (c) =>
+        c.type === "field" ||
+        c.type === "text" ||
+        (c.type === "campus_badges" && c.campuses.length > 0),
+    ),
+  );
+}
+
+export function sortContributorEditorAdditionalFields(
+  fields: ResolvedFieldValue[],
+  view: ResolvedView,
+): ResolvedFieldValue[] {
+  const campus = view.presentation?.campusFieldKey;
+  const pub = resolvePublicVisibilityFieldKey(view);
+  const rank = (key: string): number => {
+    if (campus && key === campus) return 0;
+    if (pub && key === pub) return 1;
+    return 99;
+  };
+  return [...fields].sort((a, b) => rank(a.key) - rank(b.key));
+}
+
 /**
  * Field order for the contributor edit drawer: mirrors public card order (custom layout or heading/summary/body)
  * and keeps contributor-target fields even when the card would hide them as empty.

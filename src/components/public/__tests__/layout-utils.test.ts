@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { cardLayoutIncludesCampusBadges, getCardLayoutRows, getEditDrawerOrderedFields } from "@/components/public/layout-utils";
+import {
+  cardLayoutIncludesCampusBadges,
+  getCardLayoutRows,
+  getContributorEditorAdditionalOnlyFieldKeys,
+  getEditDrawerOrderedFields,
+  resolvePublicVisibilityFieldKey,
+  sortContributorEditorAdditionalFields,
+  stripCardLayoutRowsForContributorMainEditor,
+} from "@/components/public/layout-utils";
 import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import { contributorResolvedFieldStub } from "@/lib/contributor-utils";
 import { CARD_LAYOUT_CAMPUS_BADGES } from "@/lib/config/types";
@@ -328,5 +336,61 @@ describe("getEditDrawerOrderedFields", () => {
 
     const ordered = getEditDrawerOrderedFields(view, row, new Set(["program_name", "pub"]), editableMap);
     expect(ordered.map((f) => f.key)).toContain("pub");
+  });
+});
+
+describe("contributor editor campus / visibility zoning", () => {
+  it("additional-only keys include presentation campusFieldKey and Public Visibility field", () => {
+    const view = makeView({
+      fields: [
+        { key: "program_name", label: "Program", renderType: "text" },
+        { key: "grad_campus", label: "Campus", renderType: "badge" },
+        { key: "public_visibility", label: "Public Visibility", renderType: "badge" },
+      ],
+      presentation: { campusFieldKey: "grad_campus" },
+    });
+    expect([...getContributorEditorAdditionalOnlyFieldKeys(view)].sort()).toEqual(["grad_campus", "public_visibility"]);
+  });
+
+  it("resolvePublicVisibilityFieldKey falls back to public_visibility key", () => {
+    const view = makeView({
+      fields: [{ key: "public_visibility", label: "Other label", renderType: "badge" }],
+    });
+    expect(resolvePublicVisibilityFieldKey(view)).toBe("public_visibility");
+  });
+
+  it("stripCardLayoutRowsForContributorMainEditor removes campus field row and campus_badges row", () => {
+    const row = makeRow(
+      {
+        program_name: textField("program_name", "Program", "Bio"),
+        campus: textField("campus", "Campus", "Pullman"),
+      },
+      { mergedCampuses: ["Pullman"] },
+    );
+    const view = makeView({
+      presentation: {
+        campusFieldKey: "campus",
+        cardLayout: [{ fieldKeys: ["program_name", "campus"] }, { fieldKeys: [CARD_LAYOUT_CAMPUS_BADGES] }],
+      },
+    });
+    const rows = getCardLayoutRows(view, row);
+    const stripped = stripCardLayoutRowsForContributorMainEditor(rows, new Set(["campus"]), "campus");
+    expect(stripped).toHaveLength(1);
+    expect(stripped[0]?.map((c) => c.type)).toEqual(["field", "placeholder"]);
+  });
+
+  it("sortContributorEditorAdditionalFields orders campus before public visibility", () => {
+    const view = makeView({
+      fields: [
+        { key: "campus", label: "Campus", renderType: "badge" },
+        { key: "public_visibility", label: "Public Visibility", renderType: "badge" },
+      ],
+      presentation: { campusFieldKey: "campus" },
+    });
+    const sorted = sortContributorEditorAdditionalFields(
+      [textField("public_visibility", "Public Visibility", "Show"), textField("campus", "Campus", "P")],
+      view,
+    );
+    expect(sorted.map((f) => f.key)).toEqual(["campus", "public_visibility"]);
   });
 });
