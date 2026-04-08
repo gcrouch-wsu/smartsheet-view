@@ -31,11 +31,12 @@ import type { ProgramGroup } from "@/lib/campus-grouping";
 import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
+import { fieldBlockOuterClassName } from "@/components/public/FieldBlock";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
-    <div key={`${rowId}-${field.key}`} className="space-y-1">
+    <div key={`${rowId}-${field.key}`} className={fieldBlockOuterClassName(field)}>
       {!field.hideLabel && (
         <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}

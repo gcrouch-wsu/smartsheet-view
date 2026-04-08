@@ -25,11 +25,12 @@ import {
 } from "@/lib/campus-grouping";
 import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
+import { fieldBlockOuterClassName } from "@/components/public/FieldBlock";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
-    <div key={`${rowId}-${field.key}`} className="space-y-1">
+    <div key={`${rowId}-${field.key}`} className={fieldBlockOuterClassName(field)}>
       {!field.hideLabel && (
         <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}

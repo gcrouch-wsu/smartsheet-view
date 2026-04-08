@@ -22,11 +22,12 @@ import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/co
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
+import { fieldBlockOuterClassName } from "@/components/public/FieldBlock";
 import { fieldLabelClassName } from "@/lib/field-typography";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
-    <div key={`${rowId}-${field.key}`} className="space-y-1">
+    <div key={`${rowId}-${field.key}`} className={fieldBlockOuterClassName(field)}>
       {!field.hideLabel && (
         <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}
