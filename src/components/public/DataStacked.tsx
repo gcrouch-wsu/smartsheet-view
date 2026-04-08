@@ -185,7 +185,7 @@ export function DataStacked({
           <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {bodyFields.map((field) => (
               <div key={`${row.id}-${field.key}`}>
-                <FieldBlock field={field} compact />
+                <FieldBlock field={field} compact inCssGrid />
               </div>
             ))}
           </div>

@@ -28,7 +28,7 @@ import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/co
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (
-    <div key={`${rowId}-${field.key}`} className={fieldBlockOuterClassName(field)}>
+    <div key={`${rowId}-${field.key}`} className={fieldBlockOuterClassName(field, undefined, { inCssGrid: true })}>
       {!field.hideLabel && (
         <p className={fieldLabelClassName(field)}>{field.label}</p>
       )}
