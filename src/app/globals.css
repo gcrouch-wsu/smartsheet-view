@@ -320,6 +320,16 @@ a {
   font-weight: var(--view-people-detail-font-weight, 400);
 }
 
+/** Campus pill beside people_group names; colors from theme designer or Setup → Chips overrides (inline). */
+.view-people-campus-chip {
+  background: var(
+    --view-people-campus-chip-bg,
+    color-mix(in srgb, var(--view-surface-muted-bg, var(--wsu-stone)) 40%, white)
+  );
+  color: var(--view-people-campus-chip-text, var(--view-text, var(--wsu-ink)));
+  border-color: var(--view-people-campus-chip-border, var(--view-border, var(--wsu-border)));
+}
+
 /* Email, phone, and URL values in public data (theme: valueLinkColor, valueLinkDecoration) */
 .view-field-link {
   color: var(--view-value-link-color, var(--view-accent, var(--wsu-crimson)));

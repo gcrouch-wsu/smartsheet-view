@@ -234,7 +234,7 @@ describe("ContributorGroupFieldControl", () => {
     const html = renderToStaticMarkup(
       <ContributorGroupFieldControl group={group} persons={persons} onChange={() => {}} />,
     );
-    expect(html).toContain("flex flex-wrap items-end gap-2");
+    expect(html).toContain("flex-row flex-wrap items-end gap-x-3");
     expect(html).toContain('id="rg-staff-n-0"');
     expect(html).toContain('id="rg-staff-c-0"');
     expect(html).toContain("<select");

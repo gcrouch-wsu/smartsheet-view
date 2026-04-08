@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CampusBadgeStyleProvider } from "@/components/public/CampusBadgeStyleContext";
 import { FieldValue } from "@/components/public/FieldValue";
 import { getRowHeadingField } from "@/components/public/layout-utils";
 import { ViewStyleWrapper } from "@/components/public/ViewStyleWrapper";
@@ -208,6 +209,7 @@ export function PrintViewDocument({
 
   return (
     <ViewStyleWrapper style={view.style} themePresetId={view.themePresetId}>
+      <CampusBadgeStyleProvider style={view.presentation?.campusBadgeStyle}>
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
       {printCompact ? (
         <style
@@ -311,6 +313,7 @@ export function PrintViewDocument({
           <p className="text-sm text-[color:var(--wsu-muted)]">No rows to display for this view.</p>
         )}
       </main>
+      </CampusBadgeStyleProvider>
     </ViewStyleWrapper>
   );
 }

@@ -350,6 +350,12 @@ export interface ViewStyleConfig {
   peopleNameFontWeight?: string;
   /** Email/phone weight inside grouped people fields. */
   peopleDetailFontWeight?: string;
+  /** Background for campus chip beside names in people_group (Setup → Chips can override per field). */
+  peopleCampusChipBg?: string;
+  /** Text color for that chip. */
+  peopleCampusChipText?: string;
+  /** Border color for that chip. */
+  peopleCampusChipBorder?: string;
   /** Body font style (e.g. normal, italic). */
   fontStyle?: string;
   /** Heading font style (e.g. normal, italic). */

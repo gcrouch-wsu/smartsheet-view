@@ -1,12 +1,14 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useOptionalCampusBadgeStyle } from "@/components/public/CampusBadgeStyleContext";
 import { useDisplayTimezone } from "@/components/public/DisplayTimezoneContext";
-import type { ResolvedFieldValue } from "@/lib/config/types";
-import { publicCoordinatorCampusBadgeLabel } from "@/lib/coordinator-campus-badge";
-import { fieldValueTypographyClass } from "@/lib/field-typography";
-import { formatDateInDisplayTimeZone } from "@/lib/display-datetime";
 import { useViewValueLinkFlags } from "@/components/public/ViewValueLinkContext";
+import type { ResolvedFieldValue } from "@/lib/config/types";
+import { campusChipInlineStyle } from "@/lib/campus-chip-inline-style";
+import { publicCoordinatorCampusBadgeLabel } from "@/lib/coordinator-campus-badge";
+import { formatDateInDisplayTimeZone } from "@/lib/display-datetime";
+import { fieldValueTypographyClass } from "@/lib/field-typography";
 
 function tx(field: ResolvedFieldValue, ...classes: string[]) {
   const t = fieldValueTypographyClass(field);
@@ -34,20 +36,25 @@ function PersonSummary({
   plainValueLinks?: boolean;
 }) {
   const { linkEmailsInView, linkPhonesInView } = useViewValueLinkFlags();
+  const campusPresentation = useOptionalCampusBadgeStyle();
+  const chipInline = campusChipInlineStyle(campusPresentation);
   const linkEmail = !plainValueLinks && linkEmailsInView;
   const linkPhone = !plainValueLinks && linkPhonesInView;
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
   const detailClass = "view-people-detail view-field-link";
-  const campusChipClass =
-    "ml-1 inline-block align-middle rounded-full border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[11px] font-medium leading-none text-[color:var(--wsu-ink)]";
+  /** Matches CampusBadgeStrip: custom radius can override rounded-full when inline style sets borderRadius. */
+  const campusChipClass = chipInline
+    ? "view-people-campus-chip ml-1 inline-block max-w-full align-middle rounded-full border px-2 py-0.5 text-[11px] font-medium leading-normal"
+    : "view-people-campus-chip ml-1 inline-block max-w-full align-middle rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none";
 
   const nameTrimmed = name?.trim() ?? "";
   /** R5: never show a campus badge (or print suffix) unless there is a display name. */
   const showCampusBesideName = Boolean(campusBadgeLabel && nameTrimmed);
+  const stackGap = compact ? "gap-0.5" : "gap-1";
 
   return (
-    <>
-      {/* R5: campus chip/suffix only renders inside this block when nameTrimmed is set (see showCampusBesideName). */}
+    <div className={`flex min-w-0 flex-col ${stackGap}`}>
+      {/* R5: campus chip/suffix only when nameTrimmed (see showCampusBesideName). */}
       {nameTrimmed ? (
         <span
           className={`inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 ${compact ? "" : "max-w-full"}`}
@@ -60,42 +67,36 @@ function PersonSummary({
                 {campusBadgeLabel}
               </span>
             ) : (
-              <span className={campusChipClass}>{campusBadgeLabel}</span>
+              <span className={campusChipClass} style={chipInline ?? undefined}>
+                {campusBadgeLabel}
+              </span>
             )
           ) : null}
         </span>
       ) : null}
       {email ? (
-        linkEmail ? (
-          <a href={`mailto:${email}`} className={detailClass}>
-            {email}
-          </a>
-        ) : (
-          <span className="view-people-detail text-[color:var(--wsu-ink)]">{email}</span>
-        )
+        <div className="min-w-0">
+          {linkEmail ? (
+            <a href={`mailto:${email}`} className={`${detailClass} block`}>
+              {email}
+            </a>
+          ) : (
+            <span className="view-people-detail block text-[color:var(--wsu-ink)]">{email}</span>
+          )}
+        </div>
       ) : null}
       {phone ? (
-        compact ? (
-          linkPhone ? (
-            <a href={telHref} className={detailClass}>
+        <div className="min-w-0">
+          {linkPhone ? (
+            <a href={telHref} className={`${detailClass} block`}>
               {phone}
             </a>
           ) : (
-            <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
-          )
-        ) : (
-          <span className="mt-0.5 block">
-            {linkPhone ? (
-              <a href={telHref} className={`${detailClass} block`}>
-                {phone}
-              </a>
-            ) : (
-              <span className="view-people-detail text-[color:var(--wsu-ink)]">{phone}</span>
-            )}
-          </span>
-        )
+            <span className="view-people-detail block text-[color:var(--wsu-ink)]">{phone}</span>
+          )}
+        </div>
       ) : null}
-    </>
+    </div>
   );
 }
 

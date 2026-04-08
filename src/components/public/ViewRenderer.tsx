@@ -7,6 +7,7 @@ import { DataListDetail } from "@/components/public/DataListDetail";
 import { DataStacked } from "@/components/public/DataStacked";
 import { DataTabbed } from "@/components/public/DataTabbed";
 import { DataTable } from "@/components/public/DataTable";
+import { CampusBadgeStyleProvider } from "@/components/public/CampusBadgeStyleContext";
 import { ViewValueLinkProvider } from "@/components/public/ViewValueLinkContext";
 import type { ProgramGroup } from "@/lib/campus-grouping";
 import type { LayoutType, ResolvedView } from "@/lib/config/types";
@@ -111,5 +112,9 @@ export function PublicViewRenderer({
       <DataTable view={view} programGroups={programGroups} editableRowIds={editableRowIds} onEditRow={onEditRow} />
     );
 
-  return <ViewValueLinkProvider value={linkCtx}>{body}</ViewValueLinkProvider>;
+  return (
+    <ViewValueLinkProvider value={linkCtx}>
+      <CampusBadgeStyleProvider style={view.presentation?.campusBadgeStyle}>{body}</CampusBadgeStyleProvider>
+    </ViewValueLinkProvider>
+  );
 }

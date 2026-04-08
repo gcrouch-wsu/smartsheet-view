@@ -37,6 +37,9 @@ const COLOR_LABELS: Record<string, string> = {
   controlActiveText: "Active control text",
   badgeBg: "Badge background (Smartsheet “badge” columns only)",
   badgeText: "Badge text (Smartsheet “badge” columns only)",
+  peopleCampusChipBg: "People campus chip background (beside names in people_group)",
+  peopleCampusChipText: "People campus chip text",
+  peopleCampusChipBorder: "People campus chip border",
 };
 
 const COLOR_TOKENS = Object.keys(COLOR_LABELS) as Array<keyof ViewStyleConfig>;
@@ -631,11 +634,13 @@ export function ThemeEditor({ view, update }: ThemeEditorProps) {
             <Section title="Chips">
               <p className="text-xs text-[color:var(--wsu-muted)]">
                 <strong className="font-semibold text-[color:var(--wsu-ink)]">Campus chips</strong> — styling for program-section strips,
-                merged-row campus badges, and the{" "}
-                <code className="rounded bg-[color:var(--wsu-stone)]/50 px-1 py-0.5 text-[10px]">__campus_badges__</code> card slot. Separate
-                from palette{" "}
-                <strong className="font-semibold text-[color:var(--wsu-ink)]">Badge background / Badge text</strong> (Smartsheet badge
-                columns only).
+                merged-row campus badges, the{" "}
+                <code className="rounded bg-[color:var(--wsu-stone)]/50 px-1 py-0.5 text-[10px]">__campus_badges__</code> card slot, and{" "}
+                <strong className="font-semibold text-[color:var(--wsu-ink)]">pills beside names</strong> in people_group (numbered slots with
+                campus). For chip <strong className="font-semibold text-[color:var(--wsu-ink)]">colors only</strong>, use Palette → People campus
+                chip background / text / border. Separate from palette{" "}
+                <strong className="font-semibold text-[color:var(--wsu-ink)]">Badge background / Badge text</strong> (Smartsheet badge columns
+                only).
               </p>
               <div className="mt-4 space-y-3">
                 <div>
