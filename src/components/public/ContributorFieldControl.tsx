@@ -215,7 +215,7 @@ export function ContributorGroupFieldControl({
   const hasCampus = group.attributes.some((a) => a.attribute === "campus");
 
   return (
-    <div className="space-y-3">
+    <div className="w-full min-w-0 space-y-3">
       <div>
         {!suppressDuplicateGroupTitle && <p className={labelClass}>{group.label}</p>}
         <p
@@ -250,21 +250,21 @@ export function ContributorGroupFieldControl({
             fixedSlotCount > 0
               ? smartsheetSlotTitle || `${group.label} — ${idx + 1} of ${fixedSlotCount}`
               : `${group.label} — person ${idx + 1}`;
-          const preview =
-            person.name.trim() || person.email.trim()
-              ? person.name.trim() || person.email.trim()
-              : positionLabel;
-
           return (
             <fieldset
               key={`${group.id}-person-${idx}`}
-              className="rounded-xl border border-[color:var(--wsu-border)]/80 bg-white/80 p-3 shadow-sm space-y-2"
+              className="w-full min-w-0 space-y-2 rounded-xl border border-[color:var(--wsu-border)]/80 bg-white/80 p-3 shadow-sm"
             >
               <legend className="mb-1 w-full border-b border-[color:var(--wsu-border)]/40 px-0.5 pb-1.5 text-left text-xs font-semibold text-[color:var(--wsu-ink)]">
                 {positionLabel}
                 {person.name.trim() || person.email.trim() ? (
-                  <span className="mt-0.5 block text-[11px] font-normal text-[color:var(--wsu-muted)]">
-                    {preview}
+                  <span className="mt-1 block space-y-0.5 text-[11px] font-normal leading-snug text-[color:var(--wsu-muted)]">
+                    {person.name.trim() ? (
+                      <span className="block break-words">{person.name.trim()}</span>
+                    ) : null}
+                    {person.email.trim() ? (
+                      <span className="block break-all">{person.email.trim()}</span>
+                    ) : null}
                   </span>
                 ) : null}
               </legend>
@@ -281,7 +281,7 @@ export function ContributorGroupFieldControl({
                   </button>
                 </div>
               ) : null}
-              <div className="grid gap-2">
+              <div className="flex w-full min-w-0 flex-col gap-3">
                 {hasName &&
                   (() => {
                     const attr = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
@@ -319,9 +319,9 @@ export function ContributorGroupFieldControl({
 
                     if (showCampusBesideName && campusAttrForRow) {
                       return (
-                        <div key="name" className="flex flex-wrap items-end gap-2">
-                          <div className="min-w-0 flex-1 space-y-0.5">{nameInput}</div>
-                          <div className="w-full min-w-[12rem] shrink-0 space-y-0.5 sm:w-[14rem]">
+                        <div key="name" className="flex w-full min-w-0 flex-row flex-wrap items-end gap-x-3 gap-y-2">
+                          <div className="min-w-0 flex-1 basis-full space-y-0.5 sm:basis-0">{nameInput}</div>
+                          <div className="w-full min-w-0 shrink-0 space-y-0.5 sm:w-[14rem]">
                             <label className={labelClass} htmlFor={`${group.id}-c-${idx}`}>
                               {campusAttrForRow.columnTitle ?? "Campus"}
                             </label>
@@ -348,14 +348,18 @@ export function ContributorGroupFieldControl({
                       );
                     }
 
-                    return <div className="space-y-0.5">{nameInput}</div>;
+                    return (
+                      <div key="name" className="space-y-0.5">
+                        {nameInput}
+                      </div>
+                    );
                   })()}
                 {hasEmail &&
                   (() => {
                     const attr = attributeForPersonRow(group, idx, "email", fixedSlotOrder);
                     const colLabel = attr?.columnTitle ?? "Email";
                     return (
-                      <div key="email" className="space-y-0.5">
+                      <div key="email" className="w-full min-w-0 space-y-0.5">
                         <label className={labelClass} htmlFor={`${group.id}-e-${idx}`}>
                           {colLabel}
                         </label>

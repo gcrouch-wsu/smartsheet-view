@@ -264,6 +264,23 @@ describe("validateMultiPersonGroupsForSave", () => {
     });
     expect(hasMultiPersonValidationErrors(v)).toBe(false);
   });
+
+  it("treats campus-only rows as unused (optional numbered slots)", () => {
+    const withCampus: EditableFieldGroup = {
+      ...group,
+      attributes: [
+        ...group.attributes,
+        { attribute: "campus", fieldKey: "c", columnId: 3 },
+      ],
+    };
+    const v = validateMultiPersonGroupsForSave([withCampus], {
+      g1: [
+        { name: "Ada", email: "a@b.com", phone: "", campus: "" },
+        { name: "", email: "", phone: "", campus: "Pullman" },
+      ],
+    });
+    expect(hasMultiPersonValidationErrors(v)).toBe(false);
+  });
 });
 
 describe("parseMultiPersonValue", () => {
@@ -624,6 +641,31 @@ describe("serializeMultiPersonToCells", () => {
     expect(serializeMultiPersonToCells(persons, group)).toEqual([
       { columnId: 1, value: "Ada" },
       { columnId: 2, value: "Pullman" },
+    ]);
+  });
+
+  it("clears campus for contact-empty slots (no orphan campus without name/email/phone)", () => {
+    const group: EditableFieldGroup = {
+      id: "g",
+      label: "Staff",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "staff",
+      attributes: [
+        { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1", columnType: "TEXT_NUMBER" },
+        { attribute: "campus", fieldKey: "staff", columnId: 2, slot: "1", columnType: "PICKLIST" },
+        { attribute: "name", fieldKey: "staff", columnId: 3, slot: "2", columnType: "TEXT_NUMBER" },
+        { attribute: "campus", fieldKey: "staff", columnId: 4, slot: "2", columnType: "PICKLIST" },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [
+      { name: "Ada", email: "", phone: "", campus: "Pullman" },
+      { name: "", email: "", phone: "", campus: "Spokane" },
+    ];
+    expect(serializeMultiPersonToCells(persons, group)).toEqual([
+      { columnId: 1, value: "Ada" },
+      { columnId: 2, value: "Pullman" },
+      { columnId: 3, value: "" },
+      { columnId: 4, value: "" },
     ]);
   });
 });

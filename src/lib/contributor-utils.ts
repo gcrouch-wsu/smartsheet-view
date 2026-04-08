@@ -106,6 +106,11 @@ export interface MultiPersonEntry {
 /** Per-person validation messages for multi-person groups (name/email required when those columns exist). */
 export type MultiPersonFieldErrors = { name?: string; email?: string };
 
+/** True when a numbered slot has no contact data — optional campus alone does not count as "in use". */
+export function isMultiPersonSlotContactEmpty(p: MultiPersonEntry): boolean {
+  return !p.name.trim() && !p.email.trim() && !p.phone.trim();
+}
+
 /**
  * Returns groupId → (personIndex → field errors). Empty object means OK to save (including zero people in a group).
  * Phone is never required. When both name and email attributes exist, both must be non-empty per person.
@@ -119,15 +124,11 @@ export function validateMultiPersonGroupsForSave(
     const persons = groupValues[group.id] ?? [];
     const hasName = group.attributes.some((a) => a.attribute === "name");
     const hasEmail = group.attributes.some((a) => a.attribute === "email");
-    const hasCampus = group.attributes.some((a) => a.attribute === "campus");
     const byIndex: Record<number, MultiPersonFieldErrors> = {};
     persons.forEach((p, idx) => {
-      // Skip validation for empty rows (unused numbered slots). If the group has only a phone attribute,
-      // a row with only phone filled is not "entirelyUnused" and passes when hasName/hasEmail are false.
-      const campusEmpty = !hasCampus || !(p.campus?.trim());
-      const entirelyUnused =
-        !p.name.trim() && !p.email.trim() && !p.phone.trim() && campusEmpty;
-      if (entirelyUnused) {
+      // Skip validation for empty rows (unused numbered slots). Campus-only rows are treated as unused so
+      // optional slots stay optional; serializer clears orphan campus values for contact-empty slots.
+      if (isMultiPersonSlotContactEmpty(p)) {
         return;
       }
       const err: MultiPersonFieldErrors = {};
@@ -490,6 +491,7 @@ function serializeSlotBasedMultiPersonToCells(
     }
     const personIdx = slotOrder.indexOf(attr.slot);
     const p = persons[personIdx] ?? { name: "", email: "", phone: "", campus: "" };
+    const slotContactEmpty = isMultiPersonSlotContactEmpty(p);
 
     if (isContact(attr.columnType)) {
       const mk = contactSlotMergeKey(attr.slot, attr.columnId);
@@ -512,8 +514,9 @@ function serializeSlotBasedMultiPersonToCells(
       continue;
     }
 
-    const val =
-      attr.attribute === "name"
+    const val = slotContactEmpty
+      ? ""
+      : attr.attribute === "name"
         ? p.name.trim()
         : attr.attribute === "email"
           ? p.email.trim()
