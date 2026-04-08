@@ -12,8 +12,6 @@ import {
 } from "@/components/public/ContributorFieldControl";
 import {
   contributorEditTargetRowId,
-  validateMultiPersonGroupsForSave,
-  hasMultiPersonValidationErrors,
   serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
   parseMultiPersonRow,
@@ -75,11 +73,6 @@ export function ContributorCardEditShell({
   const writableFieldGroups = useMemo(
     () => editableFieldGroups.filter((g) => !g.readOnly),
     [editableFieldGroups],
-  );
-
-  const multiPersonValidation = useMemo(
-    () => validateMultiPersonGroupsForSave(writableFieldGroups, groupValues),
-    [writableFieldGroups, groupValues],
   );
 
   const patchRowId = useMemo(
@@ -197,13 +190,6 @@ export function ContributorCardEditShell({
       return;
     }
 
-    const mpErrors = validateMultiPersonGroupsForSave(writableFieldGroups, groupValues);
-    if (hasMultiPersonValidationErrors(mpErrors)) {
-      setError("Please fix the errors in multi-person groups before saving.");
-      toast.addToast("Fix highlighted fields before saving.", "error");
-      return;
-    }
-
     setIsSaving(true);
     setError(null);
 
@@ -282,7 +268,6 @@ export function ContributorCardEditShell({
           group={group}
           persons={groupValues[group.id] ?? []}
           onChange={(next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))}
-          errors={multiPersonValidation[group.id]}
         />
       );
     }
@@ -379,7 +364,6 @@ export function ContributorCardEditShell({
                                   group: group ?? undefined,
                                   value: ed ? formValues[ed.columnId] : undefined,
                                   persons: group ? groupValues[group.id] : undefined,
-                                  errors: group ? multiPersonValidation[group.id] : undefined,
                                   onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
                                   onChangePersons: group
                                     ? (next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))
@@ -407,7 +391,6 @@ export function ContributorCardEditShell({
                                 group: group ?? undefined,
                                 value: ed ? formValues[ed.columnId] : undefined,
                                 persons: group ? groupValues[group.id] : undefined,
-                                errors: group ? multiPersonValidation[group.id] : undefined,
                                 onChangeValue: ed ? (val) => setFormValues(prev => ({ ...prev, [ed.columnId]: val })) : undefined,
                                 onChangePersons: group
                                   ? (next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))

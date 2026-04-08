@@ -159,7 +159,7 @@ export default function ContributorInstructionsPage() {
               <li>Some groups also show <strong className="text-[color:var(--wsu-ink)]">Clear everyone</strong>.</li>
               <li>Some groups use fixed role slots and will not show <strong className="text-[color:var(--wsu-ink)]">Add person</strong> or <strong className="text-[color:var(--wsu-ink)]">Remove</strong>.</li>
               <li>Some legacy grouped roles may be display-only if the administrator marked them read-only for safety.</li>
-              <li>If a group shows both name and email, both are required to save that person; phone is usually optional unless you were told otherwise.</li>
+              <li>If a group shows both name and email, fill the fields your program uses; name or email alone may already match the sheet. Phone is usually optional unless you were told otherwise.</li>
               <li>You do not need to type comma-separated or semicolon-separated lists when the grouped editor is shown.</li>
             </ul>
             <p className="mt-4 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">

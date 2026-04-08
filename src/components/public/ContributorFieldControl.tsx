@@ -223,7 +223,7 @@ export function ContributorGroupFieldControl({
         >
           {fixedSlotCount > 0
             ? `This role has ${fixedSlotCount} numbered positions in Smartsheet (shown below as 1–${fixedSlotCount}). Fill each row you use; leave unused rows blank or clear values before saving if your workflow allows.`
-            : "One block per person. Name and email are both required when your sheet has both columns."}{" "}
+            : "One block per person. Fill the fields you use; name or email alone is allowed to match your sheet."}{" "}
           Phone is optional until you have it.
         </p>
       </div>

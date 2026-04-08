@@ -14,11 +14,9 @@ import type { EditableFieldGroup, ResolvedView, ResolvedViewRow } from "@/lib/co
 import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import {
   contributorEditTargetRowId,
-  hasMultiPersonValidationErrors,
   parseMultiPersonRow,
   serializeContactDisplayToObjectValue,
   serializeMultiPersonToCells,
-  validateMultiPersonGroupsForSave,
   type MultiPersonEntry,
 } from "@/lib/contributor-utils";
 
@@ -103,12 +101,6 @@ export function EditRowDrawer({
     () => editableFieldGroups.filter((g) => !g.readOnly),
     [editableFieldGroups],
   );
-
-  const multiPersonValidation = useMemo(
-    () => validateMultiPersonGroupsForSave(writableFieldGroups, groupValues),
-    [writableFieldGroups, groupValues],
-  );
-  const multiPersonHasErrors = hasMultiPersonValidationErrors(multiPersonValidation);
 
   const editDrawerTitle = useMemo(() => {
     if (!row) {
@@ -224,18 +216,6 @@ export function EditRowDrawer({
       toast.addToast("Cannot save: missing public view address.", "error");
       return;
     }
-    const mpErrors = validateMultiPersonGroupsForSave(writableFieldGroups, groupValues);
-    if (hasMultiPersonValidationErrors(mpErrors)) {
-      const firstMsg = Object.values(mpErrors)
-        .flatMap((m) => Object.values(m))
-        .map((e) => e.name ?? e.email)
-        .find(Boolean);
-      setError(firstMsg ?? "Complete name and email for each person, or remove anyone you are not saving.");
-      toast.addToast(firstMsg ?? "Fix the highlighted fields before saving.", "error");
-      document.getElementById("edit-row-drawer-validation-summary")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      return;
-    }
-
     setIsSaving(true);
     setError(null);
 
@@ -389,7 +369,6 @@ export function EditRowDrawer({
                               group={group}
                               persons={groupValues[group.id] ?? []}
                               onChange={(next) => setGroupValues((prev) => ({ ...prev, [group.id]: next }))}
-                              errors={multiPersonValidation[group.id]}
                             />
                           </div>
                         );
@@ -418,20 +397,6 @@ export function EditRowDrawer({
                   })()}
                 </div>
               </article>
-            )}
-
-            {multiPersonHasErrors && (
-              <div
-                id="edit-row-drawer-validation-summary"
-                role="status"
-                className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-              >
-                <p className="font-medium">Before you can save</p>
-                <p className="mt-1 text-amber-900/90">
-                  Each person must have the required fields filled in (name and email when both columns exist), or use{" "}
-                  <strong>Remove person</strong>. Phone and similar fields can wait for a later edit.
-                </p>
-              </div>
             )}
 
             {error && (

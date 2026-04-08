@@ -142,40 +142,17 @@ export function isMultiPersonSlotContactEmpty(p: MultiPersonEntry): boolean {
 
 /**
  * Returns groupId → (personIndex → field errors). Empty object means OK to save (including zero people in a group).
- * Phone is never required. When both name and email attributes exist, both must be non-empty per person.
+ *
+ * Name and email are **not** cross-required: Smartsheet may already have only a name or only an email for a role
+ * slot, and requiring both blocked saves when editing unrelated fields (e.g. layout visibility).
  */
 export function validateMultiPersonGroupsForSave(
   groups: EditableFieldGroup[],
   groupValues: Record<string, MultiPersonEntry[]>,
 ): Record<string, Record<number, MultiPersonFieldErrors>> {
-  const result: Record<string, Record<number, MultiPersonFieldErrors>> = {};
-  for (const group of groups) {
-    const persons = groupValues[group.id] ?? [];
-    const hasName = group.attributes.some((a) => a.attribute === "name");
-    const hasEmail = group.attributes.some((a) => a.attribute === "email");
-    const byIndex: Record<number, MultiPersonFieldErrors> = {};
-    persons.forEach((p, idx) => {
-      // Skip validation for empty rows (unused numbered slots). Campus-only rows are treated as unused so
-      // optional slots stay optional; serializer clears orphan campus values for contact-empty slots.
-      if (isMultiPersonSlotContactEmpty(p)) {
-        return;
-      }
-      const err: MultiPersonFieldErrors = {};
-      if (hasName && !trimMultiPersonText(p.name)) {
-        err.name = "Enter a name to save, or remove this person.";
-      }
-      if (hasEmail && !trimMultiPersonText(p.email)) {
-        err.email = "Enter an email to save, or remove this person.";
-      }
-      if (Object.keys(err).length > 0) {
-        byIndex[idx] = err;
-      }
-    });
-    if (Object.keys(byIndex).length > 0) {
-      result[group.id] = byIndex;
-    }
-  }
-  return result;
+  void groups;
+  void groupValues;
+  return {};
 }
 
 export function hasMultiPersonValidationErrors(errors: Record<string, Record<number, MultiPersonFieldErrors>>): boolean {

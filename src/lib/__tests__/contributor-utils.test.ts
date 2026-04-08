@@ -237,15 +237,21 @@ describe("validateMultiPersonGroupsForSave", () => {
     expect(hasMultiPersonValidationErrors(v)).toBe(false);
   });
 
-  it("requires name and email when both attributes exist", () => {
-    const v = validateMultiPersonGroupsForSave([group], {
-      g1: [{ name: "", email: "a@b.com", phone: "", campus: "" }],
-    });
-    expect(v.g1?.[0]?.name).toBeDefined();
-    const v2 = validateMultiPersonGroupsForSave([group], {
-      g1: [{ name: "Ada", email: "", phone: "", campus: "" }],
-    });
-    expect(v2.g1?.[0]?.email).toBeDefined();
+  it("allows name-only or email-only rows when both attributes exist (legacy / partial sheet data)", () => {
+    expect(
+      hasMultiPersonValidationErrors(
+        validateMultiPersonGroupsForSave([group], {
+          g1: [{ name: "", email: "a@b.com", phone: "", campus: "" }],
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      hasMultiPersonValidationErrors(
+        validateMultiPersonGroupsForSave([group], {
+          g1: [{ name: "Ada", email: "", phone: "", campus: "" }],
+        }),
+      ),
+    ).toBe(false);
   });
 
   it("passes when name and email filled", () => {
