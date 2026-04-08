@@ -3,6 +3,7 @@ import type {
   EditableFieldGroupAttribute,
   RenderType,
   ResolvedFieldValue,
+  ResolvedPersonRoleEntry,
   ResolvedViewRow,
   SmartsheetCell,
   SmartsheetColumn,
@@ -103,12 +104,40 @@ export interface MultiPersonEntry {
   campus: string;
 }
 
+function trimMultiPersonText(value: string | undefined | null): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * Map a resolved role-group row into editor state. Rows marked {@link ResolvedPersonRoleEntry.isEmpty}
+ * never contribute name/email/phone (campus may still appear for picker display); this avoids
+ * phantom partial contacts on unused numbered slots passing through to validation.
+ */
+export function multiPersonEntryFromRoleRow(p: ResolvedPersonRoleEntry): MultiPersonEntry {
+  if (p.isEmpty) {
+    return {
+      name: "",
+      email: "",
+      phone: "",
+      campus: trimMultiPersonText(p.campus),
+    };
+  }
+  return {
+    name: trimMultiPersonText(p.name),
+    email: trimMultiPersonText(p.email),
+    phone: trimMultiPersonText(p.phone),
+    campus: trimMultiPersonText(p.campus),
+  };
+}
+
 /** Per-person validation messages for multi-person groups (name/email required when those columns exist). */
 export type MultiPersonFieldErrors = { name?: string; email?: string };
 
 /** True when a numbered slot has no contact data — optional campus alone does not count as "in use". */
 export function isMultiPersonSlotContactEmpty(p: MultiPersonEntry): boolean {
-  return !p.name.trim() && !p.email.trim() && !p.phone.trim();
+  return (
+    !trimMultiPersonText(p.name) && !trimMultiPersonText(p.email) && !trimMultiPersonText(p.phone)
+  );
 }
 
 /**
@@ -132,10 +161,10 @@ export function validateMultiPersonGroupsForSave(
         return;
       }
       const err: MultiPersonFieldErrors = {};
-      if (hasName && !p.name.trim()) {
+      if (hasName && !trimMultiPersonText(p.name)) {
         err.name = "Enter a name to save, or remove this person.";
       }
-      if (hasEmail && !p.email.trim()) {
+      if (hasEmail && !trimMultiPersonText(p.email)) {
         err.email = "Enter an email to save, or remove this person.";
       }
       if (Object.keys(err).length > 0) {
@@ -277,22 +306,12 @@ export function parseMultiPersonRow(
     }
     const slotOrder = slotOrderFromAttributes(group.attributes);
     if (slotOrder.length === 0) {
-      const mapped = people.map((p) => ({
-        name: p.name?.trim() ?? "",
-        email: p.email?.trim() ?? "",
-        phone: p.phone?.trim() ?? "",
-        campus: p.campus?.trim() ?? "",
-      }));
+      const mapped = people.map((p) => multiPersonEntryFromRoleRow(p));
       return normalizeFixedSlotPersonsForEdit(group, mapped);
     }
     const bySlot = new Map<string, MultiPersonEntry>();
     for (const p of people) {
-      bySlot.set(String(p.slot), {
-        name: p.name?.trim() ?? "",
-        email: p.email?.trim() ?? "",
-        phone: p.phone?.trim() ?? "",
-        campus: p.campus?.trim() ?? "",
-      });
+      bySlot.set(String(p.slot), multiPersonEntryFromRoleRow(p));
     }
     const mapped = slotOrder.map(
       (slot) => bySlot.get(slot) ?? { name: "", email: "", phone: "", campus: "" },

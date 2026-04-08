@@ -453,6 +453,54 @@ describe("parseMultiPersonRow", () => {
       { name: "test2", email: "b@y.com", phone: "", campus: "" },
     ]);
   });
+
+  it("ignores name/email on role rows marked isEmpty so unused slots do not require fields", () => {
+    const row: ResolvedViewRow = {
+      id: 1,
+      fields: [],
+      fieldMap: {
+        staff: {
+          key: "staff",
+          label: "Staff",
+          renderType: "people_group",
+          textValue: "",
+          listValue: [],
+          links: [],
+          isEmpty: false,
+          hideWhenEmpty: false,
+          people: [
+            { slot: "1", name: "Alice", email: "a@wsu.edu", isEmpty: false },
+            {
+              slot: "2",
+              name: "should-not-appear",
+              email: "ghost@wsu.edu",
+              isEmpty: true,
+            },
+            { slot: "3", isEmpty: true },
+          ],
+        },
+      },
+    };
+    const group: EditableFieldGroup = {
+      id: "x",
+      label: "Coordinators",
+      fromRoleGroupViewFieldKey: "staff",
+      usesFixedSlots: true,
+      attributes: [
+        { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1" },
+        { attribute: "email", fieldKey: "staff", columnId: 2, slot: "1" },
+        { attribute: "name", fieldKey: "staff", columnId: 3, slot: "2" },
+        { attribute: "email", fieldKey: "staff", columnId: 4, slot: "2" },
+        { attribute: "name", fieldKey: "staff", columnId: 5, slot: "3" },
+        { attribute: "email", fieldKey: "staff", columnId: 6, slot: "3" },
+      ],
+    };
+    const persons = parseMultiPersonRow(row, group);
+    expect(persons[1]).toEqual({ name: "", email: "", phone: "", campus: "" });
+    expect(
+      hasMultiPersonValidationErrors(validateMultiPersonGroupsForSave([group], { x: persons })),
+    ).toBe(false);
+  });
 });
 
 describe("serializeMultiPersonToCells", () => {
