@@ -239,18 +239,18 @@ describe("validateMultiPersonGroupsForSave", () => {
 
   it("requires name and email when both attributes exist", () => {
     const v = validateMultiPersonGroupsForSave([group], {
-      g1: [{ name: "", email: "a@b.com", phone: "" }],
+      g1: [{ name: "", email: "a@b.com", phone: "", campus: "" }],
     });
     expect(v.g1?.[0]?.name).toBeDefined();
     const v2 = validateMultiPersonGroupsForSave([group], {
-      g1: [{ name: "Ada", email: "", phone: "" }],
+      g1: [{ name: "Ada", email: "", phone: "", campus: "" }],
     });
     expect(v2.g1?.[0]?.email).toBeDefined();
   });
 
   it("passes when name and email filled", () => {
     const v = validateMultiPersonGroupsForSave([group], {
-      g1: [{ name: "Ada", email: "a@b.com", phone: "" }],
+      g1: [{ name: "Ada", email: "a@b.com", phone: "", campus: "" }],
     });
     expect(hasMultiPersonValidationErrors(v)).toBe(false);
   });
@@ -258,8 +258,8 @@ describe("validateMultiPersonGroupsForSave", () => {
   it("ignores wholly empty person rows (unused fixed slots)", () => {
     const v = validateMultiPersonGroupsForSave([group], {
       g1: [
-        { name: "Ada", email: "a@b.com", phone: "" },
-        { name: "", email: "", phone: "" },
+        { name: "Ada", email: "a@b.com", phone: "", campus: "" },
+        { name: "", email: "", phone: "", campus: "" },
       ],
     });
     expect(hasMultiPersonValidationErrors(v)).toBe(false);
@@ -333,8 +333,8 @@ describe("parseMultiPersonRow", () => {
     };
     const result = parseMultiPersonRow(row, group);
     expect(result).toEqual([
-      { name: "lisa lujan", email: "llujan@wsu.edu", phone: "" },
-      { name: "deb marsh", email: "marshdj@wsu.edu", phone: "" },
+      { name: "lisa lujan", email: "llujan@wsu.edu", phone: "", campus: "" },
+      { name: "deb marsh", email: "marshdj@wsu.edu", phone: "", campus: "" },
     ]);
   });
 
@@ -391,8 +391,8 @@ describe("parseMultiPersonRow", () => {
       ],
     };
     expect(parseMultiPersonRow(row, group)).toEqual([
-      { name: "test", email: "a@x.com", phone: "" },
-      { name: "test2", email: "b@y.com", phone: "" },
+      { name: "test", email: "a@x.com", phone: "", campus: "" },
+      { name: "test2", email: "b@y.com", phone: "", campus: "" },
     ]);
   });
 
@@ -432,8 +432,8 @@ describe("parseMultiPersonRow", () => {
       ],
     };
     expect(parseMultiPersonRow(row, group)).toEqual([
-      { name: "test", email: "a@x.com", phone: "" },
-      { name: "test2", email: "b@y.com", phone: "" },
+      { name: "test", email: "a@x.com", phone: "", campus: "" },
+      { name: "test2", email: "b@y.com", phone: "", campus: "" },
     ]);
   });
 });
@@ -441,8 +441,8 @@ describe("parseMultiPersonRow", () => {
 describe("serializeMultiPersonToCells", () => {
   it("joins with comma and space", () => {
     const persons: MultiPersonEntry[] = [
-      { name: "lisa lujan", email: "llujan@wsu.edu", phone: "" },
-      { name: "deb marsh", email: "marshdj@wsu.edu", phone: "" },
+      { name: "lisa lujan", email: "llujan@wsu.edu", phone: "", campus: "" },
+      { name: "deb marsh", email: "marshdj@wsu.edu", phone: "", campus: "" },
     ];
     const group: EditableFieldGroup = {
       id: "g1",
@@ -462,7 +462,7 @@ describe("serializeMultiPersonToCells", () => {
   it("round-trips with parseMultiPersonRow", () => {
     const original = "lisa lujan, deb marsh";
     const parsed = parseMultiPersonValue(original);
-    const persons: MultiPersonEntry[] = parsed.map((name) => ({ name, email: "", phone: "" }));
+    const persons: MultiPersonEntry[] = parsed.map((name) => ({ name, email: "", phone: "", campus: "" }));
     const group: EditableFieldGroup = {
       id: "g1",
       label: "Coordinators",
@@ -498,8 +498,8 @@ describe("serializeMultiPersonToCells", () => {
       ],
     };
     const persons: MultiPersonEntry[] = [
-      { name: "", email: "", phone: "" },
-      { name: "Ada", email: "ada@wsu.edu", phone: "" },
+      { name: "", email: "", phone: "", campus: "" },
+      { name: "Ada", email: "ada@wsu.edu", phone: "", campus: "" },
     ];
     const result = serializeMultiPersonToCells(persons, group);
     expect(result).toEqual([
@@ -549,8 +549,8 @@ describe("serializeMultiPersonToCells", () => {
       ],
     };
     const persons: MultiPersonEntry[] = [
-      { name: "", email: "alice@wsu.edu", phone: "" },
-      { name: "", email: "bob@wsu.edu", phone: "" },
+      { name: "", email: "alice@wsu.edu", phone: "", campus: "" },
+      { name: "", email: "bob@wsu.edu", phone: "", campus: "" },
     ];
     expect(serializeMultiPersonToCells(persons, group)).toEqual([
       {
@@ -577,7 +577,7 @@ describe("serializeMultiPersonToCells", () => {
         { attribute: "email", fieldKey: "people", columnId: 500, columnType: "CONTACT_LIST", slot: "1" },
       ],
     };
-    const persons: MultiPersonEntry[] = [{ name: "Ada Lovelace", email: "ada@example.com", phone: "" }];
+    const persons: MultiPersonEntry[] = [{ name: "Ada Lovelace", email: "ada@example.com", phone: "", campus: "" }];
     expect(serializeMultiPersonToCells(persons, group)).toEqual([
       {
         columnId: 500,
@@ -597,7 +597,7 @@ describe("serializeMultiPersonToCells", () => {
         { attribute: "email", fieldKey: "people", columnId: 600, columnType: "MULTI_CONTACT_LIST", slot: "1" },
       ],
     };
-    const persons: MultiPersonEntry[] = [{ name: "Bob", email: "bob@example.com", phone: "" }];
+    const persons: MultiPersonEntry[] = [{ name: "Bob", email: "bob@example.com", phone: "", campus: "" }];
     expect(serializeMultiPersonToCells(persons, group)).toEqual([
       {
         columnId: 600,
@@ -606,6 +606,24 @@ describe("serializeMultiPersonToCells", () => {
           values: [{ objectType: "CONTACT", name: "Bob", email: "bob@example.com" }],
         },
       },
+    ]);
+  });
+
+  it("writes per-slot campus picklist cells in fixed-slot groups", () => {
+    const group: EditableFieldGroup = {
+      id: "g",
+      label: "Staff",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "staff",
+      attributes: [
+        { attribute: "name", fieldKey: "staff", columnId: 1, slot: "1", columnType: "TEXT_NUMBER" },
+        { attribute: "campus", fieldKey: "staff", columnId: 2, slot: "1", columnType: "PICKLIST" },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [{ name: "Ada", email: "", phone: "", campus: "Pullman" }];
+    expect(serializeMultiPersonToCells(persons, group)).toEqual([
+      { columnId: 1, value: "Ada" },
+      { columnId: 2, value: "Pullman" },
     ]);
   });
 });

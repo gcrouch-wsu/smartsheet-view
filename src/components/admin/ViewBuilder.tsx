@@ -245,7 +245,7 @@ function collectRawFieldSelectors(source: ViewFieldSource): FieldSourceSelector[
 function collectRoleGroupSelectors(group: SourceRoleGroupConfig): FieldSourceSelector[] {
   if (group.mode === "numbered_slots") {
     return (group.slots ?? [])
-      .flatMap((slot) => [slot.name, slot.email, slot.phone])
+      .flatMap((slot) => [slot.name, slot.email, slot.phone, slot.campus])
       .filter((selector): selector is FieldSourceSelector => Boolean(selector));
   }
 

@@ -134,7 +134,7 @@ describe("ContributorGroupFieldControl", () => {
   };
 
   const mockPersons: MultiPersonEntry[] = [
-    { name: "User One", email: "one@wsu.edu", phone: "" },
+    { name: "User One", email: "one@wsu.edu", phone: "", campus: "" },
   ];
 
   it("renders fieldsets for each person", () => {
@@ -192,8 +192,8 @@ describe("ContributorGroupFieldControl", () => {
       ],
     };
     const persons: MultiPersonEntry[] = [
-      { name: "Alice", email: "a@wsu.edu", phone: "" },
-      { name: "Bob", email: "b@wsu.edu", phone: "" },
+      { name: "Alice", email: "a@wsu.edu", phone: "", campus: "" },
+      { name: "Bob", email: "b@wsu.edu", phone: "", campus: "" },
     ];
     const html = renderToStaticMarkup(
       <ContributorGroupFieldControl group={twoSlotGroup} persons={persons} onChange={() => {}} />
@@ -202,6 +202,68 @@ describe("ContributorGroupFieldControl", () => {
     expect(html).toContain("Department Chair or School Director Name 2");
     expect(html).toContain("Department Chair or School Director Email 1");
     expect(html).toContain("Department Chair or School Director Email 2");
+  });
+
+  it("renders campus select beside name for fixed slots when both attributes exist", () => {
+    const group: EditableFieldGroup = {
+      id: "rg-staff",
+      label: "Staff Coordinators",
+      usesFixedSlots: true,
+      fromRoleGroupViewFieldKey: "staff",
+      attributes: [
+        {
+          attribute: "name",
+          fieldKey: "staff",
+          columnId: 101,
+          columnType: "TEXT_NUMBER",
+          columnTitle: "Staff Coordinator Name 1",
+          slot: "1",
+        },
+        {
+          attribute: "campus",
+          fieldKey: "staff",
+          columnId: 102,
+          columnType: "PICKLIST",
+          columnTitle: "Staff Coordinator Campus 1",
+          slot: "1",
+          options: ["Do Not Show", "Pullman", "Spokane"],
+        },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [{ name: "Ada", email: "", phone: "", campus: "Pullman" }];
+    const html = renderToStaticMarkup(
+      <ContributorGroupFieldControl group={group} persons={persons} onChange={() => {}} />,
+    );
+    expect(html).toContain("flex flex-wrap items-end gap-2");
+    expect(html).toContain('id="rg-staff-n-0"');
+    expect(html).toContain('id="rg-staff-c-0"');
+    expect(html).toContain("<select");
+    expect(html).toContain("Staff Coordinator Campus 1");
+  });
+
+  it("renders standalone campus select when campus exists without name attribute on fixed slots", () => {
+    const group: EditableFieldGroup = {
+      id: "rg-campus-only",
+      label: "Odd group",
+      usesFixedSlots: true,
+      attributes: [
+        {
+          attribute: "campus",
+          fieldKey: "staff",
+          columnId: 102,
+          columnType: "PICKLIST",
+          columnTitle: "Campus 1 only",
+          slot: "1",
+          options: ["Pullman"],
+        },
+      ],
+    };
+    const persons: MultiPersonEntry[] = [{ name: "", email: "", phone: "", campus: "" }];
+    const html = renderToStaticMarkup(
+      <ContributorGroupFieldControl group={group} persons={persons} onChange={() => {}} />,
+    );
+    expect(html).toContain("rg-campus-only-c-only-0");
+    expect(html).not.toContain("rg-campus-only-n-0");
   });
 });
 

@@ -13,6 +13,7 @@ import {
   countFixedSlotsInEditableGroup,
   slotOrderForEditableGroup,
 } from "@/lib/contributor-utils";
+import { COORDINATOR_CAMPUS_PICKLIST_FALLBACK_OPTIONS } from "@/lib/coordinator-campus-badge";
 
 export const contributorEditControlClass =
   "box-border min-h-[44px] w-full rounded-lg border-2 border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)] shadow-sm outline-none transition placeholder:text-[color:var(--wsu-muted)] focus:border-[color:var(--wsu-crimson)] focus:ring-2 focus:ring-[color:var(--wsu-crimson)]/20";
@@ -35,7 +36,7 @@ function slotsMatch(slotOnAttr: string | undefined, slotForRow: string | undefin
 function attributeForPersonRow(
   group: EditableFieldGroup,
   personIndex: number,
-  kind: "name" | "email" | "phone",
+  kind: "name" | "email" | "phone" | "campus",
   fixedSlotOrder: string[],
 ): (typeof group.attributes)[number] | undefined {
   if (group.usesFixedSlots && fixedSlotOrder.length > 0) {
@@ -211,6 +212,7 @@ export function ContributorGroupFieldControl({
   const hasName = group.attributes.some((a) => a.attribute === "name");
   const hasEmail = group.attributes.some((a) => a.attribute === "email");
   const hasPhone = group.attributes.some((a) => a.attribute === "phone");
+  const hasCampus = group.attributes.some((a) => a.attribute === "campus");
 
   return (
     <div className="space-y-3">
@@ -236,6 +238,13 @@ export function ContributorGroupFieldControl({
           const rowErr = errors[idx];
           const slotId = fixedSlotOrder[idx];
           const nameAttrForRow = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
+          const campusAttrForRow = attributeForPersonRow(group, idx, "campus", fixedSlotOrder);
+          const campusPicklistOptions =
+            (campusAttrForRow?.options?.length ?? 0) > 0
+              ? campusAttrForRow!.options!
+              : COORDINATOR_CAMPUS_PICKLIST_FALLBACK_OPTIONS;
+          const showCampusBesideName = Boolean(group.usesFixedSlots && hasName && campusAttrForRow);
+          const showCampusStandalone = Boolean(campusAttrForRow && !showCampusBesideName);
           const smartsheetSlotTitle = nameAttrForRow?.columnTitle?.trim();
           const positionLabel =
             fixedSlotCount > 0
@@ -277,8 +286,8 @@ export function ContributorGroupFieldControl({
                   (() => {
                     const attr = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
                     const colLabel = attr?.columnTitle ?? "Name";
-                    return (
-                      <div key="name" className="space-y-0.5">
+                    const nameInput = (
+                      <>
                         <label className={labelClass} htmlFor={`${group.id}-n-${idx}`}>
                           {colLabel}
                         </label>
@@ -305,8 +314,41 @@ export function ContributorGroupFieldControl({
                             {rowErr.name}
                           </p>
                         ) : null}
-                      </div>
+                      </>
                     );
+
+                    if (showCampusBesideName && campusAttrForRow) {
+                      return (
+                        <div key="name" className="flex flex-wrap items-end gap-2">
+                          <div className="min-w-0 flex-1 space-y-0.5">{nameInput}</div>
+                          <div className="w-full min-w-[12rem] shrink-0 space-y-0.5 sm:w-[14rem]">
+                            <label className={labelClass} htmlFor={`${group.id}-c-${idx}`}>
+                              {campusAttrForRow.columnTitle ?? "Campus"}
+                            </label>
+                            <select
+                              id={`${group.id}-c-${idx}`}
+                              value={person.campus}
+                              onChange={(e) => {
+                                const next = [...persons];
+                                next[idx] = { ...next[idx]!, campus: e.target.value };
+                                onChange(next);
+                              }}
+                              aria-label={campusAttrForRow.columnTitle ?? "Campus"}
+                              className={contributorEditControlClass}
+                            >
+                              <option value="">Select…</option>
+                              {campusPicklistOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return <div className="space-y-0.5">{nameInput}</div>;
                   })()}
                 {hasEmail &&
                   (() => {
@@ -370,6 +412,31 @@ export function ContributorGroupFieldControl({
                       </div>
                     );
                   })()}
+                {showCampusStandalone ? (
+                  <div key="campus" className="space-y-0.5">
+                    <label className={labelClass} htmlFor={`${group.id}-c-only-${idx}`}>
+                      {campusAttrForRow?.columnTitle ?? "Campus"}
+                    </label>
+                    <select
+                      id={`${group.id}-c-only-${idx}`}
+                      value={person.campus}
+                      onChange={(e) => {
+                        const next = [...persons];
+                        next[idx] = { ...next[idx]!, campus: e.target.value };
+                        onChange(next);
+                      }}
+                      aria-label={campusAttrForRow?.columnTitle ?? "Campus"}
+                      className={contributorEditControlClass}
+                    >
+                      <option value="">Select…</option>
+                      {campusPicklistOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
               </div>
             </fieldset>
           );
@@ -387,7 +454,7 @@ export function ContributorGroupFieldControl({
             )}
             <button
               type="button"
-              onClick={() => onChange([...persons, { name: "", email: "", phone: "" }])}
+              onClick={() => onChange([...persons, { name: "", email: "", phone: "", campus: "" }])}
               className="rounded-lg border border-dashed border-[color:var(--wsu-crimson)]/50 bg-[color:var(--wsu-crimson)]/5 px-3 py-2 text-sm font-semibold text-[color:var(--wsu-crimson)] hover:bg-[color:var(--wsu-crimson)]/10"
             >
               + Add person

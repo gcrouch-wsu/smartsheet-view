@@ -34,8 +34,8 @@ function buildInitialState(source: SourceConfig | null, connectionKeys: string[]
 
 function getRoleGroupAttributeKeys(roleGroup: SourceRoleGroupConfig) {
   if (roleGroup.mode === "numbered_slots") {
-    return ["name", "email", "phone"].filter((attr) =>
-      roleGroup.slots?.some((slot) => Boolean(slot[attr as "name" | "email" | "phone"])),
+    return (["name", "email", "phone", "campus"] as const).filter((attr) =>
+      roleGroup.slots?.some((slot) => Boolean(slot[attr])),
     );
   }
 
@@ -345,7 +345,7 @@ export function SourceForm({
   function updateNumberedSlotAttr(
     roleGroupId: string,
     slotIndex: number,
-    attr: "name" | "email" | "phone",
+    attr: "name" | "email" | "phone" | "campus",
     selector: FieldSourceSelector | undefined,
   ) {
     updateRoleGroup(roleGroupId, (rg) => {
@@ -801,6 +801,7 @@ export function SourceForm({
                               <th className="px-3 py-2 align-bottom">Name column</th>
                               <th className="px-3 py-2 align-bottom">Email column</th>
                               <th className="px-3 py-2 align-bottom">Phone column</th>
+                              <th className="px-3 py-2 align-bottom">Campus column</th>
                               <th className="w-14 px-2 py-2 align-bottom" aria-label="Remove slot" />
                             </tr>
                           </thead>
@@ -846,6 +847,16 @@ export function SourceForm({
                                     schemaLoaded={schemaLoaded}
                                     accessibilityLabel={`Phone column, slot ${slot.slot || String(slotIndex + 1)}, ${roleGroup.label}`}
                                     onChange={(sel) => updateNumberedSlotAttr(roleGroup.id, slotIndex, "phone", sel)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 align-top">
+                                  <RoleGroupColumnSelect
+                                    htmlId={`${roleGroup.id}-campus-${slotIndex}`}
+                                    columns={schemaColumns}
+                                    value={slot.campus}
+                                    schemaLoaded={schemaLoaded}
+                                    accessibilityLabel={`Campus column, slot ${slot.slot || String(slotIndex + 1)}, ${roleGroup.label}`}
+                                    onChange={(sel) => updateNumberedSlotAttr(roleGroup.id, slotIndex, "campus", sel)}
                                   />
                                 </td>
                                 <td className="px-2 py-2 align-top">

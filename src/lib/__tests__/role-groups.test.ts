@@ -34,6 +34,14 @@ describe("parseNumberedRoleColumnTitle", () => {
       attr: "name",
     });
   });
+
+  it("parses trailing Campus with slot number", () => {
+    expect(parseNumberedRoleColumnTitle("Staff Grad Prog Coord or Designee 1 Campus")).toEqual({
+      baseLabel: "Staff Grad Prog Coord or Designee",
+      slot: "1",
+      attr: "campus",
+    });
+  });
 });
 
 describe("detectNumberedRoleGroupsFromColumns", () => {
@@ -56,6 +64,17 @@ describe("detectNumberedRoleGroupsFromColumns", () => {
     expect(slots[1]!.slot).toBe("2");
     expect(slots[1]!.name?.columnId).toBe(3);
     expect(slots[1]!.email?.columnId).toBe(4);
+  });
+
+  it("maps Designee N Campus columns into slot campus selectors", () => {
+    const columns: SmartsheetColumn[] = [
+      { id: 1, index: 0, title: "Role or Designee 1", type: "TEXT_NUMBER" },
+      { id: 2, index: 1, title: "Role or Designee 1 Campus", type: "PICKLIST" },
+    ];
+    const groups = detectNumberedRoleGroupsFromColumns(columns);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.slots?.[0]?.name?.columnId).toBe(1);
+    expect(groups[0]!.slots?.[0]?.campus?.columnId).toBe(2);
   });
 });
 

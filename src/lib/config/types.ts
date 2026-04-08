@@ -30,6 +30,8 @@ export interface SourceRoleGroupSlotConfig {
   name?: FieldSourceSelector;
   email?: FieldSourceSelector;
   phone?: FieldSourceSelector;
+  /** Per-slot campus picklist (e.g. Designee N Campus), paired with this slot only. */
+  campus?: FieldSourceSelector;
 }
 
 export interface SourceRoleGroupConfig {
@@ -436,7 +438,7 @@ export interface ThemeConfig {
   tokens: Partial<ViewStyleConfig>;
 }
 
-export type EditableFieldGroupAttributeType = "name" | "email" | "phone";
+export type EditableFieldGroupAttributeType = "name" | "email" | "phone" | "campus";
 
 export interface EditableFieldGroupAttribute {
   attribute: EditableFieldGroupAttributeType;
@@ -448,6 +450,8 @@ export interface EditableFieldGroupAttribute {
   columnTitle?: string;
   /** Slot id within a numbered role group (e.g. "1"); enables per-column write-back for that slot. */
   slot?: string;
+  /** Populated for PICKLIST when building contributor client config from schema (not stored in view JSON). */
+  options?: string[];
 }
 
 export interface EditableFieldGroup {
@@ -568,6 +572,8 @@ export interface ResolvedPersonRoleEntry {
   name?: string;
   email?: string;
   phone?: string;
+  /** Trimmed Smartsheet picklist value for this slot's campus column (if configured). */
+  campus?: string;
   isEmpty: boolean;
 }
 

@@ -12,14 +12,22 @@ export function isRoleGroupFieldSource(source: ViewFieldSourceConfig): source is
   return typeof source === "object" && source !== null && "kind" in source && (source as RoleGroupFieldSource).kind === "role_group";
 }
 
-type ParsedNumberedTitle = { baseLabel: string; slot: string; attr: "name" | "email" | "phone" };
+type ParsedNumberedTitle = { baseLabel: string; slot: string; attr: "name" | "email" | "phone" | "campus" };
 
 /**
- * Detects numbered slot columns: trailing slot number, optional Name / Email / Phone suffix,
+ * Detects numbered slot columns: trailing slot number, optional Name / Email / Phone / Campus suffix,
  * or bare role label as the name column.
  */
 export function parseNumberedRoleColumnTitle(title: string): ParsedNumberedTitle | null {
   const t = title.trim();
+
+  const campusSlotMatch = t.match(/^(.+?)\s+(\d+)\s+Campus$/i);
+  if (campusSlotMatch) {
+    const rest = campusSlotMatch[1]!.trim();
+    const slot = campusSlotMatch[2]!;
+    return { baseLabel: rest, slot, attr: "campus" };
+  }
+
   const slotMatch = t.match(/^(.+?)\s+(\d+)$/);
   if (!slotMatch) {
     return null;
@@ -58,7 +66,13 @@ function compareSlots(a: string, b: string): number {
   return String(ka).localeCompare(String(kb), undefined, { numeric: true });
 }
 
-type MutableSlot = { slot: string; name?: FieldSourceSelector; email?: FieldSourceSelector; phone?: FieldSourceSelector };
+type MutableSlot = {
+  slot: string;
+  name?: FieldSourceSelector;
+  email?: FieldSourceSelector;
+  phone?: FieldSourceSelector;
+  campus?: FieldSourceSelector;
+};
 
 /** Maps parallel columns that share a coordinator prefix (e.g. bare “… or Designee N” vs “… Email N”). */
 export function clusterKeyForRoleBase(baseLabel: string): string {
@@ -96,6 +110,8 @@ export function detectNumberedRoleGroupsFromColumns(columns: SmartsheetColumn[])
       slotCell.name = sel;
     } else if (parsed.attr === "email") {
       slotCell.email = sel;
+    } else if (parsed.attr === "campus") {
+      slotCell.campus = sel;
     } else {
       slotCell.phone = sel;
     }

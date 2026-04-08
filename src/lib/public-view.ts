@@ -78,6 +78,31 @@ function resolveSelector(row: SmartsheetRow, selector: FieldSourceSelector): Sma
   return null;
 }
 
+/** Plain text for picklist / text cells (role-group campus and similar). */
+function cellPlainText(row: SmartsheetRow, selector: FieldSourceSelector | undefined): string {
+  if (!selector) {
+    return "";
+  }
+  const cell = resolveSelector(row, selector);
+  if (!cell) {
+    return "";
+  }
+  const normalized = normalizeSourceValue(cell);
+  if (typeof normalized === "string") {
+    return normalized.trim();
+  }
+  if (normalized != null && typeof normalized !== "object") {
+    return String(normalized).trim();
+  }
+  if (typeof cell.displayValue === "string" && cell.displayValue.trim()) {
+    return cell.displayValue.trim();
+  }
+  if (cell.value !== undefined && cell.value !== null && typeof cell.value !== "object") {
+    return String(cell.value).trim();
+  }
+  return "";
+}
+
 function cellHasValue(cell: SmartsheetCell | null) {
   if (!cell) {
     return false;
@@ -156,11 +181,15 @@ function resolveNumberedRoleGroupPeople(row: SmartsheetRow, group: SourceRoleGro
     const name = slotDef.name ? resolveCellRoleAttributeText(row, slotDef.name, "name") : "";
     const email = slotDef.email ? resolveCellRoleAttributeText(row, slotDef.email, "email") : "";
     const phone = slotDef.phone ? resolveCellRoleAttributeText(row, slotDef.phone, "phone") : "";
-    const hasAttr = Boolean(slotDef.name || slotDef.email || slotDef.phone);
-    const anyValue = [slotDef.name ? name : "", slotDef.email ? email : "", slotDef.phone ? phone : ""].some((s) =>
-      s.trim(),
-    );
-    const isEmpty = !hasAttr || !anyValue;
+    const campus = slotDef.campus ? cellPlainText(row, slotDef.campus) : "";
+    const hasAttr = Boolean(slotDef.name || slotDef.email || slotDef.phone || slotDef.campus);
+    /** Campus alone does not surface a people_group row (R5: badge only beside a name). */
+    const anyContactValue = [
+      slotDef.name ? name : "",
+      slotDef.email ? email : "",
+      slotDef.phone ? phone : "",
+    ].some((s) => s.trim());
+    const isEmpty = !hasAttr || !anyContactValue;
     const entry: ResolvedPersonRoleEntry = {
       slot: slotDef.slot,
       isEmpty,
@@ -173,6 +202,9 @@ function resolveNumberedRoleGroupPeople(row: SmartsheetRow, group: SourceRoleGro
     }
     if (phone.trim()) {
       entry.phone = phone.trim();
+    }
+    if (slotDef.campus) {
+      entry.campus = campus.trim();
     }
     return entry;
   });
@@ -339,6 +371,9 @@ export function collectSelectorsFromRoleGroup(group: SourceRoleGroupConfig): Fie
       }
       if (slot.phone) {
         out.push(slot.phone);
+      }
+      if (slot.campus) {
+        out.push(slot.campus);
       }
     }
     return out;

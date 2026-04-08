@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useDisplayTimezone } from "@/components/public/DisplayTimezoneContext";
 import type { ResolvedFieldValue } from "@/lib/config/types";
+import { publicCoordinatorCampusBadgeLabel } from "@/lib/coordinator-campus-badge";
 import { fieldValueTypographyClass } from "@/lib/field-typography";
 import { formatDateInDisplayTimeZone } from "@/lib/display-datetime";
 import { useViewValueLinkFlags } from "@/components/public/ViewValueLinkContext";
@@ -20,12 +21,15 @@ function PersonSummary({
   name,
   email,
   phone,
+  campusBadgeLabel,
   compact = false,
   plainValueLinks = false,
 }: {
   name?: string;
   email?: string;
   phone?: string;
+  /** Inline chip next to the name (approved campus only). */
+  campusBadgeLabel?: string;
   compact?: boolean;
   plainValueLinks?: boolean;
 }) {
@@ -34,10 +38,33 @@ function PersonSummary({
   const linkPhone = !plainValueLinks && linkPhonesInView;
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
   const detailClass = "view-people-detail view-field-link";
+  const campusChipClass =
+    "ml-1 inline-block align-middle rounded-full border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/40 px-2 py-0.5 text-[11px] font-medium leading-none text-[color:var(--wsu-ink)]";
+
+  const nameTrimmed = name?.trim() ?? "";
+  /** R5: never show a campus badge (or print suffix) unless there is a display name. */
+  const showCampusBesideName = Boolean(campusBadgeLabel && nameTrimmed);
 
   return (
     <>
-      {name ? <span className={`view-people-name ${compact ? "" : "block"}`}>{name}</span> : null}
+      {/* R5: campus chip/suffix only renders inside this block when nameTrimmed is set (see showCampusBesideName). */}
+      {nameTrimmed ? (
+        <span
+          className={`inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 ${compact ? "" : "max-w-full"}`}
+        >
+          <span className={`view-people-name ${compact ? "" : "min-w-0"}`}>{nameTrimmed}</span>
+          {showCampusBesideName ? (
+            plainValueLinks ? (
+              <span className="text-xs font-normal text-[color:var(--wsu-muted)]">
+                {" \u2014 "}
+                {campusBadgeLabel}
+              </span>
+            ) : (
+              <span className={campusChipClass}>{campusBadgeLabel}</span>
+            )
+          ) : null}
+        </span>
+      ) : null}
       {email ? (
         linkEmail ? (
           <a href={`mailto:${email}`} className={detailClass}>
@@ -255,7 +282,13 @@ export function FieldValue({
                 }
               >
                 <div className="min-w-0">
-                  <PersonSummary name={person.name} email={person.email} phone={person.phone} plainValueLinks={plainValueLinks} />
+                  <PersonSummary
+                    name={person.name}
+                    email={person.email}
+                    phone={person.phone}
+                    campusBadgeLabel={publicCoordinatorCampusBadgeLabel(person.campus)}
+                    plainValueLinks={plainValueLinks}
+                  />
                 </div>
               </li>
             ))}
@@ -278,7 +311,13 @@ export function FieldValue({
                   : undefined
               }
             >
-              <PersonSummary name={person.name} email={person.email} phone={person.phone} plainValueLinks={plainValueLinks} />
+              <PersonSummary
+                name={person.name}
+                email={person.email}
+                phone={person.phone}
+                campusBadgeLabel={publicCoordinatorCampusBadgeLabel(person.campus)}
+                plainValueLinks={plainValueLinks}
+              />
             </li>
           ))}
         </ul>

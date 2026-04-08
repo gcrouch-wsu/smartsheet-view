@@ -58,4 +58,67 @@ describe("FieldValue people_group", () => {
 
     expect(html).toContain("rounded-2xl border");
   });
+
+  it("renders campus as a chip after the name when campus is approved and name exists (R5)", () => {
+    const html = renderToStaticMarkup(
+      <FieldValue
+        field={buildPeopleField({
+          people: [
+            { slot: "1", name: "Ada", email: "a@wsu.edu", campus: "Pullman", isEmpty: false },
+          ],
+        })}
+      />,
+    );
+
+    expect(html).toContain("Ada");
+    expect(html).toContain("Pullman");
+    expect(html).toContain("rounded-full");
+  });
+
+  it("does not render a campus chip when name is missing even if campus is approved", () => {
+    const html = renderToStaticMarkup(
+      <FieldValue
+        field={buildPeopleField({
+          people: [
+            { slot: "1", email: "solo@wsu.edu", campus: "Pullman", isEmpty: false },
+          ],
+        })}
+      />,
+    );
+
+    expect(html).toContain("solo@wsu.edu");
+    expect(html).not.toContain("Pullman");
+  });
+
+  it("renders campus as plain em-dash suffix after name when plainValueLinks (print)", () => {
+    const html = renderToStaticMarkup(
+      <FieldValue
+        plainValueLinks
+        field={buildPeopleField({
+          people: [
+            { slot: "1", name: "Ada", email: "a@wsu.edu", campus: "Pullman", isEmpty: false },
+          ],
+        })}
+      />,
+    );
+
+    expect(html).toContain("Ada");
+    expect(html).toContain("\u2014");
+    expect(html).toContain("Pullman");
+    expect(html).not.toContain("rounded-full");
+  });
+
+  it("does not show campus suffix in print mode when name is missing", () => {
+    const html = renderToStaticMarkup(
+      <FieldValue
+        plainValueLinks
+        field={buildPeopleField({
+          people: [{ slot: "1", email: "e@wsu.edu", campus: "Spokane", isEmpty: false }],
+        })}
+      />,
+    );
+
+    expect(html).toContain("e@wsu.edu");
+    expect(html).not.toContain("Spokane");
+  });
 });

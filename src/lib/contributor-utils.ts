@@ -95,11 +95,12 @@ export interface ContributorEditingClientConfig {
   editableFieldGroups: EditableFieldGroup[];
 }
 
-/** Person object for multi-person fields: name, email, phone. */
+/** Person object for multi-person fields: name, email, phone, optional per-slot campus. */
 export interface MultiPersonEntry {
   name: string;
   email: string;
   phone: string;
+  campus: string;
 }
 
 /** Per-person validation messages for multi-person groups (name/email required when those columns exist). */
@@ -118,11 +119,14 @@ export function validateMultiPersonGroupsForSave(
     const persons = groupValues[group.id] ?? [];
     const hasName = group.attributes.some((a) => a.attribute === "name");
     const hasEmail = group.attributes.some((a) => a.attribute === "email");
+    const hasCampus = group.attributes.some((a) => a.attribute === "campus");
     const byIndex: Record<number, MultiPersonFieldErrors> = {};
     persons.forEach((p, idx) => {
       // Skip validation for empty rows (unused numbered slots). If the group has only a phone attribute,
       // a row with only phone filled is not "entirelyUnused" and passes when hasName/hasEmail are false.
-      const entirelyUnused = !p.name.trim() && !p.email.trim() && !p.phone.trim();
+      const campusEmpty = !hasCampus || !(p.campus?.trim());
+      const entirelyUnused =
+        !p.name.trim() && !p.email.trim() && !p.phone.trim() && campusEmpty;
       if (entirelyUnused) {
         return;
       }
@@ -276,6 +280,7 @@ export function parseMultiPersonRow(
         name: p.name?.trim() ?? "",
         email: p.email?.trim() ?? "",
         phone: p.phone?.trim() ?? "",
+        campus: p.campus?.trim() ?? "",
       }));
       return normalizeFixedSlotPersonsForEdit(group, mapped);
     }
@@ -285,9 +290,12 @@ export function parseMultiPersonRow(
         name: p.name?.trim() ?? "",
         email: p.email?.trim() ?? "",
         phone: p.phone?.trim() ?? "",
+        campus: p.campus?.trim() ?? "",
       });
     }
-    const mapped = slotOrder.map((slot) => bySlot.get(slot) ?? { name: "", email: "", phone: "" });
+    const mapped = slotOrder.map(
+      (slot) => bySlot.get(slot) ?? { name: "", email: "", phone: "", campus: "" },
+    );
     return normalizeFixedSlotPersonsForEdit(group, mapped);
   }
 
@@ -304,7 +312,7 @@ export function parseMultiPersonRow(
 
   const persons: MultiPersonEntry[] = [];
 
-  const defaults: MultiPersonEntry = { name: "", email: "", phone: "" };
+  const defaults: MultiPersonEntry = { name: "", email: "", phone: "", campus: "" };
 
   for (let i = 0; i < maxLen; i++) {
     const entry: MultiPersonEntry = { ...defaults };
@@ -315,6 +323,7 @@ export function parseMultiPersonRow(
       if (attr.attribute === "name") entry.name = val;
       else if (attr.attribute === "email") entry.email = val;
       else if (attr.attribute === "phone") entry.phone = val;
+      else if (attr.attribute === "campus") entry.campus = val;
     }
     persons.push(entry);
   }
@@ -411,7 +420,7 @@ export function normalizeFixedSlotPersonsForEdit(
   if (n === 0) {
     return persons;
   }
-  const empty: MultiPersonEntry = { name: "", email: "", phone: "" };
+  const empty: MultiPersonEntry = { name: "", email: "", phone: "", campus: "" };
   const next = persons.slice(0, n);
   while (next.length < n) {
     next.push({ ...empty });
@@ -454,7 +463,7 @@ function serializeSlotBasedMultiPersonToCells(
       continue;
     }
     const personIdx = slotOrder.indexOf(attr.slot);
-    const p = persons[personIdx] ?? { name: "", email: "", phone: "" };
+    const p = persons[personIdx] ?? { name: "", email: "", phone: "", campus: "" };
     const mk = contactSlotMergeKey(attr.slot, attr.columnId);
     let entry = mergedContactByKey.get(mk);
     if (!entry) {
@@ -480,7 +489,7 @@ function serializeSlotBasedMultiPersonToCells(
       continue;
     }
     const personIdx = slotOrder.indexOf(attr.slot);
-    const p = persons[personIdx] ?? { name: "", email: "", phone: "" };
+    const p = persons[personIdx] ?? { name: "", email: "", phone: "", campus: "" };
 
     if (isContact(attr.columnType)) {
       const mk = contactSlotMergeKey(attr.slot, attr.columnId);
@@ -504,7 +513,13 @@ function serializeSlotBasedMultiPersonToCells(
     }
 
     const val =
-      attr.attribute === "name" ? p.name.trim() : attr.attribute === "email" ? p.email.trim() : p.phone.trim();
+      attr.attribute === "name"
+        ? p.name.trim()
+        : attr.attribute === "email"
+          ? p.email.trim()
+          : attr.attribute === "campus"
+            ? p.campus.trim()
+            : p.phone.trim();
     result.push({ columnId: attr.columnId, value: val });
   }
 
@@ -577,6 +592,7 @@ export function serializeMultiPersonToCells(
       if (attr.attribute === "name") return p.name.trim();
       if (attr.attribute === "email") return p.email.trim();
       if (attr.attribute === "phone") return p.phone.trim();
+      if (attr.attribute === "campus") return p.campus.trim();
       return "";
     });
     const joined = values.filter(Boolean).join(", ");
@@ -1040,7 +1056,7 @@ export function buildDerivedRoleGroupEditableFieldGroups(
 
     const attrs: EditableFieldGroupAttribute[] = [];
     for (const slot of rg.slots) {
-      for (const attr of ["name", "email", "phone"] as const) {
+      for (const attr of ["name", "email", "phone", "campus"] as const) {
         const sel = slot[attr];
         if (!sel) {
           continue;
@@ -1050,6 +1066,7 @@ export function buildDerivedRoleGroupEditableFieldGroups(
         if (typeof columnId !== "number") {
           continue;
         }
+        const opts = (col?.options ?? []).filter((o): o is string => typeof o === "string" && o.length > 0);
         attrs.push({
           attribute: attr,
           fieldKey: field.key,
@@ -1057,6 +1074,7 @@ export function buildDerivedRoleGroupEditableFieldGroups(
           columnType: col?.type ?? sel.columnType,
           columnTitle: col?.title?.trim() ?? sel.columnTitle ?? attr,
           slot: slot.slot,
+          ...(opts.length > 0 ? { options: opts } : {}),
         });
       }
     }
@@ -1097,10 +1115,13 @@ export function buildContributorEditingClientConfig(
     ...group,
     attributes: group.attributes.map((attr) => {
       const column = columnsById.get(attr.columnId);
+      const fromCol = (column?.options ?? []).filter((o): o is string => typeof o === "string" && o.length > 0);
+      const options = attr.options?.length ? attr.options : fromCol.length > 0 ? fromCol : undefined;
       return {
         ...attr,
         columnType: attr.columnType ?? column?.type,
         columnTitle: column?.title?.trim() || attr.fieldKey,
+        ...(options?.length ? { options } : {}),
       };
     }),
   }));

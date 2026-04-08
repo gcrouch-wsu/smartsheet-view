@@ -242,7 +242,7 @@ function parseRoleGroupSlot(input: unknown, path: string): ValidationResult<Sour
   const errors: string[] = [];
   const row: SourceRoleGroupSlotConfig = { slot };
 
-  for (const attr of ["name", "email", "phone"] as const) {
+  for (const attr of ["name", "email", "phone", "campus"] as const) {
     if (input[attr] === undefined || input[attr] === null) {
       continue;
     }
@@ -1077,7 +1077,7 @@ function parseEditableFieldGroups(input: unknown): {
     return { errors: ["editing.editableFieldGroups must be an array."], data: [] };
   }
 
-  const attrTypes = new Set(["name", "email", "phone"]);
+  const attrTypes = new Set(["name", "email", "phone", "campus"]);
 
   for (let i = 0; i < input.length; i++) {
     const item = input[i];
@@ -1104,7 +1104,9 @@ function parseEditableFieldGroups(input: unknown): {
       }
       const attribute = String(a.attribute ?? "").trim().toLowerCase();
       if (!attrTypes.has(attribute)) {
-        errors.push(`editing.editableFieldGroups[${i}].attributes[${j}].attribute must be "name", "email", or "phone".`);
+        errors.push(
+          `editing.editableFieldGroups[${i}].attributes[${j}].attribute must be "name", "email", "phone", or "campus".`,
+        );
         continue;
       }
       const fieldKey = String(a.fieldKey ?? "").trim();

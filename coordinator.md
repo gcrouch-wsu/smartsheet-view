@@ -1,100 +1,133 @@
-# Feasibility: Campus badges from Smartsheet coordinator columns
+# Per-coordinator campus badges (inline)
 
-## Question
-
-Three new Smartsheet columns were added, each a **dropdown** with:
-
-- Do Not Show  
-- Everett  
-- Global  
-- Pullman  
-- Spokane  
-- Tri-Cities  
-- Vancouver  
-
-**Goal:** Read these values and, for every value **other than** “Do Not Show,” show a **campus badge** immediately to the right of the associated coordinator’s name so students know whom to contact on which campuses. The badge must **not consume its own column width** in the public view (e.g. table layout): it stays **inline** on the same line as the name, not a separate grid/table column for campus.
-
-## Product requirements (agreed)
-
-These rules are the target behavior; implementation would follow them in config and UI.
-
-| Rule | Detail |
-|------|--------|
-| **When to show a badge** | Only when a **campus option is selected** in that row’s campus dropdown—i.e. the cell has one of the real campus values (Everett, Global, Pullman, Spokane, Tri-Cities, Vancouver). |
-| **When not to show** | If the dropdown is **“Do Not Show”** or the cell is **empty**, **no badge** for that coordinator slot (same visible outcome: nothing beside the name for campus). |
-| **Pairing** | **Strictly one-to-one:** designee slot 1 uses campus column 1, slot 2 uses column 2, slot 3 uses column 3—the same structural pairing as name/email/phone per slot in the role-group model. |
-| **No multi-campus per person (current sheet)** | One dropdown per slot; a person does not get multiple inline badges from a single column without a sheet or model change. |
-| **Layout (no extra column)** | Campus appears **only as an inline chip to the right of the person’s name** within the same cell/block as that coordinator—not as a **separate view column** or labeled field row that would reserve full column width for campus alone. (Smartsheet still has separate source columns; the app **merges display** next to the name.) |
-
-Normalization (e.g. trim, case-insensitive match for “Do Not Show”) can be decided at implementation time so Smartsheet display text stays reliable.
-
-## Short answer
-
-**Yes, this is feasible.** This repository (**smartsheet-view**) already **reads Smartsheet** via the API and already has **campus chip UI** (`CampusBadgeStrip`, merged-row campus badges). What is **not** implemented yet is wiring the three new **per-designee campus** columns into **inline display next to each coordinator name** (and treating `Do Not Show` as hidden). That would be a focused feature on top of the existing stack.
+**Document type:** product contract + implementation notes  
+**Status:** implemented against §2 (engineering); release sign-off still depends on pilot views, accessibility, and content approval outside this file.  
+**Product:** Smartsheet View (`smartsheet-view`)  
+**Last updated:** 2026-04-08
 
 ---
 
-## 1. Reading the new columns from Smartsheet
+## 1. Goal
 
-### API
+For numbered coordinator slots (`1`, `2`, `3`), the app should read each slot's matching Smartsheet campus picklist and show **one optional inline campus badge beside that slot's coordinator name**.
 
-Smartsheet returns columns (with titles and IDs) and row cells. Dropdown (**PICKLIST**) cells expose the selected option as text (e.g. `Pullman`, `Do Not Show`) in the API payload.
+This feature must:
 
-### In this codebase
-
-- Sheet data is fetched and normalized into **field keys** driven by **view/source config** (column IDs, labels, role groups, etc.).
-- **Feasible:** Add three fields (or extend **role group** attributes) that map to:
-  - `Staff Grad Prog Coord or Designee 1 Campus`
-  - `Staff Grad Prog Coord or Designee 2 Campus`
-  - `Staff Grad Prog Coord or Designee 3 Campus`  
-  Prefer **column IDs** in config once discovered, so renames in Smartsheet are less brittle than title-only matching.
-
-### Logic
-
-- **`Do Not Show` or empty:** **no badge** for that slot.
-- **Any selected real campus:** **show one badge** with that label, **inline** immediately to the right of that slot’s coordinator name—**same visual line / same table cell** as the name where applicable, not a dedicated campus column (reuse or mirror `CampusBadgeStrip` styling for consistency).
+- keep slot pairing strict (`1 -> 1`, `2 -> 2`, `3 -> 3`)
+- render campus only as inline UI next to the correct person **when that person has a display name** (see R5)
+- avoid creating a standalone public campus row or column for this feature
+- keep row-level or program-level campus UI separate from per-person campus badges
+- let contributors edit the same three campus picklists beside the matching slot name controls
 
 ---
 
-## 2. Showing a badge “to the right of the coordinator’s name”
+## 2. Source-of-truth behavior
 
-### Data pairing
+### 2.1 Allowed values and normalization
 
-**One coordinator (designee) slot ↔ one campus column** (1 ↔ 1, 2 ↔ 2, 3 ↔ 3), aligned with existing **role group** patterns (name / email / phone per slot). The app already models **parallel columns** under a shared coordinator prefix in `role-groups` logic; campus would follow the same slot alignment.
+| Source value | Normalization | Public result |
+|-------------|---------------|---------------|
+| `Do Not Show` | Trimmed, case-insensitive match | No badge |
+| Empty / whitespace-only | Trimmed to empty | No badge |
+| `Everett` | Exact approved label after trim | Badge `Everett` |
+| `Global` | Exact approved label after trim | Badge `Global` |
+| `Pullman` | Exact approved label after trim | Badge `Pullman` |
+| `Spokane` | Exact approved label after trim | Badge `Spokane` |
+| `Tri-Cities` | Exact approved label after trim | Badge `Tri-Cities` |
+| `Vancouver` | Exact approved label after trim | Badge `Vancouver` |
+| Anything else | Not approved after trim | No badge |
 
-### Rendering in smartsheet-view
+Rules:
 
-| Piece today | Relevance |
-|-------------|-----------|
-| `CampusBadgeStrip` | Chip styling for campus labels; can be reused or adapted for **inline** badges (e.g. `inline-flex` beside the name, tight gap, **no block-level strip** that implies a full-width row/column). |
-| `MergedRowCampusBadges` | Row-level merged campuses after email/campus merge — **different** from per-person badges; keep both concepts distinct. |
-| `FieldValue` / card layouts | Likely place to render **name + optional inline badge** when a field is a “person” line and a sibling campus field exists. |
+- Trim whitespace before comparison.
+- Treat `Do Not Show` case-insensitively.
+- Do not infer campuses from partial text.
+- Do not fuzzy-match campuses.
+- Fail closed for unrecognized values.
 
-**Feasibility:** **High**, with UI work so campus is **composed into the people-group name line** (table, cards, lists) rather than exposed as its own column or duplicate labeled row—implementation should keep **name + optional badge** as one inline run of content.
+### 2.2 Product rules
 
-### Smartsheet-only display
+- `R1`: Render exactly one badge only when a slot's normalized value equals one approved campus.
+- `R2`: Render no badge for `Do Not Show`, blank, whitespace-only, or unrecognized values.
+- `R3`: Slot `N` campus applies only to slot `N`.
+- `R4`: One slot can render at most one badge.
+- `R5`: The badge appears inside the same coordinator output, **immediately after the corresponding non-empty name**. There is **no** public campus pill or print suffix if the slot has no name (email-only rows may still appear without a campus badge). No standalone public campus field, row, or column for this feature.
+- `R6`: Row-level or program-level campus UI remains separate from per-person coordinator campus UI.
 
-Native Smartsheet grid still is **not** ideal for rich HTML badges; **this app** is the right place for the student-facing experience.
+### 2.3 Contributor layout
+
+For numbered coordinator slots:
+
+- each slot keeps its existing name / email / phone grouping
+- the matching `Designee N Campus` dropdown appears beside that slot's name control when both **name** and **campus** attributes exist for that slot
+- if only a campus attribute exists (no name column in config), a standalone campus control is used for that row
+- campus `N` never edits slot `M` when `N != M`
+- after save, the public page reflects the same slot's badge behavior from `2.1` and `2.2`
+
+This is a numbered-slot feature. Delimited multi-person groups are not the product model for campus badges.
+
+### 2.4 Print / PDF
+
+On the print route, `FieldValue` receives `plainValueLinks`:
+
+- **Links** (mailto, tel, external URLs) render as plain text.
+- **Per-coordinator campus** next to a name renders as **plain text** after an **em dash** (e.g. `Ada — Pullman`), not as the rounded chip used on screen.
+- If there is **no name**, campus is **not** shown in print (same as R5 on the public page).
 
 ---
 
-## 3. Edge cases to plan for
+## 3. Resolution and visibility (numbered slots)
 
-- **Empty cell:** **No badge** (same outcome as “Do Not Show”).
-- **Multiple campuses for one person:** Current sheet design is **one dropdown per slot**; two campuses would need another column or sheet change.
-- **“Global”:** Show as a normal badge unless product owners want different styling (config-only change).
-- **Print / export:** If you add inline badges in the web view, decide whether **print export** and **contributor** views should match (may need parallel changes in print CSS or export HTML).
+- A coordinator **slot** is treated as having no public `people_group` row unless at least one of **name**, **email**, or **phone** has non-empty text after trim. **Campus alone does not create a visible row** (data may still be stored on the resolved entry for internal consistency).
+- **View row visibility:** Public resolution drops sheet rows when every resolved field on that row is empty (including a `people_group` whose slots are all empty as above). A row that only had campus picklists filled and no other columns would disappear unless another field on the view still has content.
+- Schema drift warnings for role groups include **campus** selectors on numbered slots, the same way as name, email, and phone.
 
 ---
 
-## 4. Summary
+## 4. Implementation map
 
-| Item | Assessment |
-|------|------------|
-| Read dropdown values via Smartsheet API | **Feasible** (already how the app is fed) |
-| Map new columns into this app’s config | **Feasible** (column IDs + view/source config) |
-| Ignore `Do Not Show`; badge other options | **Feasible** (simple conditional in render or transform layer) |
-| Place badge beside the correct coordinator name **without a separate view column** | **Feasible** with 1:1 slot pairing and **inline** composition in `FieldValue` / table cells (not mapping campus as its own public field column) |
-| Reuse existing campus chip look | **Feasible** via `CampusBadgeStrip` or shared styles |
+Primary modules:
 
-**Conclusion:** The approach is **technically sound** and **well aligned with this repository**. Implementation is **new feature work** (config + rendering), not a fundamental platform limitation.
+- `src/lib/config/types.ts` — slot `campus`, `ResolvedPersonRoleEntry.campus`, editable `campus` attribute
+- `src/lib/config/validation.ts` — parses `campus` on slots and editable groups
+- `src/lib/role-groups.ts` — detects `… N Campus` columns
+- `src/lib/public-view.ts` — resolves campus text, `isEmpty` without contact fields, `collectSelectorsFromRoleGroup` includes campus
+- `src/lib/coordinator-campus-badge.ts` — normalization / approved list
+- `src/components/public/FieldValue.tsx` — chip vs `plainValueLinks` suffix; badge only with name
+- `src/lib/contributor-utils.ts` — multi-person campus parse/serialize, derived groups + options
+- `src/components/public/ContributorFieldControl.tsx` — campus beside name or standalone
+- `src/components/admin/SourceForm.tsx` — campus column per slot
+- `src/components/admin/ViewBuilder.tsx` — role-group overlap includes campus selectors
+
+---
+
+## 5. Tests (current)
+
+- `src/lib/__tests__/coordinator-campus-badge.test.ts` — normalization unit tests
+- `src/lib/__tests__/public-view.test.ts` — resolution, drift including campus, slot pairing, campus-only `isEmpty`
+- `src/lib/__tests__/contributor-utils.test.ts` — serialize/parse including campus
+- `src/lib/__tests__/role-groups.test.ts` — title parsing and cluster with campus
+- `src/lib/__tests__/multi-person.test.ts` — fixed-slot parse order
+- `src/components/public/__tests__/ContributorFieldControl.test.tsx` — beside-name layout, campus-only fallback
+- `src/components/public/__tests__/FieldValue.test.tsx` — chip vs print suffix, no badge without name
+
+---
+
+## 6. Sign-off outside this document
+
+Pilot slugs, accessibility wording, content/legal approval, and rollout/rollback remain **process** items: confirm them before calling a release “done” in your org. This file describes **product + code behavior** only.
+
+---
+
+## 7. One-line summary
+
+**Numbered-slot campus badges are implemented with strict slot pairing, name-gated public badges, campus included in schema drift, and print using a plain em-dash suffix after the name.**
+
+## 8. External review notes
+
+When re-running automated or human review, **confirm the checkout** (path and branch) matches this repo. False failures often come from an older tree or a different folder clone. Contract checks in current code live at:
+
+- `resolveNumberedRoleGroupPeople`: `isEmpty` uses **name/email/phone only** (`anyContactValue`), not campus.
+- `collectSelectorsFromRoleGroup`: numbered slots include **`slot.campus`**.
+- `PersonSummary` in `FieldValue.tsx`: first line is shown **only when `nameTrimmed`**; campus is **chip or print em-dash suffix** only with `showCampusBesideName` (`campus` + name).
+- Tests: `public-view.test.ts` (drift, R5 campus-only slot, 1→1 / 2→2), `FieldValue.test.tsx` (no badge without name, print suffix), `ContributorFieldControl.test.tsx` (beside name / standalone).

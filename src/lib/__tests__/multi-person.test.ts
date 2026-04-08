@@ -107,8 +107,8 @@ describe("parseMultiPersonRow with numbered role groups (fromRoleGroupViewFieldK
       ],
     };
     expect(parseMultiPersonRow(row, group)).toEqual([
-      { name: "", email: "", phone: "" },
-      { name: "", email: "", phone: "" },
+      { name: "", email: "", phone: "", campus: "" },
+      { name: "", email: "", phone: "", campus: "" },
     ]);
   });
 
