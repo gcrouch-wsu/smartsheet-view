@@ -37,9 +37,10 @@ const COLOR_LABELS: Record<string, string> = {
   controlActiveText: "Active control text",
   badgeBg: "Badge background (Smartsheet “badge” columns only)",
   badgeText: "Badge text (Smartsheet “badge” columns only)",
-  peopleCampusChipBg: "People campus chip background (beside names in people_group)",
-  peopleCampusChipText: "People campus chip text",
-  peopleCampusChipBorder: "People campus chip border",
+  peopleCampusChipBg:
+    "People campus chip background (beside names). Override: Setup → Theme → Chips sets inline colors that win over these palette values.",
+  peopleCampusChipText: "People campus chip text (beside names)",
+  peopleCampusChipBorder: "People campus chip border (beside names)",
 };
 
 const COLOR_TOKENS = Object.keys(COLOR_LABELS) as Array<keyof ViewStyleConfig>;
