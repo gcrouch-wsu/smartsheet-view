@@ -19,6 +19,7 @@ import {
   type ContributorEditableFieldDefinition,
 } from "@/lib/contributor-utils";
 import {
+  cardLayoutContinuationRowClass,
   getEditDrawerOrderedFields,
   hasCustomCardLayout,
   getCardLayoutRows,
@@ -404,7 +405,14 @@ export function ContributorCardEditShell({
                   );
 
                   return (
-                    <div key={rowIndex} className={rowIndex > 0 ? "border-t border-[color:var(--wsu-border)]/40 pt-6" : ""}>
+                    <div
+                      key={rowIndex}
+                      className={cardLayoutContinuationRowClass(
+                        paddedCells,
+                        rowIndex,
+                        rowIndex > 0 ? "border-t border-[color:var(--wsu-border)]/40 pt-6" : "",
+                      )}
+                    >
                       {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
                     </div>
                   );

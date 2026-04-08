@@ -12,6 +12,7 @@ import {
 import { EmptyState } from "@/components/public/EmptyState";
 import { FieldValue } from "@/components/public/FieldValue";
 import {
+  cardLayoutContinuationRowClass,
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   describeResolvedField,
@@ -233,7 +234,10 @@ export function DataListDetail({
                       </div>
                     );
                     return (
-                      <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                      <div
+                        key={rowIndex}
+                        className={cardLayoutContinuationRowClass(paddedCells, rowIndex, rowDividerClass(rowIndex))}
+                      >
                         {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
                       </div>
                     );

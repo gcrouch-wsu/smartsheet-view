@@ -294,6 +294,23 @@ export function getFirstFieldFromCells(cells: CardLayoutCell[]): ResolvedFieldVa
   return cell?.type === "field" ? cell.field : null;
 }
 
+/**
+ * Custom card layout: a row with exactly one field and a hidden label continues the previous block (e.g. email
+ * under contact). Uses tight spacing instead of full row dividers (`mt-4 pt-4`, list `border-t pt-4`, etc.).
+ */
+export function cardLayoutContinuationRowClass(
+  paddedCells: CardLayoutCell[],
+  rowIndex: number,
+  standardClass: string,
+): string {
+  if (rowIndex === 0) return standardClass;
+  const fields = paddedCells.filter((c): c is Extract<CardLayoutCell, { type: "field" }> => c.type === "field");
+  if (fields.length === 1 && fields[0].field.hideLabel) {
+    return "mt-1 border-t-0 pt-0";
+  }
+  return standardClass;
+}
+
 /** Max number of columns across all card layout rows (for grid alignment). */
 export function getCardLayoutColumnCount(view: ResolvedView): number {
   const layout = view.presentation?.cardLayout;

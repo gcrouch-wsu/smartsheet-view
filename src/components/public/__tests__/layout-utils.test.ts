@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cardLayoutContinuationRowClass,
   cardLayoutIncludesCampusBadges,
   getCardLayoutRows,
   getContributorEditorAdditionalOnlyFieldKeys,
@@ -8,6 +9,7 @@ import {
   sortContributorEditorAdditionalFields,
   stripCardLayoutRowsForContributorMainEditor,
 } from "@/components/public/layout-utils";
+import type { CardLayoutCell } from "@/components/public/layout-utils";
 import type { ContributorEditableFieldDefinition } from "@/lib/contributor-utils";
 import { contributorResolvedFieldStub } from "@/lib/contributor-utils";
 import { CARD_LAYOUT_CAMPUS_BADGES } from "@/lib/config/types";
@@ -44,6 +46,29 @@ function makeView(overrides: Partial<ResolvedView> = {}): ResolvedView {
 function makeRow(fieldMap: Record<string, ResolvedFieldValue>, extra?: Partial<ResolvedViewRow>): ResolvedViewRow {
   return { id: 1, fields: Object.values(fieldMap), fieldMap, ...extra };
 }
+
+describe("cardLayoutContinuationRowClass", () => {
+  function fieldCell(hideLabel: boolean): CardLayoutCell {
+    return { type: "field", field: { ...textField("k", "Label", "v"), hideLabel } };
+  }
+
+  it("leaves first row unchanged", () => {
+    expect(cardLayoutContinuationRowClass([fieldCell(true)], 0, "")).toBe("");
+    expect(cardLayoutContinuationRowClass([fieldCell(true)], 0, "mt-4")).toBe("mt-4");
+  });
+
+  it("tightens spacing when a later row is a single hide-label field", () => {
+    expect(cardLayoutContinuationRowClass([fieldCell(true)], 1, "mt-4 pt-4")).toBe("mt-1 border-t-0 pt-0");
+  });
+
+  it("keeps standard class when the row has more than one field", () => {
+    expect(cardLayoutContinuationRowClass([fieldCell(true), fieldCell(false)], 1, "std")).toBe("std");
+  });
+
+  it("keeps standard class when the single field shows its label", () => {
+    expect(cardLayoutContinuationRowClass([fieldCell(false)], 1, "std")).toBe("std");
+  });
+});
 
 describe("cardLayoutIncludesCampusBadges", () => {
   it("is true when any layout row includes the campus badges token", () => {

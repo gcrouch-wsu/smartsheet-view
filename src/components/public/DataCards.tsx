@@ -7,6 +7,7 @@ import { FieldValue } from "@/components/public/FieldValue";
 import { MergedRowCampusBadges } from "@/components/public/MergedRowCampusBadges";
 import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppressionCollapsible";
 import {
+  cardLayoutContinuationRowClass,
   customCardAlignedGridStyle,
   customCardGridScrollWrapClassName,
   cardLayoutIncludesCampusBadges,
@@ -140,7 +141,10 @@ export function DataCards({
                 </div>
               );
               return (
-                <div key={rowIndex} className={rowDividerClass(rowIndex)}>
+                <div
+                  key={rowIndex}
+                  className={cardLayoutContinuationRowClass(paddedCells, rowIndex, rowDividerClass(rowIndex))}
+                >
                   {scrollWrap ? <div className={scrollWrap}>{gridInner}</div> : gridInner}
                 </div>
               );
