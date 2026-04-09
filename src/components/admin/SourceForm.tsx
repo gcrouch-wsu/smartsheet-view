@@ -326,7 +326,19 @@ export function SourceForm({
     toast.addToast(`Merged ${detected.length} detected role group(s). Save the source to persist.`, "success");
   }
 
+  function removeEntireRoleGroup(roleGroupId: string) {
+    setForm((current) => ({
+      ...current,
+      roleGroups: (current.roleGroups ?? []).filter((g) => g.id !== roleGroupId),
+    }));
+    toast.addToast("Role group removed from this draft. Save source to persist.", "success");
+  }
+
   function addCustomNumberedRoleGroup() {
+    if (!schema?.columns?.length) {
+      toast.addToast("Load the schema first (Schema preview → Fetch schema now or Test + Fetch Schema), then add a role group.", "error");
+      return;
+    }
     const label = customRoleGroupLabel.trim();
     if (!label) {
       toast.addToast("Enter a label for the new role group.", "error");
@@ -743,33 +755,50 @@ export function SourceForm({
           <div>
             <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Role groups</h2>
             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-              Map each person-slot to Smartsheet columns for name, email, phone, and optional campus. A group can have{" "}
-              <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (e.g. a single assessment contact) or many. Slot IDs can be any
-              stable label. Merge detected groups only finds titles like “Coordinator 1” / “Coordinator 1 Email”; use{" "}
-              <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> for other column names. For delimited groups, only
-              enable trusted pairing when parallel columns stay in lockstep.
+              <strong className="font-medium text-[color:var(--wsu-ink)]">Fetch the schema first</strong> in{" "}
+              <strong className="font-medium text-[color:var(--wsu-ink)]">Schema preview</strong> above — mapping and saves expect a loaded column list. Then map
+              each person-slot to columns for name, email, phone, and optional campus. A group can have{" "}
+              <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (e.g. a single assessment contact) or many. Merge detected groups only
+              finds titles like “Coordinator 1” / “Coordinator 1 Email”; use <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong>{" "}
+              for other column names. To drop a one-slot group, use <strong className="font-medium text-[color:var(--wsu-ink)]">Remove group</strong> on that card
+              (row <strong className="font-medium text-[color:var(--wsu-ink)]">Remove</strong> only removes a slot when you have two or more). For delimited groups,
+              only enable trusted pairing when parallel columns stay in lockstep.
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
-          <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs">
-            <span className="font-semibold text-[color:var(--wsu-ink)]">Add custom role group</span>
-            <input
-              type="text"
-              value={customRoleGroupLabel}
-              onChange={(e) => setCustomRoleGroupLabel(e.target.value)}
-              placeholder="e.g. Assessment support contact"
-              className="rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)]"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => addCustomNumberedRoleGroup()}
-            className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
-          >
-            Add with one slot
-          </button>
+        <div className="mt-4 space-y-2 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+          {!schemaLoaded ? (
+            <p className="text-xs text-amber-900 underline decoration-amber-700/50">
+              Load the schema in <strong className="font-medium">Schema preview</strong> before adding a role group — otherwise column mapping and save can fail.
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs">
+              <span className="font-semibold text-[color:var(--wsu-ink)]">Add custom role group</span>
+              <input
+                type="text"
+                value={customRoleGroupLabel}
+                onChange={(e) => setCustomRoleGroupLabel(e.target.value)}
+                placeholder="e.g. Assessment support contact"
+                disabled={!schemaLoaded}
+                className="rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)] disabled:opacity-50"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => addCustomNumberedRoleGroup()}
+              disabled={!schemaLoaded}
+              title={
+                schemaLoaded
+                  ? undefined
+                  : "Fetch schema in Schema preview first (Test + Fetch Schema or Fetch schema now)."
+              }
+              className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Add with one slot
+            </button>
+          </div>
         </div>
 
         {form.roleGroups && form.roleGroups.length > 0 ? (
@@ -844,6 +873,22 @@ export function SourceForm({
                       </p>
                       <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Configured attributes: {attrSummary}</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            `Remove role group "${roleGroup.label}" from this source? Smartsheet columns are not deleted. Save source to persist.`,
+                          )
+                        ) {
+                          return;
+                        }
+                        removeEntireRoleGroup(roleGroup.id);
+                      }}
+                      className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800 hover:bg-rose-100"
+                    >
+                      Remove group
+                    </button>
                   </div>
 
                   {roleGroup.mode === "numbered_slots" ? (
@@ -921,7 +966,7 @@ export function SourceForm({
                                     disabled={(roleGroup.slots ?? []).length <= 1}
                                     title={
                                       (roleGroup.slots ?? []).length <= 1
-                                        ? "Numbered role groups must keep at least one slot to match Smartsheet and save."
+                                        ? "Keep at least one slot in the table, or use Remove group above to delete this entire role."
                                         : undefined
                                     }
                                     aria-label={`Remove slot ${slot.slot || String(slotIndex + 1)} from ${roleGroup.label}`}

@@ -2952,9 +2952,10 @@ export function ViewBuilder({
                   <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--wsu-muted)]">Add grouped role field</p>
                   <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
                     Appends one <strong className="font-medium text-[color:var(--wsu-ink)]">People / grouped role</strong> field backed by a role group on this view&apos;s
-                    source (admin → Sources → Role groups). Works with <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (single contact, e.g.
-                    assessment) or many; use <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> on the source when Smartsheet
-                    columns are not named like “Coordinator 1” / “Coordinator 1 Email”.
+                    source (admin → Sources → Role groups). On the source, <strong className="font-medium text-[color:var(--wsu-ink)]">fetch schema first</strong>, then add
+                    or map groups. Works with <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (single contact, e.g. assessment) or many; use{" "}
+                    <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> when columns are not named like “Coordinator 1” / “Coordinator 1 Email”.
+                    <strong className="font-medium text-[color:var(--wsu-ink)]"> Remove group</strong> on the source card drops a group even when it only has one slot.
                   </p>
                   <div className="mt-2">
                     <select
