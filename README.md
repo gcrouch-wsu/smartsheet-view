@@ -153,6 +153,10 @@ Sanitize server-side with **`sanitize-html`** only. Avoid adding **`jsdom`** to 
 - Confirm **contact columns** used for contributor eligibility contain real emails where policy requires it.
 - Smoke test: contributor sign-in, row edit only where allowed, multi-person group save, public page refresh, quick pass on a phone.
 
+## Planned enhancements
+
+See **`future_build.md`** for a curated backlog of realistic ideas (not a committed schedule).
+
 ## Project Structure
 
 - `src/app/` - Next.js App Router (public views and admin API)

@@ -52,10 +52,8 @@ contributor_instructions.md
 !README.md
 !VERCEL_DEPLOYMENT.md
 !Admin_Instruction.md
+!future_build.md
 !web.html
-
-# Local master spec (optional; personal copy — not shared via this repo)
-PROJECT_SPEC.md
 
 # Local / scratch (keep out of repo)
 .claude/

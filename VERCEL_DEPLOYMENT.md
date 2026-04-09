@@ -267,6 +267,27 @@ Admin sessions are **stateless** (no server session table). **Global sign-out / 
 
 ---
 
+## Production go-live checklist (first real deployment)
+
+Use before turning on contributor editing for a production audience (for example graduate program contacts).
+
+1. **Vercel Production (and Preview if used)** — Set `SMARTSHEET_API_TOKEN`, bootstrap admin username/password, **`SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`** explicitly (see **Admin bootstrap** above), `DATABASE_URL`, `CONTRIBUTOR_SESSION_SECRET`. Use `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL=true` only if Postgres TLS verification fails and the risk is accepted after review.
+2. **Audience splits (config only)** — Prefer **separate published views** per campus or audience using existing filters instead of one overloaded page.
+3. **Contributor columns** — Confirm Smartsheet columns that drive row eligibility; use real mailbox addresses where registration matches email in the sheet.
+4. **Smoke test** — Contributor first-time access and sign-in, edit only on authorized rows, save and verify Smartsheet + public page; exercise multi-person fields if used; quick mobile check.
+5. **Admin handoff** — Operators know `/instructions/admin`, `/admin/contributors`, and the manual password-reset link flow.
+
+---
+
+## Maintainer engineering rules (this repo)
+
+- Run **`npx tsc --noEmit`** or **`npm run build`** before pushing; Vercel fails on the same TypeScript errors.
+- **Do not link this file from `README.md`** unless project policy changes; keep public onboarding to `README.md` only.
+- New **`public` schema tables** owned by the app: enable RLS in the same change that creates or bootstraps them; extend **`sql/enable-public-rls.sql`**; rerun Supabase Security Advisor after deploy.
+- Smartsheet client, column normalization, or multi-contact parsing changes: note whether the fix should be **ported** to sibling platforms or kept **repo-specific**.
+
+---
+
 ## Smartsheet API: Cell Shapes For Row Writes
 
 Rules below are the ones that matter most in production.
