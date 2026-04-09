@@ -35,6 +35,7 @@ export default async function ViewEditorPage({ params }: { params: Promise<{ id:
           label: item.label,
           slug: item.slug,
           sourceId: item.sourceId,
+          public: item.public,
         }))}
         isNew={isNew}
       />

@@ -121,7 +121,26 @@ export async function saveAdminViewConfig(
     }
   }
 
+  const previous = await getViewConfigById(viewToSave.id);
+
   await saveViewConfig(viewToSave);
+
+  if (
+    previous &&
+    previous.sourceId === viewToSave.sourceId &&
+    previous.slug !== viewToSave.slug
+  ) {
+    const others = (await listViewConfigs()).filter(
+      (v) =>
+        v.id !== viewToSave.id &&
+        v.sourceId === previous.sourceId &&
+        v.slug === previous.slug,
+    );
+    for (const v of others) {
+      await saveViewConfig({ ...v, slug: viewToSave.slug });
+    }
+  }
+
   return viewToSave;
 }
 

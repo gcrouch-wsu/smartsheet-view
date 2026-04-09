@@ -173,6 +173,7 @@ function PrintDataTableSection({
 export function PrintViewDocument({
   slug,
   viewId,
+  singlePublishedView,
   pageTitle,
   sourceLabel,
   sourceName,
@@ -184,6 +185,7 @@ export function PrintViewDocument({
 }: {
   slug: string;
   viewId: string;
+  singlePublishedView: boolean;
   pageTitle: string;
   sourceLabel: string;
   sourceName: string;
@@ -236,6 +238,7 @@ export function PrintViewDocument({
         <PrintViewToolbar
           slug={slug}
           viewId={viewId}
+          singlePublishedView={singlePublishedView}
           columnOptions={printableColumnOptions}
           compact={printCompact}
         />

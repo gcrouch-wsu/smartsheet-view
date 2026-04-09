@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { publicInteractiveHref } from "@/lib/public-view-href";
 
 export type PrintColumnPickerRow = { key: string; label: string; heading?: boolean };
 
 export function PrintViewToolbar({
   slug,
   viewId,
+  singlePublishedView,
   columnOptions,
   compact: compactActive,
 }: {
   slug: string;
   viewId: string;
+  singlePublishedView: boolean;
   columnOptions?: PrintColumnPickerRow[];
   compact?: boolean;
 }) {
@@ -46,7 +49,11 @@ export function PrintViewToolbar({
 
   function applyPrintSettings() {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("view", viewId);
+    if (singlePublishedView) {
+      params.delete("view");
+    } else {
+      params.set("view", viewId);
+    }
 
     const allSelected =
       selectedOptional.length === optionalKeys.length &&
@@ -72,7 +79,7 @@ export function PrintViewToolbar({
   return (
     <div className="no-print mb-8 flex flex-col gap-4 border-b border-[color:var(--wsu-border)] pb-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={`/view/${slug}?view=${viewId}`} className="link-pill-muted px-4 py-2 text-sm">
+        <Link href={publicInteractiveHref(slug, viewId, singlePublishedView)} className="link-pill-muted px-4 py-2 text-sm">
           Back to interactive view
         </Link>
         <button type="button" onClick={() => window.print()} className="view-control-active px-4 py-2 text-sm font-medium">

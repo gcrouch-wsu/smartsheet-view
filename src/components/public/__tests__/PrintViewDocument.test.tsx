@@ -68,6 +68,7 @@ describe("PrintViewDocument", () => {
       <PrintViewDocument
         slug="grad-programs"
         viewId={view.id}
+        singlePublishedView={false}
         pageTitle="Graduate Programs"
         sourceLabel="Programs"
         sourceName="GRAD Programs"
@@ -92,6 +93,7 @@ describe("PrintViewDocument", () => {
       <PrintViewDocument
         slug="grad-programs"
         viewId={view.id}
+        singlePublishedView={false}
         pageTitle="Graduate Programs"
         sourceLabel="Programs"
         sourceName="GRAD Programs"
@@ -145,6 +147,7 @@ describe("PrintViewDocument", () => {
       <PrintViewDocument
         slug="grad-programs"
         viewId={view.id}
+        singlePublishedView={false}
         pageTitle="Graduate Programs"
         sourceLabel="Programs"
         sourceName="GRAD Programs"

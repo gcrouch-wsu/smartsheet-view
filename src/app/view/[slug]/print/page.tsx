@@ -101,6 +101,7 @@ export default async function PrintExportPage({
   const printCompact = firstValue(resolvedSearchParams.compact) === "1";
   const printView = omitRecordSuppressedRowsFromResolvedView(activeView);
   const printableColumnOptions = buildPrintColumnPickerOptions(printView);
+  const singlePublishedView = page.viewConfigs.length === 1;
 
   return (
     <div className="min-h-screen bg-[color:var(--wsu-stone)] px-4 py-6 sm:px-6">
@@ -109,6 +110,7 @@ export default async function PrintExportPage({
           <PrintViewDocument
             slug={slug}
             viewId={printView.id}
+            singlePublishedView={singlePublishedView}
             pageTitle={page.title}
             sourceLabel={page.sourceConfig.label}
             sourceName={page.sourceName}

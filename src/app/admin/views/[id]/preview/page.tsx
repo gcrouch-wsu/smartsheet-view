@@ -4,7 +4,9 @@ import { PublicViewRenderer, formatLayoutLabel } from "@/components/public/ViewR
 import { requireAdminPageAccess } from "@/lib/admin-page";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
+import { getPublicViewsBySlug } from "@/lib/config/store";
 import { loadAdminViewPreview } from "@/lib/public-view";
+import { publicInteractiveHref } from "@/lib/public-view-href";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -28,6 +30,14 @@ export default async function ViewPreviewPage({
     notFound();
   }
 
+  const publishedForSlug = await getPublicViewsBySlug(preview.viewConfig.slug);
+  const singlePublishedView = publishedForSlug.length === 1;
+  const publicPageHref = publicInteractiveHref(
+    preview.viewConfig.slug,
+    preview.viewConfig.id,
+    singlePublishedView,
+  );
+
   const requestedLayout = firstValue(resolvedSearchParams.layout);
   const layout = LAYOUT_OPTIONS.includes(requestedLayout as LayoutType)
     ? (requestedLayout as LayoutType)
@@ -47,7 +57,7 @@ export default async function ViewPreviewPage({
           <div className="flex flex-wrap gap-2">
             <Link href={`/admin/views/${preview.viewConfig.id}`} className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-muted)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]">Back to builder</Link>
             {preview.viewConfig.public && (
-              <Link href={`/view/${preview.viewConfig.slug}?view=${preview.viewConfig.id}`} className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]">Open public page</Link>
+              <Link href={publicPageHref} className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]">Open public page</Link>
             )}
           </div>
         </div>

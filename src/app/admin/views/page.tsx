@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import { requireAdminPageAccess } from "@/lib/admin-page";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
+import { publicInteractiveHref } from "@/lib/public-view-href";
 
 export default async function ViewsIndexPage() {
   await requireAdminPageAccess("/admin/views");
@@ -30,7 +31,16 @@ export default async function ViewsIndexPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--wsu-crimson)]">{view.public ? "Published" : "Draft"}</p>
                 <h3 className="mt-2 text-2xl font-semibold text-[color:var(--wsu-ink)]">{view.label}</h3>
-                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">Slug: /view/{view.slug}?view={view.id}</p>
+                <p className="mt-2 text-sm text-[color:var(--wsu-muted)]">
+                  Public path:{" "}
+                  <code className="text-xs">
+                    {publicInteractiveHref(
+                      view.slug,
+                      view.id,
+                      views.filter((v) => v.public && v.slug === view.slug).length === 1,
+                    )}
+                  </code>
+                </p>
                 <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">Source: {sourceMap.get(view.sourceId) ?? view.sourceId} · Layout: {view.layout}</p>
               </div>
               <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">

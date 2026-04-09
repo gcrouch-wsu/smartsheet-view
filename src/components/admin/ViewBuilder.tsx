@@ -24,6 +24,7 @@ import { VIEW_TEMPLATES, applyViewTemplate } from "@/lib/config/templates";
 import { validateViewConfig } from "@/lib/config/validation";
 import { parseViewConfigFromBackupJson } from "@/lib/view-backup-json";
 import { DISPLAY_TIMEZONE_OPTIONS, effectiveViewDisplayTimeZone } from "@/lib/display-datetime";
+import { publicInteractiveHref } from "@/lib/public-view-href";
 import { slugify } from "@/lib/utils";
 import { effectiveValueLinkFlags } from "@/lib/transforms";
 import type {
@@ -205,7 +206,7 @@ function toggleNumberSelection(values: number[], id: number, checked: boolean) {
 
 const FETCH_CREDENTIALS: RequestCredentials = "include";
 
-type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId">;
+type ExistingViewMeta = Pick<ViewConfig, "id" | "label" | "slug" | "sourceId" | "public">;
 type RoleGroupOverlapWarning = {
   roleFieldKey: string;
   roleFieldLabel: string;
@@ -316,6 +317,16 @@ export function ViewBuilder({
     }
     return comparisonViews.filter((candidate) => normalizedCompareKey(candidate.slug) === targetSlug);
   }, [comparisonViews, view.slug]);
+  /** One published view on this slug → canonical URL is /view/{slug} without ?view=. */
+  const singlePublishedOnSlug = useMemo(() => {
+    if (!view.public) {
+      return false;
+    }
+    const n = existingViews.filter(
+      (v) => v.public && normalizedCompareKey(v.slug) === normalizedCompareKey(view.slug),
+    ).length;
+    return n === 1;
+  }, [existingViews, view.public, view.slug]);
   const hasBlockingIdConflict = Boolean(isNew && duplicateIdView);
   const contactColumns = useMemo(
     () => schema?.columns.filter((column) => column.type === "CONTACT_LIST" || column.type === "MULTI_CONTACT_LIST") ?? [],
@@ -2322,12 +2333,13 @@ export function ViewBuilder({
                 <span className="font-medium">Public URL:</span>{" "}
                 {view.public ? (
                   <a
-                    href={`${typeof window !== "undefined" ? window.location.origin : ""}/view/${view.slug}?view=${view.id}`}
+                    href={`${typeof window !== "undefined" ? window.location.origin : ""}${publicInteractiveHref(view.slug, view.id, singlePublishedOnSlug)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[color:var(--wsu-crimson)] underline hover:text-[color:var(--wsu-crimson-dark)]"
                   >
-                    {typeof window !== "undefined" ? window.location.origin : ""}/view/{view.slug}?view={view.id}
+                    {typeof window !== "undefined" ? window.location.origin : ""}
+                    {publicInteractiveHref(view.slug, view.id, singlePublishedOnSlug)}
                   </a>
                 ) : (
                   "Not published."
@@ -2337,7 +2349,11 @@ export function ViewBuilder({
               <textarea
                 readOnly
                 rows={3}
-                value={view.public ? `<iframe src="${typeof window !== "undefined" ? window.location.origin : ""}/view/${view.slug}?view=${view.id}&embed=1" style="width:100%;border:0;min-height:640px;" loading="lazy"></iframe>` : "Publish the view to generate an embed snippet."}
+                value={
+                  view.public
+                    ? `<iframe src="${typeof window !== "undefined" ? window.location.origin : ""}${publicInteractiveHref(view.slug, view.id, singlePublishedOnSlug, { embed: true })}" style="width:100%;border:0;min-height:640px;" loading="lazy"></iframe>`
+                    : "Publish the view to generate an embed snippet."
+                }
                 className="mt-2 w-full rounded-xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/30 px-3 py-2 font-mono text-xs text-[color:var(--wsu-ink)]"
               />
             </div>

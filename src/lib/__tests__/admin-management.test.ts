@@ -138,4 +138,28 @@ describe("admin management", () => {
 
     expect(adminStoreMock.deleteViewConfig).toHaveBeenCalledWith("faculty");
   });
+
+  it("updates slug on sibling views that shared the old slug (same source)", async () => {
+    const tabA: ViewConfig = { ...viewConfig, id: "tab-a", slug: "page-x", label: "Tab A" };
+    const tabB: ViewConfig = { ...viewConfig, id: "tab-b", slug: "page-x", label: "Tab B", tabOrder: 2 };
+    storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
+    smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });
+    publicViewMock.collectSchemaDriftWarnings.mockReturnValue([]);
+
+    storeMock.getViewConfigById.mockImplementation(async (id: string) => {
+      if (id === "tab-a") {
+        return tabA;
+      }
+      if (id === "tab-b") {
+        return tabB;
+      }
+      return null;
+    });
+    storeMock.listViewConfigs.mockResolvedValue([tabA, tabB]);
+
+    await saveAdminViewConfig({ ...tabA, slug: "page-y" });
+
+    expect(adminStoreMock.saveViewConfig).toHaveBeenCalledWith(expect.objectContaining({ id: "tab-a", slug: "page-y" }));
+    expect(adminStoreMock.saveViewConfig).toHaveBeenCalledWith(expect.objectContaining({ id: "tab-b", slug: "page-y" }));
+  });
 });

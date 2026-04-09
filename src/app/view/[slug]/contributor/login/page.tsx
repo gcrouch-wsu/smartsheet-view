@@ -13,6 +13,7 @@ import {
   resolveRequestedResolvedView,
   resolveRequestedViewConfig,
 } from "@/lib/public-view";
+import { publicInteractiveHref } from "@/lib/public-view-href";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -43,7 +44,8 @@ export default async function ContributorLoginPage({
     redirect(`/view/${slug}`);
   }
 
-  const returnHref = `/view/${slug}?view=${activeView.id}`;
+  const singlePublishedView = page.viewConfigs.length === 1;
+  const returnHref = publicInteractiveHref(slug, activeView.id, singlePublishedView);
 
   if (configurationError || !activeViewConfig.editing?.enabled) {
     return (

@@ -31,6 +31,7 @@ import {
   resolveRequestedResolvedView,
   resolveRequestedViewConfig,
 } from "@/lib/public-view";
+import { publicContributorLoginHref, publicInteractiveHref, publicPrintHref } from "@/lib/public-view-href";
 import { omitRecordSuppressedRowsFromResolvedView } from "@/lib/record-suppression";
 import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
@@ -38,16 +39,6 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function buildHref(slug: string, viewId: string, layout: LayoutType, embed: boolean) {
-  const params = new URLSearchParams();
-  params.set("view", viewId);
-  params.set("layout", layout);
-  if (embed) {
-    params.set("embed", "1");
-  }
-  return `/view/${slug}?${params.toString()}`;
 }
 
 function PublicActionLink({
@@ -147,13 +138,17 @@ export default async function PublicViewPage({
   const mainStyle = !embed && tokens.backgroundColor ? { backgroundColor: tokens.backgroundColor } : undefined;
 
   const showViewTabs = !activeView.presentation?.hideViewTabs && page.resolvedViews.length > 1;
+  const singlePublishedView = page.viewConfigs.length === 1;
   const contributorConfigurationError = getContributorConfigurationError();
   const editingEnabled = !embed && activeViewConfig.editing?.enabled && !contributorConfigurationError;
   const showContributorLoginLink = editingEnabled && activeViewConfig.editing?.showLoginLink !== false;
-  const loginHref = showContributorLoginLink ? `/view/${slug}/contributor/login?view=${activeView.id}` : null;
+  const loginHref = showContributorLoginLink
+    ? publicContributorLoginHref(slug, activeView.id, singlePublishedView)
+    : null;
   const showContributorInstructions =
     editingEnabled && activeViewConfig.editing?.showContributorInstructions !== false;
-  const printHref = !embed ? `/view/${slug}/print?view=${activeView.id}` : null;
+  const printHref = !embed ? publicPrintHref(slug, activeView.id, singlePublishedView) : null;
+  const canonicalInteractiveUrl = `${baseUrl}${publicInteractiveHref(slug, activeView.id, singlePublishedView)}`;
   const contributorInstructionsHref = showContributorInstructions ? "/instructions/contributor" : null;
   const layoutSwitcher = !activeView.fixedLayout ? (
     <nav aria-label="Layout" className="flex flex-wrap gap-2">
@@ -162,7 +157,7 @@ export default async function PublicViewPage({
         return (
           <Link
             key={option}
-            href={buildHref(slug, activeView.id, option, embed)}
+            href={publicInteractiveHref(slug, activeView.id, singlePublishedView, { layout: option, embed })}
             aria-current={active ? "page" : undefined}
             className={active ? "view-control-active px-3 py-1.5 text-sm font-medium" : "view-control px-3 py-1.5 text-sm font-medium"}
           >
@@ -290,7 +285,7 @@ export default async function PublicViewPage({
                         dangerouslySetInnerHTML={{
                           __html: renderHeaderCustomText(
                             activeView.presentation.headerCustomText,
-                            `${baseUrl}/view/${slug}?view=${activeView.id}`,
+                            canonicalInteractiveUrl,
                           ),
                         }}
                       />
@@ -298,7 +293,7 @@ export default async function PublicViewPage({
                       <div className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
                         {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
                           <p key={i} className="whitespace-pre-wrap">
-                            {parseFormattedHeaderText(line, `${baseUrl}/view/${slug}?view=${activeView.id}`).map((part, j) =>
+                            {parseFormattedHeaderText(line, canonicalInteractiveUrl).map((part, j) =>
                               typeof part === "string" ? (
                                 <span key={j}>{part}</span>
                               ) : part.t === "b" ? (
