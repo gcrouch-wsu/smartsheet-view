@@ -72,25 +72,17 @@ export function ContributorSingleFieldControl({
     editableDef.columnType === "CONTACT_LIST" || editableDef.columnType === "MULTI_CONTACT_LIST";
   const fieldLabel = editableDef.columnTitle || editableDef.label;
   const showTitleRow = !field.hideLabel && !suppressDuplicateTitle;
-  const showCompactEditMeta = !field.hideLabel && suppressDuplicateTitle && isContact;
+  /** Aligned card: header row has the label; still show Clear for contact columns. */
+  const showAlignedContactToolbar = !field.hideLabel && suppressDuplicateTitle && isContact;
 
   return (
     <div className="space-y-2">
-      {(showTitleRow || showCompactEditMeta) && (
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          {showTitleRow ? (
-            <p className={fieldLabelClassName(field)}>
-              {fieldLabel}{" "}
-              <span className="rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
-                Editable
-              </span>
-            </p>
-          ) : showCompactEditMeta ? (
-            <span className="rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
-              Editable
-            </span>
-          ) : null}
-          {isContact && (
+      {(showTitleRow || showAlignedContactToolbar) && (
+        <div
+          className={`flex flex-wrap items-start gap-2 ${showTitleRow ? "justify-between" : "justify-end"}`}
+        >
+          {showTitleRow ? <p className={fieldLabelClassName(field)}>{fieldLabel}</p> : null}
+          {isContact && (showTitleRow || showAlignedContactToolbar) ? (
             <button
               type="button"
               onClick={() => onChange("")}
@@ -98,10 +90,10 @@ export function ContributorSingleFieldControl({
             >
               Clear this role
             </button>
-          )}
+          ) : null}
         </div>
       )}
-      {!showTitleRow && !showCompactEditMeta && isContact && (
+      {!showTitleRow && !showAlignedContactToolbar && isContact && (
         <div className="flex justify-end">
           <button
             type="button"

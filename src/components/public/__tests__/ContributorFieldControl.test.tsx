@@ -40,7 +40,6 @@ describe("ContributorSingleFieldControl", () => {
     );
     expect(html).toContain('value="Initial"');
     expect(html).toContain('Smartsheet Title');
-    expect(html).toContain('Editable');
   });
 
   it("renders a select for picklist fields", () => {
