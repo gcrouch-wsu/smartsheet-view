@@ -55,6 +55,9 @@ contributor_instructions.md
 !future_build.md
 !web.html
 
+# Local master spec (optional; not shared via this repo)
+PROJECT_SPEC.md
+
 # Local / scratch (keep out of repo)
 .claude/
 *.txt
