@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contributor tutorial — Smartsheet View (web / LMS)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --ink: #1c1917;
+        --muted: #57534e;
+        --border: #d6d3d1;
+        --paper: #fafaf9;
+        --accent: #a60f2d;
+        --max: 44rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #e7e5e4;
+          --muted: #a8a29e;
+          --border: #44403c;
+          --paper: #1c1917;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+        font-size: 1rem;
+        line-height: 1.55;
+        color: var(--ink);
+        background: var(--paper);
+      }
+      .wrap {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 1.5rem 1.25rem 3rem;
+      }
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0 0 0.75rem;
+      }
+      h2 {
+        font-size: 1.25rem;
+        margin: 2rem 0 0.75rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+      }
+      h2:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+      h3 {
+        font-size: 1.05rem;
+        margin: 1.25rem 0 0.5rem;
+      }
+      p,
+      li {
+        color: var(--muted);
+      }
+      strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      code {
+        font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+        font-size: 0.9em;
+        padding: 0.1em 0.35em;
+        border-radius: 0.25rem;
+        background: color-mix(in srgb, var(--border) 35%, transparent);
+      }
+      a {
+        color: var(--accent);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        margin: 0.75rem 0 1rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.5rem 0.65rem;
+        vertical-align: top;
+        text-align: left;
+      }
+      th {
+        background: color-mix(in srgb, var(--border) 25%, transparent);
+        font-weight: 600;
+        color: var(--ink);
+      }
+      ol,
+      ul {
+        padding-left: 1.35rem;
+      }
+      li {
+        margin: 0.35rem 0;
+      }
+      .lede {
+        font-size: 1.05rem;
+      }
+      .note {
+        margin-top: 1rem;
+        font-size: 0.92rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Contributor tutorial (web / LMS version)</h1>
+        <p class="lede">
+          Use this document when you build a <strong>standalone webpage</strong> (HTML, WordPress, Canvas, etc.) with
+          screenshots to walk graduate program contacts through editing their card on a <strong>Smartsheet View</strong>
+          page. Copy sections below as needed; replace <code>YOUR_VIEW_URL</code> with the real public link.
+        </p>
+        <p class="note">
+          <strong>Canonical in-app guide (keep wording aligned):</strong>
+          <code>/instructions/contributor</code> — source: <code>src/app/instructions/contributor/page.tsx</code>.
+        </p>
+      </header>
+
+      <main>
+        <section aria-labelledby="s-shots">
+          <h2 id="s-shots">For page authors: suggested image assets</h2>
+          <p>
+            Save images with clear names (e.g. <code>contributor-01-catalog-signin.png</code>). Use consistent browser
+            width (e.g. 1280px) and <strong>avoid</strong> capturing real student PII—use a <strong>staging</strong> view or
+            blur cells.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Suggested filename</th>
+                <th>What to capture</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1</strong></td>
+                <td><code>01-public-page-overview.png</code></td>
+                <td>
+                  The published view home: header, optional program list/cards, and the <strong>status / action</strong>
+                  area showing <strong>Contributor sign in</strong> (and <strong>Print / PDF</strong> if enabled). Shows the
+                  starting point.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>2</strong></td>
+                <td><code>02-contributor-menu.png</code></td>
+                <td>
+                  Click <strong>Contributor sign in</strong> (or equivalent): flyout or expanded area with
+                  <strong>Sign in</strong> vs <strong>First-time access</strong> (or <strong>Create password</strong>).
+                </td>
+              </tr>
+              <tr>
+                <td><strong>3</strong></td>
+                <td><code>03-first-time-access-form.png</code></td>
+                <td>
+                  <strong>First-time access</strong> form: WSU email, new password, confirm. No need to show password
+                  values.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>4</strong></td>
+                <td><code>04-sign-in-form.png</code></td>
+                <td>Returning user <strong>Sign in</strong>: email + password fields.</td>
+              </tr>
+              <tr>
+                <td><strong>5</strong></td>
+                <td><code>05-row-editable-indicator.png</code></td>
+                <td>
+                  After sign-in: one <strong>program card</strong> (or row) that belongs to the contributor—show the crimson
+                  <strong>left accent</strong> and/or <strong>Editable</strong> strip on the row and the <strong>Edit</strong>
+                  button. Other rows without <strong>Edit</strong> optional in same shot for contrast.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>6</strong></td>
+                <td><code>06-card-edit-mode.png</code></td>
+                <td>
+                  Same card <strong>after Edit</strong>: emphasized border, <strong>Editing Entry</strong> title,
+                  <strong>Cancel</strong> and <strong>Save Changes</strong>. Shows inline edit shell (typical for
+                  <strong>cards</strong>, <strong>stacked</strong>, <strong>list</strong>, <strong>accordion</strong>, etc.).
+                </td>
+              </tr>
+              <tr>
+                <td><strong>7</strong></td>
+                <td><code>07-fields-inputs-vs-readonly.png</code></td>
+                <td>
+                  Close-up of a few fields: <strong>editable</strong> fields as white boxes with visible border;
+                  <strong>read-only</strong> values as plain text without an input—so contributors know what they can change.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>8</strong></td>
+                <td><code>08-grouped-people-block.png</code></td>
+                <td>
+                  If your view uses <strong>grouped role / people</strong> fields: one block with name, email, optional
+                  campus, <strong>Add person</strong> / <strong>Remove</strong>, or fixed numbered slots <strong>without</strong>
+                  add/remove. Optional: <strong>Clear this role</strong> on a single contact column.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>9</strong></td>
+                <td><code>09-save-or-error.png</code></td>
+                <td>
+                  Either a clean state after <strong>Save Changes</strong>, or a <strong>red error</strong> banner with
+                  readable message (staging). Explain they should read the message and retry or email support.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>10</strong></td>
+                <td><code>10-table-layout-drawer.png</code></td>
+                <td>
+                  <strong>Only if this audience uses table layout:</strong> row with <strong>Edit</strong> opening a
+                  <strong>side drawer</strong> instead of inline card—full-height panel with fields and save. Caption that
+                  behavior differs from cards but steps are the same.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section aria-labelledby="s-narrative">
+          <h2 id="s-narrative">Narrative you can paste under each screenshot</h2>
+
+          <h3>Welcome</h3>
+          <p>
+            You update your program’s public listing yourself. Open the link you were given (<code>YOUR_VIEW_URL</code>). You
+            do <strong>not</strong> need a Smartsheet account—only the contributor login for this site.
+          </p>
+
+          <h3>Screenshot 1 — Find sign-in</h3>
+          <p>In the header or status area, use <strong>Contributor sign in</strong>.</p>
+
+          <h3>Screenshots 2–4 — Account</h3>
+          <ul>
+            <li>
+              <strong>First visit:</strong> choose <strong>First-time access</strong>, enter your <strong><code>@wsu.edu</code></strong>
+              email, and create a <strong>contributor password</strong> (separate from your WSU password). You can register only
+              if your email already appears on <strong>your</strong> program row in the sheet behind this page.
+            </li>
+            <li>
+              <strong>Later visits:</strong> choose <strong>Sign in</strong> and enter the same email and contributor password.
+            </li>
+          </ul>
+
+          <h3>Screenshot 5 — Your row</h3>
+          <p>
+            After sign-in, find <strong>your</strong> program. Only rows where your email is authorized show an
+            <strong>Edit</strong> control. Other programs may be visible for context but are not yours to edit.
+          </p>
+
+          <h3>Screenshots 6–7 — Edit and save</h3>
+          <ol>
+            <li>Click <strong>Edit</strong> on your card.</li>
+            <li>
+              Change values only in fields that look like <strong>form controls</strong> (boxes, dropdowns). Plain text
+              without a box is <strong>read-only</strong>.
+            </li>
+            <li>Click <strong>Save changes</strong> when finished. Use <strong>Cancel</strong> to leave without saving.</li>
+          </ol>
+          <p>
+            If your page uses a <strong>table</strong> instead of cards, <strong>Edit</strong> may open a
+            <strong>panel on the side</strong>—the same rules apply.
+          </p>
+
+          <h3>Screenshot 8 — Grouped contacts</h3>
+          <p>
+            Some pages show <strong>coordinators or contacts</strong> in grouped blocks (one person per block, or fixed “slot”
+            rows). Use <strong>Add person</strong> / <strong>Remove</strong> when those buttons appear. Fixed slot roles may
+            not allow adding rows—only edit the slots shown. Single contact columns may offer <strong>Clear this role</strong>.
+          </p>
+
+          <h3>Screenshot 9 — If something fails</h3>
+          <p>
+            Read the error text. Try again; if it persists, contact your administrator (e.g.
+            <a href="mailto:gradschool@wsu.edu"><strong>gradschool@wsu.edu</strong></a>) with the page address, program
+            name, time, and exact message.
+          </p>
+        </section>
+
+        <section aria-labelledby="s-ref">
+          <h2 id="s-ref">Short reference (merged from former contributor doc)</h2>
+
+          <h3>Who can register</h3>
+          <p>
+            Your <strong><code>@wsu.edu</code></strong> email must appear in the view’s configured <strong>contact</strong> column for
+            <strong>that row</strong>. If it does not, you cannot create an account for that page—ask your admin.
+          </p>
+
+          <h3>Password rules (contributor password)</h3>
+          <ul>
+            <li>At least 8 characters</li>
+            <li>At least one uppercase letter</li>
+            <li>At least one number</li>
+            <li>At least one special character (e.g. <code>!</code> <code>*</code> <code>_</code>)</li>
+          </ul>
+
+          <h3>Merged rows</h3>
+          <p>
+            Some views <strong>combine</strong> multiple Smartsheet lines into one card (same program, multi-campus). You still
+            edit <strong>one</strong> form; campus may appear as badges or a list. Saving updates the row the system uses for
+            editing—keep duplicate lines in Smartsheet consistent except where campus differs.
+          </p>
+
+          <h3>Password reset</h3>
+          <p>
+            There is usually <strong>no self-service reset</strong>. Contact
+            <a href="mailto:gradschool@wsu.edu"><strong>gradschool@wsu.edu</strong></a> (or the address your admin gives you)
+            for a reset link.
+          </p>
+
+          <h3>Troubleshooting (quick)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>What to check</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cannot create account</td>
+                <td>Email not on the <strong>row’s</strong> contact field for that view.</td>
+              </tr>
+              <tr>
+                <td>No <strong>Edit</strong> button</td>
+                <td>Wrong row, editing disabled, or email not in eligibility column.</td>
+              </tr>
+              <tr>
+                <td>Save fails</td>
+                <td>Note exact message; retry; email support with URL, row, time.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section aria-labelledby="s-maint">
+          <h2 id="s-maint">Maintainer note</h2>
+          <p>When product copy or flows change, update:</p>
+          <ol>
+            <li>This file (and your hosted tutorial page).</li>
+            <li><code>src/app/instructions/contributor/page.tsx</code> so the in-app guide stays in sync.</li>
+          </ol>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
