@@ -2,12 +2,7 @@
 
 Use this document when you build a **standalone webpage** (HTML, WordPress, Canvas, etc.) with screenshots to walk graduate program contacts through editing their card on a **Smartsheet View** page. Copy sections below as needed; replace `YOUR_VIEW_URL` with the real public link.
 
-**Related in this repo**
-
-- Live, accessible guide (no login): **`/instructions/contributor`** on the deployed app (source: `src/app/instructions/contributor/page.tsx`). Keep wording aligned when you change the product.
-- **Admin** documentation: `Admin_Instruction.md`
-- **Deploy / Vercel pitfalls:** `VERCEL_DEPLOYMENT.md`
-- **Repo overview:** `README.md`
+**Canonical in-app guide (keep wording aligned):** `/instructions/contributor` — source: `src/app/instructions/contributor/page.tsx`.
 
 ---
 

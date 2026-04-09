@@ -1,14 +1,16 @@
-# Smartsheet + Vercel: Build Guide
+# Vercel & Node: Build Guide
 
-**Maintainer-only pitfall log.** Record and consult this file when debugging **Vercel** or **Smartsheet API** behavior that has already caused production or CI surprises. It is intentionally **not** linked from **`README.md`** (onboarding stays self-contained there). **`PROJECT_SPEC.md`** (private, gitignored) points maintainers here.
+**General reference for shipping serverless Next.js / Node apps on Vercel** (and similar hosts): bundler choice, `npm ci`, env secrets, Postgres pooling, cache revalidation quirks, and HTTP edge cases. Many rows apply to **any** project with the same stack; some rows are **Smartsheet-specific** or note behavior observed **in this repo**.
+
+**Maintainer pitfall log:** use this file when debugging deploys or production surprises. It is intentionally **not** linked from **`README.md`** for this project so onboarding stays self-contained there.
 
 Each section is readable on its own. Update when live behavior contradicts an older assumption.
 
 ---
 
-## Failures and near-misses (this repo)
+## Failures and near-misses
 
-Symptoms that have already burned time on **Vercel builds** or **production-like** behavior. Use as a pre-deploy mental checklist; add new rows when a deploy fails for a *new* root cause.
+Symptoms that have already burned time on **Vercel builds** or **production-like** behavior. Use as a pre-deploy checklist; add rows when a deploy fails for a *new* root cause. Rows may reference Smartsheet only where noted.
 
 | Symptom | Likely cause | What to do |
 |--------|----------------|------------|

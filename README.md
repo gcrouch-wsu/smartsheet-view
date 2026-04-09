@@ -18,7 +18,7 @@ Staff manage data in Smartsheet as they always have - no changes to their workfl
 - **Print / PDF Phase 1**: Public views include a print-friendly route that defaults to a landscape-friendly semantic table for browser print or save-as-PDF.
 - **Public accessibility**: Skip link, search **live regions**, landmark/nav labels, table **captions** / **scope**, **dialog** focus trap and return focus from **Edit**, **tab**/**tabpanel** patterns on public views.
 - **Header branding (admin)**: In **Setup** > **Page header & branding**, optional PNG/JPEG logo (at most 256KB, **alt text** required for save) plus optional **two text lines** beside the logo (organization + unit), with a vertical rule - stored in view config. Shown at the top of the public header when visible.
-- **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) - static, accessible guides that deploy with the app. For a **screenshot / LMS-style** walkthrough document (copy, shot list, contributor reference), maintainers use **`web.md`** in the repo root.
+- **Instruction pages**: `/instructions/contributor` (opens from a link on public views when enabled; no login to read) and `/instructions/admin` (linked from the admin nav as **Setup guide**) - static, accessible guides that deploy with the app.
 
 ## Getting Started
 
