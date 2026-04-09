@@ -12,6 +12,7 @@ import {
 } from "@/lib/role-groups";
 import type { SmartsheetSchemaSummary } from "@/lib/smartsheet";
 import type { FieldSourceSelector, SmartsheetColumn, SourceConfig, SourceRoleGroupConfig } from "@/lib/config/types";
+import { slugify } from "@/lib/utils";
 
 function buildInitialState(source: SourceConfig | null, connectionKeys: string[]): SourceConfig {
   return (
@@ -172,6 +173,7 @@ export function SourceForm({
   const [notice, setNotice] = useState<string>("");
   const [schema, setSchema] = useState<SmartsheetSchemaSummary | null>(null);
   const [schemaError, setSchemaError] = useState<string>("");
+  const [customRoleGroupLabel, setCustomRoleGroupLabel] = useState("");
   const connectionOptions = useMemo(() => Array.from(new Set(connectionKeys.filter(Boolean))), [connectionKeys]);
 
   function update<K extends keyof SourceConfig>(key: K, value: SourceConfig[K]) {
@@ -322,6 +324,36 @@ export function SourceForm({
       roleGroups: mergeRoleGroupSuggestions(f.roleGroups, detected),
     }));
     toast.addToast(`Merged ${detected.length} detected role group(s). Save the source to persist.`, "success");
+  }
+
+  function addCustomNumberedRoleGroup() {
+    const label = customRoleGroupLabel.trim();
+    if (!label) {
+      toast.addToast("Enter a label for the new role group.", "error");
+      return;
+    }
+    setForm((current) => {
+      const existing = current.roleGroups ?? [];
+      let id = slugify(label) || "role_group";
+      let n = 0;
+      while (existing.some((g) => g.id === id)) {
+        n += 1;
+        id = `${slugify(label) || "role_group"}_${n}`;
+      }
+      const added: SourceRoleGroupConfig = {
+        id,
+        label,
+        defaultDisplayLabel: label,
+        mode: "numbered_slots",
+        slots: [{ slot: "1" }],
+      };
+      return { ...current, roleGroups: [...existing, added] };
+    });
+    setCustomRoleGroupLabel("");
+    toast.addToast(
+      `Added “${label}” with one slot. Map name/email columns in the table below, then save the source. Use + Add slot if this role has multiple people.`,
+      "success",
+    );
   }
 
   const schemaColumns = schema?.columns ?? [];
@@ -711,10 +743,33 @@ export function SourceForm({
           <div>
             <h2 className="text-xl font-semibold text-[color:var(--wsu-ink)]">Role groups</h2>
             <p className="mt-1 text-sm text-[color:var(--wsu-muted)]">
-              Map each person-slot to Smartsheet columns for name, email, and phone. Slot IDs can be any stable label (numbers are not required). Numbered
-              slots keep contributor edits aligned by position. For delimited groups, only enable trusted pairing when parallel columns stay in lockstep.
+              Map each person-slot to Smartsheet columns for name, email, phone, and optional campus. A group can have{" "}
+              <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (e.g. a single assessment contact) or many. Slot IDs can be any
+              stable label. Merge detected groups only finds titles like “Coordinator 1” / “Coordinator 1 Email”; use{" "}
+              <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> for other column names. For delimited groups, only
+              enable trusted pairing when parallel columns stay in lockstep.
             </p>
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
+          <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs">
+            <span className="font-semibold text-[color:var(--wsu-ink)]">Add custom role group</span>
+            <input
+              type="text"
+              value={customRoleGroupLabel}
+              onChange={(e) => setCustomRoleGroupLabel(e.target.value)}
+              placeholder="e.g. Assessment support contact"
+              className="rounded-xl border border-[color:var(--wsu-border)] bg-white px-3 py-2 text-sm text-[color:var(--wsu-ink)]"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => addCustomNumberedRoleGroup()}
+            className="rounded-full border border-[color:var(--wsu-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--wsu-ink)] hover:border-[color:var(--wsu-crimson)] hover:text-[color:var(--wsu-crimson)]"
+          >
+            Add with one slot
+          </button>
         </div>
 
         {form.roleGroups && form.roleGroups.length > 0 ? (
@@ -966,8 +1021,9 @@ export function SourceForm({
           </div>
         ) : (
           <p className="mt-4 text-sm text-[color:var(--wsu-muted)]">
-            No role groups configured yet. Load schema above and use <strong className="font-medium text-[color:var(--wsu-ink)]">Merge detected role groups</strong>{" "}
-            to append numbered-slot groups from column titles, then refine mappings here.
+            No role groups yet. Use <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> above for a single-person role or
+            any columns that do not match auto-detect patterns. Or load schema and use{" "}
+            <strong className="font-medium text-[color:var(--wsu-ink)]">Merge detected role groups</strong> for “Name 1” / “Name 1 Email” style titles.
           </p>
         )}
       </section>

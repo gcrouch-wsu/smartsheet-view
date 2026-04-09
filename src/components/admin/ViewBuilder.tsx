@@ -2951,7 +2951,10 @@ export function ViewBuilder({
                 <div className="mt-4 rounded-2xl border border-dashed border-[color:var(--wsu-border)] bg-[color:var(--wsu-stone)]/10 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--wsu-muted)]">Add grouped role field</p>
                   <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
-                    Appends one people-group column backed by a role group from this view&apos;s source. Configure role groups on the source record (admin → Sources).
+                    Appends one <strong className="font-medium text-[color:var(--wsu-ink)]">People / grouped role</strong> field backed by a role group on this view&apos;s
+                    source (admin → Sources → Role groups). Works with <strong className="font-medium text-[color:var(--wsu-ink)]">one slot</strong> (single contact, e.g.
+                    assessment) or many; use <strong className="font-medium text-[color:var(--wsu-ink)]">Add custom role group</strong> on the source when Smartsheet
+                    columns are not named like “Coordinator 1” / “Coordinator 1 Email”.
                   </p>
                   <div className="mt-2">
                     <select
