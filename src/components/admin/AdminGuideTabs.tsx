@@ -163,6 +163,10 @@ export function AdminGuideTabs() {
                 For <strong className="text-[color:var(--wsu-ink)]">numbered slots</strong>, edit slot IDs and pick Smartsheet columns for name, email, and phone per row; add or remove slots as needed. <strong className="text-[color:var(--wsu-ink)]">Save source</strong> when done.
               </li>
               <li>
+                If a view used separate columns for a contact and you switch to one <strong className="text-[color:var(--wsu-ink)]">grouped role</strong> field on the Fields tab, update that view&apos;s{" "}
+                <strong className="text-[color:var(--wsu-ink)]">Setup → Custom card layout</strong> so rows no longer reference the removed field keys.
+              </li>
+              <li>
                 For <strong className="text-[color:var(--wsu-ink)]">delimited parallel</strong> groups, map columns in the same section; optional delimiter tokens are separated with <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">|</code> (see the field hint for{" "}
                 <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">\n</code> and <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">\|</code>).
               </li>
@@ -207,7 +211,13 @@ export function AdminGuideTabs() {
                 <li>Start with a preset to get a sensible page pattern quickly.</li>
                 <li>Use the layout override if you want the same fields in a different presentation such as table, cards, accordion, tabbed, or list/detail.</li>
                 <li>For card-style layouts, pick heading and summary fields so the public cards read correctly.</li>
-                <li>Use <strong className="text-[color:var(--wsu-ink)]">Custom card layout</strong> when you want multiple fields on one row, placeholder blanks for alignment, or static explanatory text inside the card.</li>
+                <li>
+                  Use <strong className="text-[color:var(--wsu-ink)]">Custom card layout</strong> when you want multiple fields on one row, placeholder blanks for
+                  alignment, or static labels inside the card. Each <strong className="text-[color:var(--wsu-ink)]">field</strong> slot is tied to that field&apos;s{" "}
+                  <strong className="text-[color:var(--wsu-ink)]">key</strong> on the Fields tab. After you remove or rename a field, or merge separate contact
+                  columns into one <strong className="text-[color:var(--wsu-ink)]">grouped role</strong> field, open Custom card layout again and fix any rows that
+                  still reference old keys — the save error names the row and key to change.
+                </li>
               </ul>
             </div>
           </div>
@@ -316,6 +326,9 @@ export function AdminGuideTabs() {
               <li>Check the columns you want to include.</li>
               <li>Edit display names if the public label should differ from the Smartsheet column title.</li>
               <li>Use Arrange to reorder or remove fields.</li>
+              <li>
+                If this view uses <strong className="text-[color:var(--wsu-ink)]">Custom card layout</strong> and you remove fields or add a grouped role field in place of old columns, edit Setup → Custom card layout so every slot matches a field that still exists.
+              </li>
               <li>Use live preview to see the result as you work.</li>
             </ol>
           </div>

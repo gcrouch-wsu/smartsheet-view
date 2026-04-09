@@ -765,7 +765,12 @@ function parsePresentationConfig(
             continue;
           }
           if (!fieldKeys.has(key)) {
-            errors.push(`presentation.cardLayout[${i}] references unknown field key \"${key}\".`);
+            const rowNum = i + 1;
+            errors.push(
+              `Custom card layout (row ${rowNum}): "${key}" does not match any field on the Fields tab. ` +
+                `Under Setup → Custom card layout, replace that slot with a field that still exists, or remove the row. ` +
+                `This usually happens after removing or renaming a field, or after replacing separate contact columns with one grouped people field.`,
+            );
           } else {
             const rows = cardLayoutKeyRows.get(key) ?? [];
             rows.push(i);
@@ -780,8 +785,10 @@ function parsePresentationConfig(
     }
     for (const [key, rowIndices] of cardLayoutKeyRows) {
       if (rowIndices.length > 1) {
+        const rows = rowIndices.map((j) => j + 1).join(", ");
         errors.push(
-          `presentation.cardLayout: field key \"${key}\" appears in more than one layout row (${rowIndices.map((j) => j + 1).join(", ")}). Use each field key at most once per view.`,
+          `Custom card layout: field "${key}" is used in more than one row (rows ${rows}). ` +
+            `Each field can appear only once in the layout — merge into a single row or remove the extra slots.`,
         );
       }
     }

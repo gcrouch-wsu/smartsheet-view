@@ -493,7 +493,34 @@ describe("validateViewConfig", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.errors.some((e) => e.includes("cardLayout") && e.includes("more than one"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("Custom card layout") && e.includes("more than one row"))).toBe(true);
+  });
+
+  it("rejects cardLayout keys that are not on the Fields list with a clear message", () => {
+    const result = validateViewConfig(
+      {
+        id: "stale-card",
+        slug: "stale-card",
+        sourceId: "grad-programs",
+        label: "Stale",
+        layout: "cards",
+        public: false,
+        presentation: {
+          cardLayout: [{ fieldKeys: ["still_here", "removed_field"] }],
+        },
+        fields: [
+          { key: "still_here", label: "Here", source: { columnTitle: "Here" }, render: { type: "text" } },
+        ],
+      },
+      { knownSourceIds: ["grad-programs"] },
+    );
+
+    expect(result.success).toBe(false);
+    expect(
+      result.errors.some(
+        (e) => e.includes("Custom card layout") && e.includes("row 1") && e.includes("removed_field") && e.includes("Fields tab"),
+      ),
+    ).toBe(true);
   });
 
   it("preserves themePresetId and editing config in validated output", () => {

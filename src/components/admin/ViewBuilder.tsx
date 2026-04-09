@@ -1264,7 +1264,16 @@ export function ViewBuilder({
             <div className="space-y-3">
               <div>
                 <span className="text-sm font-medium text-[color:var(--wsu-ink)]">Enable & arrange</span>
-                <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">Define rows and which fields appear in each. Multiple fields in a row appear side-by-side.</p>
+                <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
+                  Define rows and which fields appear in each. Multiple fields in a row appear side-by-side. Every field slot must use a{" "}
+                  <strong className="font-medium text-[color:var(--wsu-ink)]">key</strong> that still exists on the{" "}
+                  <strong className="font-medium text-[color:var(--wsu-ink)]">Fields</strong> tab (not just the display label).
+                </p>
+                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+                  <strong className="font-semibold">Warning:</strong> If you delete a field, change its key, or replace several columns with one{" "}
+                  <strong className="font-medium">grouped role / people</strong> field, come back here and update or remove the affected rows. Otherwise save will
+                  report which row still points at an old key.
+                </p>
               </div>
               <label className="flex items-center gap-3 text-sm">
                 <input
