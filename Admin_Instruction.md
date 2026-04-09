@@ -270,6 +270,8 @@ The Editing tab also controls:
 
 Hiding those links does not remove editing for someone who already has the direct URL or an active session.
 
+**Public screenshot / LMS tutorial:** Maintain a separate walkthrough page (images + steps) using **`web.md`** in the repo root (shot list and narrative). The live **Contributor help** page is `/instructions/contributor` (`src/app/instructions/contributor/page.tsx`).
+
 ### Administrators on the live public page
 
 If you remain signed in to **Admin** and open the **published** public view in the same browser, the page can offer **unrestricted row editing** when contributor editing is enabled: same allowed fields as contributors, but **no** contact-column row filter. Use this for support and data fixes; changes still write to Smartsheet. Sign out of Admin when done. Emergency invalidation of **all** admin sessions: rotate `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` and redeploy (see **Admin session cookies** above). Ensure Preview and Production each have the secrets you expect so behavior is not confused across environments.
