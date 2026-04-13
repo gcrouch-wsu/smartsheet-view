@@ -11,6 +11,7 @@ import {
   normalizeCellsForSmartsheetRowUpdate,
   resolveSheetIdForRowUpdate,
   testSmartsheetConnection,
+  updateSmartsheetRow,
 } from "@/lib/smartsheet";
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -230,6 +231,36 @@ describe("resolveSheetIdForRowUpdate", () => {
         {},
       ),
     ).toBeNull();
+  });
+});
+
+describe("updateSmartsheetRow", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("logs row-update metadata without logging payload values", async () => {
+    vi.stubEnv("SMARTSHEET_API_TOKEN", "token-123");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateSmartsheetRow(
+      {
+        id: "grad-programs",
+        label: "GRAD Programs",
+        sourceType: "sheet",
+        smartsheetId: 7763577444192132,
+      },
+      123,
+      456,
+      [{ columnId: 10, value: "secret@example.com" }],
+      new Map([[10, "TEXT_NUMBER"]]),
+    );
+
+    expect(logSpy).toHaveBeenCalledWith("[updateSmartsheetRow] PUT sheet=123 row=456 cellCount=1");
+    expect(String(logSpy.mock.calls[0]?.[0] ?? "")).not.toContain("secret@example.com");
   });
 });
 

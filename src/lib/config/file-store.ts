@@ -109,14 +109,21 @@ export async function listPublicPageSummaries(): Promise<PublicPageSummary[]> {
 
   return [...groups.entries()]
     .sort(([leftSlug], [rightSlug]) => leftSlug.localeCompare(rightSlug))
-    .map(([slug, groupedViews]) => {
+    .flatMap(([slug, groupedViews]) => {
       const sortedViews = [...groupedViews].sort(
         (left, right) => (left.tabOrder ?? 999) - (right.tabOrder ?? 999) || left.label.localeCompare(right.label)
       );
+      const distinctSourceIds = [...new Set(sortedViews.map((view) => view.sourceId).filter(Boolean))];
+      if (distinctSourceIds.length > 1) {
+        console.warn(
+          `[smartsheets_view] Slug "${slug}" is published for multiple sources (${distinctSourceIds.join(", ")}). Skipping it from the public summary list.`
+        );
+        return [];
+      }
       const sourceId = sortedViews[0]?.sourceId ?? "";
       const sourceLabel = sourcesById.get(sourceId)?.label ?? sourceId;
 
-      return {
+      return [{
         slug,
         title: humanizeSlug(slug),
         sourceId,
@@ -126,7 +133,7 @@ export async function listPublicPageSummaries(): Promise<PublicPageSummary[]> {
           label: view.label,
           description: view.description,
         })),
-      };
+      }];
     });
 }
 

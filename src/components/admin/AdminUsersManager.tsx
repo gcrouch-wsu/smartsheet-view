@@ -66,8 +66,8 @@ export function AdminUsersManager({ bootstrapUser, initialUsers, ownerLabel, sto
 
   const storageLabel = storageMode === "database" ? "Postgres" : "local config files";
   const storageDescription = storageMode === "database"
-    ? "These users are stored in Postgres and can sign in without changing environment variables. This is the recommended mode for Vercel deployments."
-    : "These users are stored in the app's local config files and can sign in without changing environment variables. For Vercel, switch to Postgres by setting DATABASE_URL.";
+    ? "These users are stored in Postgres and can sign in without changing environment variables. This is the recommended mode for production deployments."
+    : "These users are stored in the app's local config files and can sign in without changing environment variables. For Railway or any production deployment where local files are not durable, switch to Postgres by setting DATABASE_URL.";
   const passwordStorageDescription = storageMode === "database"
     ? "Passwords are hashed before they are written to Postgres. Use this form to provision or rotate admin credentials."
     : "Passwords are hashed before they are written to local config files. Use this form to provision or rotate admin credentials.";

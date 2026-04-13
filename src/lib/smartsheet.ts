@@ -692,10 +692,10 @@ export async function updateSmartsheetRow(
   const { token, apiBaseUrl } = resolveConnection(source.connectionKey, source.apiBaseUrl);
   const url = `${apiBaseUrl.replace(/\/$/, "")}/sheets/${sheetId}/rows`;
   const outgoingCells = formatCellsForSmartsheetRowPut(cells, columnTypeById);
-  const putBody = JSON.stringify([{ id: rowId, cells: outgoingCells }]);
   console.log(
-    `[updateSmartsheetRow] PUT sheet=${sheetId} row=${rowId} cells=${putBody.slice(0, 2000)}`,
+    `[updateSmartsheetRow] PUT sheet=${sheetId} row=${rowId} cellCount=${outgoingCells.length}`,
   );
+  const putBody = JSON.stringify([{ id: rowId, cells: outgoingCells }]);
   const response = await fetch(url, {
     method: "PUT",
     headers: {

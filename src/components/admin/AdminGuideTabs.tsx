@@ -95,9 +95,9 @@ export function AdminGuideTabs() {
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Before you start</h3>
               <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
                 <li><code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">SMARTSHEET_API_TOKEN</code> must be valid.</li>
-                <li><code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">DATABASE_URL</code> must point to your production database.</li>
+                <li><code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">DATABASE_URL</code> must point to your production database on Railway or any other non-durable host. Local file mode is fine only for local/dev work.</li>
                 <li>If contributor editing is enabled, <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1.5 py-0.5 text-xs">CONTRIBUTOR_SESSION_SECRET</code> must be set.</li>
-                <li>If you use Supabase, backend-owned public tables must keep RLS enabled.</li>
+                <li>If you use Supabase, backend-owned public tables must keep RLS enabled and the current app role must still have the generated access policy.</li>
               </ul>
             </div>
           </div>
@@ -487,10 +487,10 @@ export function AdminGuideTabs() {
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--wsu-muted)]">Release checklist</h3>
             <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[color:var(--wsu-muted)] sm:text-base">
               <li>Confirm environment values and database connectivity.</li>
-              <li>Confirm RLS is enabled on backend-owned public tables.</li>
+              <li>Confirm RLS is enabled on backend-owned public tables and that the current <code className="rounded bg-[color:var(--wsu-stone)]/40 px-1 py-0.5 text-xs">DATABASE_URL</code> role still has the generated access policy.</li>
               <li>Preview the public page and verify layout, filters, search, branding, and contributor links.</li>
               <li>If contributor editing is enabled, test first-time access, sign-in, row eligibility, save to Smartsheet, and password reset.</li>
-              <li>Commit and push before expecting Vercel to deploy changes.</li>
+              <li>Commit and push before expecting a Git-based deploy to pick up changes.</li>
             </ol>
           </div>
 

@@ -25,7 +25,7 @@ import type { ProgramGroup } from "@/lib/campus-grouping";
 import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
 import { fieldBlockOuterClassName } from "@/components/public/FieldBlock";
-import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 
 function FieldBlock({ rowId, field }: { rowId: number; field: ResolvedFieldValue }) {
   return (

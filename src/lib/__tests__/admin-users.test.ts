@@ -60,6 +60,14 @@ async function runMockQuery(text: string, params: unknown[] = []) {
     return { rows: [], rowCount: 0 };
   }
 
+  if (sql.startsWith("DO $$ BEGIN") && sql.includes("admin_users_app_role_access")) {
+    return { rows: [], rowCount: 0 };
+  }
+
+  if (sql.startsWith("DO $$ BEGIN") && sql.includes("admin_login_attempts_app_role_access")) {
+    return { rows: [], rowCount: 0 };
+  }
+
   if (sql.startsWith("SELECT COUNT(*)::int AS count FROM admin_users")) {
     return { rows: [{ count: mockDbUsers.length }], rowCount: 1 };
   }

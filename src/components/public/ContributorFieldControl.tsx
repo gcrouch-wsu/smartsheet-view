@@ -204,7 +204,6 @@ export function ContributorGroupFieldControl({
   const hasName = group.attributes.some((a) => a.attribute === "name");
   const hasEmail = group.attributes.some((a) => a.attribute === "email");
   const hasPhone = group.attributes.some((a) => a.attribute === "phone");
-  const hasCampus = group.attributes.some((a) => a.attribute === "campus");
 
   return (
     <div className="w-full min-w-0 space-y-3">
@@ -228,7 +227,6 @@ export function ContributorGroupFieldControl({
         )}
         {persons.map((person, idx) => {
           const rowErr = errors[idx];
-          const slotId = fixedSlotOrder[idx];
           const nameAttrForRow = attributeForPersonRow(group, idx, "name", fixedSlotOrder);
           const campusAttrForRow = attributeForPersonRow(group, idx, "campus", fixedSlotOrder);
           const campusPicklistOptions =

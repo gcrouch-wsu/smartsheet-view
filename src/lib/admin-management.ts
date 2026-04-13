@@ -90,6 +90,29 @@ async function resolveViewForAdminSave(view: ViewConfig) {
   return { source, schema, view: pruned, columnsWerePruned };
 }
 
+async function assertNoPublishedSlugSourceConflict(view: ViewConfig) {
+  const conflictingViews = (await listViewConfigs()).filter(
+    (existing) =>
+      existing.id !== view.id &&
+      existing.public &&
+      existing.slug === view.slug &&
+      existing.sourceId !== view.sourceId,
+  );
+
+  if (conflictingViews.length === 0) {
+    return;
+  }
+
+  const labels = conflictingViews.map((existing) => existing.label || existing.id);
+  throw new AdminActionError({
+    status: 409,
+    message: `Slug "${view.slug}" is already published for another source.`,
+    errors: [
+      `Published slugs may only belong to one source. "${view.slug}" is already used by: ${labels.join(", ")}.`,
+    ],
+  });
+}
+
 export async function saveAdminViewConfig(
   view: ViewConfig,
   options?: { rejectOnExistingId?: boolean },
@@ -119,6 +142,8 @@ export async function saveAdminViewConfig(
         warnings,
       });
     }
+
+    await assertNoPublishedSlugSourceConflict(viewToSave);
   }
 
   const previous = await getViewConfigById(viewToSave.id);
@@ -168,6 +193,8 @@ export async function updateAdminViewPublication(viewId: string, isPublic: boole
       warnings,
     });
   }
+
+  await assertNoPublishedSlugSourceConflict(viewToCheck);
 
   if (columnsWerePruned) {
     await saveViewConfig(viewToCheck);

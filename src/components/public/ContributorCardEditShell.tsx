@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition, useMemo, useEffect } from "react";
+import React, { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/admin/Toast";
 import type { ResolvedView, ResolvedViewRow, EditableFieldGroup, ResolvedFieldValue } from "@/lib/config/types";
@@ -32,6 +32,9 @@ import {
 } from "@/components/public/layout-utils";
 import { CardLayoutCellRenderer } from "@/components/public/CardLayoutCellRenderer";
 
+const EMPTY_EDITABLE_FIELDS: ContributorEditableFieldDefinition[] = [];
+const EMPTY_EDITABLE_GROUPS: EditableFieldGroup[] = [];
+
 export function ContributorCardEditShell({
   slug,
   view,
@@ -52,8 +55,8 @@ export function ContributorCardEditShell({
   const [showAdditional, setShowAdditional] = useState(false);
 
   const editingConfig = contributor?.editingConfig;
-  const editableFields = editingConfig?.editableFields ?? [];
-  const editableFieldGroups = editingConfig?.editableFieldGroups ?? [];
+  const editableFields = editingConfig?.editableFields ?? EMPTY_EDITABLE_FIELDS;
+  const editableFieldGroups = editingConfig?.editableFieldGroups ?? EMPTY_EDITABLE_GROUPS;
 
   const [formValues, setFormValues] = useState<Record<number, string>>(() => {
     return editableFields.reduce<Record<number, string>>((values, field) => {

@@ -31,7 +31,7 @@ export async function generateMetadata({
 
   let title = `${humanizeSlug(slug)} — Print`;
   try {
-    const page = await loadPublicPageState(slug, { datasetOptions: { fresh: true } });
+    const page = await loadPublicPageState(slug);
     if (page) {
       const view = resolveRequestedResolvedView(page.resolvedViews, page.defaultViewId, requestedView);
       if (view) {
@@ -62,7 +62,7 @@ export default async function PrintExportPage({
 
   let page;
   try {
-    page = await loadPublicPageState(slug, { datasetOptions: { fresh: true } });
+    page = await loadPublicPageState(slug);
   } catch (error) {
     console.error(`[smartsheets_view] Failed to load print page "${slug}":`, error);
     return (

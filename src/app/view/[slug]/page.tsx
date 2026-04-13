@@ -32,6 +32,7 @@ import {
   resolveRequestedViewConfig,
 } from "@/lib/public-view";
 import { publicContributorLoginHref, publicInteractiveHref, publicPrintHref } from "@/lib/public-view-href";
+import { getPublicOrigin } from "@/lib/request-ip";
 import { omitRecordSuppressedRowsFromResolvedView } from "@/lib/record-suppression";
 import { isHtmlContent, parseFormattedHeaderText, renderHeaderCustomText } from "@/lib/rendering";
 
@@ -80,7 +81,7 @@ export default async function PublicViewPage({
 
   let page;
   try {
-    page = await loadPublicPageState(slug, { datasetOptions: { fresh: true } });
+    page = await loadPublicPageState(slug);
   } catch (error) {
     console.error(`[smartsheets_view] Failed to load public page "${slug}":`, error);
     return (
@@ -109,11 +110,6 @@ export default async function PublicViewPage({
   if (!page) {
     notFound();
   }
-
-  const headersList = await headers();
-  const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "localhost:3000";
-  const proto = headersList.get("x-forwarded-proto") ?? "http";
-  const baseUrl = `${proto}://${host}`;
 
   const requestedView = firstValue(resolvedSearchParams.view);
   const requestedLayout = firstValue(resolvedSearchParams.layout);
@@ -148,7 +144,9 @@ export default async function PublicViewPage({
   const showContributorInstructions =
     editingEnabled && activeViewConfig.editing?.showContributorInstructions !== false;
   const printHref = !embed ? publicPrintHref(slug, activeView.id, singlePublishedView) : null;
-  const canonicalInteractiveUrl = `${baseUrl}${publicInteractiveHref(slug, activeView.id, singlePublishedView)}`;
+  const publicPath = publicInteractiveHref(slug, activeView.id, singlePublishedView);
+  const publicOrigin = getPublicOrigin(await headers());
+  const headerPublicUrl = publicOrigin ? `${publicOrigin}${publicPath}` : publicPath;
   const contributorInstructionsHref = showContributorInstructions ? "/instructions/contributor" : null;
   const layoutSwitcher = !activeView.fixedLayout ? (
     <nav aria-label="Layout" className="flex flex-wrap gap-2">
@@ -285,7 +283,7 @@ export default async function PublicViewPage({
                         dangerouslySetInnerHTML={{
                           __html: renderHeaderCustomText(
                             activeView.presentation.headerCustomText,
-                            canonicalInteractiveUrl,
+                            headerPublicUrl,
                           ),
                         }}
                       />
@@ -293,7 +291,7 @@ export default async function PublicViewPage({
                       <div className="custom-header-text mt-3 text-sm leading-6 text-[color:var(--wsu-ink)]">
                         {activeView.presentation.headerCustomText.split("\n").map((line, i) => (
                           <p key={i} className="whitespace-pre-wrap">
-                            {parseFormattedHeaderText(line, canonicalInteractiveUrl).map((part, j) =>
+                            {parseFormattedHeaderText(line, headerPublicUrl).map((part, j) =>
                               typeof part === "string" ? (
                                 <span key={j}>{part}</span>
                               ) : part.t === "b" ? (

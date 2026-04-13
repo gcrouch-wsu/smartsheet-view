@@ -40,14 +40,15 @@ Edit `.env` with your Smartsheet and Admin credentials:
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`: Initial admin username.
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`: Initial admin password.
 - `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` (strongly recommended in production): Signs admin session cookies. If omitted, signing is derived from the bootstrap username and password — changing the password then invalidates all admin sessions. Prefer a long random secret independent of the password (see **Admin session cookies** below).
-- `DATABASE_URL` (Optional): Connect to Postgres for durable admin users and config (sources/views) on Vercel. When set, sources and views are stored in Postgres instead of config files, enabling create/edit/delete on serverless deployments.
+- `DATABASE_URL` (Optional locally, required for durable production): Connect to Postgres for admin users and config (sources/views). When set, sources and views are stored in Postgres instead of config files, enabling reliable create/edit/delete on Railway and other hosts with non-durable local filesystems.
 - `CONTRIBUTOR_SESSION_SECRET` (Required for contributor editing): Secret used to sign contributor session cookies.
+- `SMARTSHEETS_VIEW_PUBLIC_BASE_URL` (Optional): Explicit external origin used for `{{PUBLIC_URL}}` in custom headers. Recommended if the app sits behind an unusual proxy/load balancer or you do not want host/proto inferred from trusted proxy headers.
 
 Postgres requirement:
 
 - The app expects **PostgreSQL 13 or newer**.
 - The schema uses `gen_random_uuid()` without installing `pgcrypto` at app startup.
-- This is compatible with Vercel Postgres / Neon style hosted Postgres, but older Postgres versions are not supported.
+- This is compatible with Railway Postgres, Neon, Vercel Postgres, and similar hosted Postgres providers, but older Postgres versions are not supported.
 - If you host on Supabase, any new backend-owned table created in `public` must ship with RLS enabled in the same code change. Update `sql/enable-public-rls.sql` for existing databases and rerun Security Advisor after deploy.
 
 ### 3. Run Development Server
@@ -91,19 +92,18 @@ Grouped role display defaults to a compact plain inline layout so multiple peopl
 
 ## Production deployment
 
-Routine checklist for shipping this app (Vercel is the usual host; similar constraints apply on other serverless Node hosts).
+Routine checklist for shipping this app. Railway is the current target host, but the same constraints mostly apply on other managed Node platforms.
 
 ### Source control and builds
 
-- Vercel deploys from your Git remote, not from uncommitted local changes. Commit and push to ship new code.
+- Railway and other Git-based hosts deploy from your Git remote, not from uncommitted local changes. Commit and push to ship new code.
 - **Webpack vs Turbopack:** Next.js 16 defaults to Turbopack for `next build`. This repo uses **`next dev --webpack`** and **`next build --webpack`** because `pg` and TipTap / ProseMirror are not reliable here under the default bundler. Keep `--webpack` unless you re-validate a full production build.
-- **`vercel.json`** uses **`npm ci`** for reproducible installs.
-- **`next build` runs TypeScript checking.** Fix errors locally with `npx tsc --noEmit` or `npm run build` before pushing; Vercel will fail on the same errors.
-- Pin the Vercel project to an LTS Node version (e.g. 22.x) if you want parity with local builds.
+- **`next build` runs TypeScript checking.** Fix errors locally with `npx tsc --noEmit` or `npm run build` before pushing; your host will fail on the same errors.
+- Pin the deployment environment to an LTS Node version (e.g. 22.x) if you want parity with local builds.
 
 ### Environment variables (production checklist)
 
-Set these in the Vercel project (Production and Preview as appropriate):
+Set these in the Railway service (and any preview/staging environment you use):
 
 | Variable | Purpose |
 |----------|---------|
@@ -111,13 +111,15 @@ Set these in the Vercel project (Production and Preview as appropriate):
 | `SMARTSHEETS_VIEW_ADMIN_USERNAME` | Bootstrap admin username |
 | `SMARTSHEETS_VIEW_ADMIN_PASSWORD` | Bootstrap admin password |
 | `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` | Signs admin session cookies (strong secret; never empty). Rotation logs all admins out immediately; see **Admin session cookies** above |
-| `DATABASE_URL` | Postgres for durable sources, views, admin users, contributors, and login rate-limit data on serverless |
+| `DATABASE_URL` | Postgres for durable sources, views, admin users, contributors, and login rate-limit data |
 | `CONTRIBUTOR_SESSION_SECRET` | Signs contributor cookies (required if contributor editing is enabled) |
 | `SMARTSHEET_CONNECTIONS_JSON` | Optional multi-connection Smartsheet config |
 | `SMARTSHEET_API_BASE_URL` | Optional Smartsheet API base URL override |
+| `SMARTSHEETS_VIEW_PUBLIC_BASE_URL` | Optional explicit external origin for `{{PUBLIC_URL}}` links in custom headers; useful behind unusual proxies or load balancers |
+| `SMARTSHEETS_VIEW_TRUST_PROXY_HEADERS` | Optional override for login rate-limit IP detection and forwarded host/proto trust. Railway / Vercel proxy headers are trusted automatically; set to `true` or `false` explicitly on unusual proxy setups |
 | `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` | Optional. Set to `true` only if Postgres TLS verification fails in production and you accept relaxed certificate verification after a security review. Prefer fixing `DATABASE_URL` or provider certificates. |
 
-Without **`DATABASE_URL`** on Vercel, the filesystem is effectively read-only for config: sources and views cannot be persisted reliably, and managed admin users / contributor accounts will not work as intended.
+Without **`DATABASE_URL`** on Railway or any other environment with non-durable local files, sources and views cannot be persisted reliably, and managed admin users / contributor accounts will not work as intended.
 
 ### Postgres and TLS
 
@@ -127,7 +129,7 @@ Without **`DATABASE_URL`** on Vercel, the filesystem is effectively read-only fo
 
 ### Supabase and RLS
 
-If Postgres is Supabase, Security Advisor expects Row Level Security on `public` tables. This app enables RLS on backend-owned tables at bootstrap. For databases that already existed before a change, run **`sql/enable-public-rls.sql`** once, and add new tables to that script when you add them in code.
+If Postgres is Supabase, Security Advisor expects Row Level Security on `public` tables. This app enables RLS on backend-owned tables at bootstrap and creates an allow-all policy scoped to the current app database role so the server can keep working under restricted roles. For databases that already existed before a change, run **`sql/enable-public-rls.sql`** once, and add new tables to that script when you add them in code. If you later change the `DATABASE_URL` role, rerun that bootstrap/script path so the policy follows the new role.
 
 ### Runtime, caching, and Smartsheet errors
 
@@ -138,11 +140,11 @@ If Postgres is Supabase, Security Advisor expects Row Level Security on `public`
 
 ### Custom header HTML
 
-Sanitize server-side with **`sanitize-html`** only. Avoid adding **`jsdom`** to the server bundle on Vercel.
+Sanitize server-side with **`sanitize-html`** only. Avoid adding **`jsdom`** to the server bundle in production.
 
 ### Deploy steps
 
-1. Push the repository to your Git host and connect it in Vercel.
+1. Push the repository to your Git host and connect it to Railway or your chosen host.
 2. Configure the environment variables above.
 3. Deploy. The production build command must remain **`next build --webpack`** unless you have re-tested TipTap and `pg` without it.
 

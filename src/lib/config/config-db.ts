@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import type { PublicPageSummary, SourceConfig, ViewConfig } from "@/lib/config/types";
 import { humanizeSlug } from "@/lib/utils";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
+import { ensureCurrentAppRoleRls } from "@/lib/db-rls";
 import { buildPgPoolOptions } from "@/lib/pg-connection";
 
 const DATABASE_URL_ENV_VAR = "DATABASE_URL";
@@ -78,10 +79,10 @@ export async function ensureConfigTables() {
         CREATE INDEX IF NOT EXISTS idx_contributor_login_attempts_ip_at
         ON contributor_login_attempts(ip, attempted_at)
       `);
-      await queryConfigDb(`ALTER TABLE config_sources ENABLE ROW LEVEL SECURITY`);
-      await queryConfigDb(`ALTER TABLE config_views ENABLE ROW LEVEL SECURITY`);
-      await queryConfigDb(`ALTER TABLE contributor_users ENABLE ROW LEVEL SECURITY`);
-      await queryConfigDb(`ALTER TABLE contributor_login_attempts ENABLE ROW LEVEL SECURITY`);
+      await ensureCurrentAppRoleRls(queryConfigDb, "config_sources");
+      await ensureCurrentAppRoleRls(queryConfigDb, "config_views");
+      await ensureCurrentAppRoleRls(queryConfigDb, "contributor_users");
+      await ensureCurrentAppRoleRls(queryConfigDb, "contributor_login_attempts");
     })().catch((err) => {
       ensureTablesPromise = null;
       throw err;
@@ -160,19 +161,26 @@ export async function listPublicPageSummaries(): Promise<PublicPageSummary[]> {
 
   return [...groups.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([slug, groupedViews]) => {
+    .flatMap(([slug, groupedViews]) => {
       const sorted = [...groupedViews].sort(
         (a, b) => (a.tabOrder ?? 999) - (b.tabOrder ?? 999) || (a.label ?? "").localeCompare(b.label ?? "")
       );
+      const distinctSourceIds = [...new Set(sorted.map((view) => view.sourceId).filter(Boolean))];
+      if (distinctSourceIds.length > 1) {
+        console.warn(
+          `[smartsheets_view] Slug "${slug}" is published for multiple sources (${distinctSourceIds.join(", ")}). Skipping it from the public summary list.`
+        );
+        return [];
+      }
       const sourceId = sorted[0]?.sourceId ?? "";
       const sourceLabel = sourcesById.get(sourceId)?.label ?? sourceId;
-      return {
+      return [{
         slug,
         title: humanizeSlug(slug),
         sourceId,
         sourceLabel,
         views: sorted.map((v) => ({ id: v.id, label: v.label, description: v.description })),
-      };
+      }];
     });
 }
 

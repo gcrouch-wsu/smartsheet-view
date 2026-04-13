@@ -488,16 +488,13 @@ function resolveView(view: ViewConfig, rows: SmartsheetRow[], sourceConfig: Sour
   };
 }
 
-function filterCompatibleViews(views: ViewConfig[], sourceConfig: SourceConfig, slug: string) {
-  const compatibleViews = views.filter((view) => view.sourceId === sourceConfig.id);
-
-  if (compatibleViews.length < views.length) {
-    console.warn(
-      `[smartsheets_view] Slug "${slug}" contains views with different sources. Only views for source "${sourceConfig.id}" will be shown.`
+function assertSingleSourceForSlug(views: ViewConfig[], slug: string) {
+  const sourceIds = [...new Set(views.map((view) => view.sourceId).filter(Boolean))];
+  if (sourceIds.length > 1) {
+    throw new Error(
+      `Slug "${slug}" is published for multiple sources (${sourceIds.join(", ")}). Published slugs must map to exactly one source.`,
     );
   }
-
-  return compatibleViews;
 }
 
 export function resolveRequestedViewConfig(viewConfigs: ViewConfig[], requestedViewId?: string | null) {
@@ -530,6 +527,8 @@ export async function loadPublicViewCollection(
     return null;
   }
 
+  assertSingleSourceForSlug(views, slug);
+
   const sourceId = views[0]?.sourceId;
   const sourceConfig = sourceId ? await getSourceConfigById(sourceId) : null;
 
@@ -537,14 +536,12 @@ export async function loadPublicViewCollection(
     throw new Error(`The data source for this view ("${sourceId}") could not be found or is no longer registered.`);
   }
 
-  const compatibleViews = filterCompatibleViews(views, sourceConfig, slug);
-
   return {
     slug,
     title: humanizeSlug(slug),
     sourceConfig,
-    viewConfigs: compatibleViews,
-    defaultViewId: compatibleViews[0]?.id ?? "",
+    viewConfigs: views,
+    defaultViewId: views[0]?.id ?? "",
   };
 }
 

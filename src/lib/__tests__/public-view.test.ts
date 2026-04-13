@@ -134,6 +134,19 @@ describe("public view resolution", () => {
     expect(page?.views[0]?.rows[0]?.fieldMap.programName.textValue).toBe("Clean Name");
   });
 
+  it("throws when a slug spans multiple sources", async () => {
+    storeMock.getPublicViewsBySlug.mockResolvedValue([
+      createView({ id: "view-a", sourceId: "grad-programs" }),
+      createView({ id: "view-b", sourceId: "other-programs" }),
+    ]);
+
+    await expect(loadPublicPage("graduate-program-contacts")).rejects.toThrow(
+      'Slug "graduate-program-contacts" is published for multiple sources',
+    );
+    expect(storeMock.getSourceConfigById).not.toHaveBeenCalled();
+    expect(smartsheetMock.getSmartsheetDataset).not.toHaveBeenCalled();
+  });
+
   it("logs schema drift when a view references missing columns", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 

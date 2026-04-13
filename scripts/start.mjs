@@ -1,0 +1,32 @@
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const nextBin = require.resolve("next/dist/bin/next");
+const port = process.env.PORT && String(process.env.PORT).trim() ? String(process.env.PORT).trim() : "3000";
+
+const child = spawn(process.execPath, [nextBin, "start", "-H", "0.0.0.0", "-p", port], {
+  stdio: "inherit",
+  env: process.env,
+});
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    if (!child.killed) {
+      child.kill(signal);
+    }
+  });
+}
+
+child.on("error", (error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
+  process.exit(code ?? 1);
+});

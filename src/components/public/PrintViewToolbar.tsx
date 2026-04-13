@@ -1,79 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { publicInteractiveHref } from "@/lib/public-view-href";
 
 export type PrintColumnPickerRow = { key: string; label: string; heading?: boolean };
 
-export function PrintViewToolbar({
+function deriveSelectedOptional(searchParams: Pick<URLSearchParams, "get">, optionalKeys: string[]) {
+  const fromUrl = searchParams.get("cols");
+  if (!fromUrl) {
+    return [...optionalKeys];
+  }
+
+  const picked = fromUrl
+    .split(",")
+    .map((s) => s.trim())
+    .filter((k) => optionalKeys.includes(k));
+
+  return picked.length > 0 ? picked : [...optionalKeys];
+}
+
+function PrintViewToolbarInner({
   slug,
   viewId,
   singlePublishedView,
   columnOptions,
-  compact: compactActive,
+  initialSelectedOptional,
+  initialCompact,
+  onApply,
 }: {
   slug: string;
   viewId: string;
   singlePublishedView: boolean;
   columnOptions?: PrintColumnPickerRow[];
-  compact?: boolean;
+  initialSelectedOptional: string[];
+  initialCompact: boolean;
+  onApply: (selectedOptional: string[], compactLocal: boolean) => void;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const optionalKeys = useMemo(
-    () => columnOptions?.filter((c) => !c.heading).map((c) => c.key) ?? [],
-    [columnOptions],
-  );
-  const optionalKeysSig = optionalKeys.join("|");
-
-  const [selectedOptional, setSelectedOptional] = useState<string[]>(optionalKeys);
-  const [compactLocal, setCompactLocal] = useState(Boolean(compactActive));
-
-  useEffect(() => {
-    const fromUrl = searchParams.get("cols");
-    if (fromUrl) {
-      const picked = fromUrl
-        .split(",")
-        .map((s) => s.trim())
-        .filter((k) => optionalKeys.includes(k));
-      setSelectedOptional(picked.length > 0 ? picked : [...optionalKeys]);
-    } else {
-      setSelectedOptional([...optionalKeys]);
-    }
-    setCompactLocal(searchParams.get("compact") === "1");
-  }, [searchParams, optionalKeys, optionalKeysSig, viewId]);
-
-  function applyPrintSettings() {
-    const params = new URLSearchParams(searchParams.toString());
-    if (singlePublishedView) {
-      params.delete("view");
-    } else {
-      params.set("view", viewId);
-    }
-
-    const allSelected =
-      selectedOptional.length === optionalKeys.length &&
-      optionalKeys.every((k) => selectedOptional.includes(k));
-
-    if (allSelected) {
-      params.delete("cols");
-    } else {
-      params.set("cols", selectedOptional.join(","));
-    }
-
-    if (compactLocal) {
-      params.set("compact", "1");
-    } else {
-      params.delete("compact");
-    }
-
-    router.replace(`${pathname}?${params.toString()}`);
-  }
-
+  const [selectedOptional, setSelectedOptional] = useState<string[]>(() => initialSelectedOptional);
+  const [compactLocal, setCompactLocal] = useState(initialCompact);
   const showPicker = Boolean(columnOptions && columnOptions.length > 0);
 
   return (
@@ -91,7 +57,7 @@ export function PrintViewToolbar({
         <div className="rounded-2xl border border-[color:var(--wsu-border)] bg-[color:var(--wsu-paper)] p-4 text-sm">
           <p className="font-medium text-[color:var(--wsu-ink)]">Print columns</p>
           <p className="mt-1 text-xs text-[color:var(--wsu-muted)]">
-            Uncheck fields you don’t need so the table stays wider. The row title column always prints.
+            Uncheck fields you donâ€¦t need so the table stays wider. The row title column always prints.
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {columnOptions!.map((col) => {
@@ -141,7 +107,7 @@ export function PrintViewToolbar({
             </label>
             <button
               type="button"
-              onClick={() => applyPrintSettings()}
+              onClick={() => onApply(selectedOptional, compactLocal)}
               className="rounded-full bg-[color:var(--wsu-crimson)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[color:var(--wsu-crimson-dark)]"
             >
               Apply to preview
@@ -156,5 +122,74 @@ export function PrintViewToolbar({
         theme). Use compact type above to fit more on one page when you use fewer columns.
       </p>
     </div>
+  );
+}
+
+export function PrintViewToolbar({
+  slug,
+  viewId,
+  singlePublishedView,
+  columnOptions,
+  compact: compactActive,
+}: {
+  slug: string;
+  viewId: string;
+  singlePublishedView: boolean;
+  columnOptions?: PrintColumnPickerRow[];
+  compact?: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const optionalKeys = useMemo(
+    () => columnOptions?.filter((c) => !c.heading).map((c) => c.key) ?? [],
+    [columnOptions],
+  );
+  const initialSelectedOptional = useMemo(
+    () => deriveSelectedOptional(searchParams, optionalKeys),
+    [optionalKeys, searchParams],
+  );
+  const initialCompact = searchParams.get("compact") === "1" || Boolean(compactActive);
+  const toolbarStateKey = `${viewId}|${searchParams.toString()}|${optionalKeys.join("|")}`;
+
+  function applyPrintSettings(selectedOptional: string[], compactLocal: boolean) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (singlePublishedView) {
+      params.delete("view");
+    } else {
+      params.set("view", viewId);
+    }
+
+    const allSelected =
+      selectedOptional.length === optionalKeys.length &&
+      optionalKeys.every((k) => selectedOptional.includes(k));
+
+    if (allSelected) {
+      params.delete("cols");
+    } else {
+      params.set("cols", selectedOptional.join(","));
+    }
+
+    if (compactLocal) {
+      params.set("compact", "1");
+    } else {
+      params.delete("compact");
+    }
+
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
+  return (
+    <PrintViewToolbarInner
+      key={toolbarStateKey}
+      slug={slug}
+      viewId={viewId}
+      singlePublishedView={singlePublishedView}
+      columnOptions={columnOptions}
+      initialSelectedOptional={initialSelectedOptional}
+      initialCompact={initialCompact}
+      onApply={applyPrintSettings}
+    />
   );
 }

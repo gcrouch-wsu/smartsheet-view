@@ -47,8 +47,8 @@ export default async function AdminDashboardPage() {
           {principal.role === "owner"
             ? "This bootstrap owner account comes from environment configuration and can also manage additional admins."
             : adminStorageMode === "database"
-              ? "This managed admin account is stored in Postgres and can be used safely on Vercel without additional environment-variable users."
-              : "This managed admin account is stored in the app's local config files. For Vercel, switch managed admins to Postgres by setting DATABASE_URL."}
+              ? "This managed admin account is stored in Postgres and is suitable for production deployments without additional environment-variable users."
+              : "This managed admin account is stored in the app's local config files. For Railway or any production deployment where local files are not durable, switch managed admins to Postgres by setting DATABASE_URL."}
         </p>
         {principal.role === "owner" && (
           <Link href="/admin/users" className="link-pill-muted mt-4">

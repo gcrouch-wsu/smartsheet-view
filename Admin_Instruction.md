@@ -24,9 +24,10 @@ Required environment values:
 - `SMARTSHEETS_VIEW_ADMIN_USERNAME`
 - `SMARTSHEETS_VIEW_ADMIN_PASSWORD`
 - `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`
-- `DATABASE_URL`
+- `DATABASE_URL` for Railway or any production environment where local files are not durable; optional for local file-backed development
 - `CONTRIBUTOR_SESSION_SECRET` if contributor editing is enabled
 - `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` — optional; set to `true` only if Postgres TLS verification fails after review and you deliberately accept relaxed TLS. Prefer fixing `DATABASE_URL` or provider certificates first. When `false` or unset, the app strips `sslmode=no-verify` from the URL unless this flag is `true`.
+- `SMARTSHEETS_VIEW_PUBLIC_BASE_URL` — optional; set this if `{{PUBLIC_URL}}` should always point at a fixed external origin instead of using trusted forwarded headers
 
 ### Admin session cookies
 
@@ -34,13 +35,15 @@ Admin sign-in uses **stateless** httpOnly cookies: HMAC-signed with `SMARTSHEETS
 
 - **Production:** Always set `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` to a strong random value (never empty). **Rotating** this secret **immediately** invalidates **all** admin sessions everywhere that uses the new value — use this after incidents or suspected cookie leaks.
 - **If the secret is unset:** Changing the bootstrap admin **password** changes the derived key and **invalidates all admin cookies** — keep that in mind during password rotations.
-- **Vercel:** Set the secret per environment (Production, Preview, Development as used). Preview without its own secret falls back to the password-derived model for Preview.
+- **Multiple environments:** Set the secret per environment (Production, Preview, Development as used). Preview without its own secret falls back to the password-derived model for Preview.
 - **Sign out** in the admin UI only clears the cookie on that browser.
 
 If you use Supabase for Postgres:
 
 - backend-owned tables in `public` must keep RLS enabled
+- backend-owned tables also need an app-role policy so the `DATABASE_URL` role can read and write after RLS is enabled
 - update `sql/enable-public-rls.sql` when a new backend-owned `public` table is added
+- rerun the bootstrap/script path if you change the `DATABASE_URL` role later
 - rerun Supabase Security Advisor after deploy and treat new `rls_disabled_in_public` findings as release-blocking
 
 ## Sources
@@ -309,7 +312,7 @@ Optional **Print / PDF grouping** (Setup) splits the print page into multiple ta
 ## Release Checklist
 
 1. Confirm environment values and database connectivity.
-2. Confirm RLS is enabled on backend-owned public tables.
+2. Confirm RLS is enabled on backend-owned public tables and that the current `DATABASE_URL` role still has the expected app-role policy.
 3. Preview the public page and verify layout, filters, search, branding, and contributor links.
 4. If contributor editing is enabled, test:
    - first-time access
@@ -320,4 +323,4 @@ Optional **Print / PDF grouping** (Setup) splits the print page into multiple ta
    - grouped contact editing when groups are enabled
    - read-only behavior for unsafe delimited grouped roles, if any exist
    - trusted pairing behavior if any source role group uses legacy delimited columns
-5. Commit and push changes before expecting Vercel to deploy them.
+5. Commit and push changes before expecting a Git-based deployment to pick them up.

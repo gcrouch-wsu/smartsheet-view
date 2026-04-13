@@ -31,7 +31,7 @@ import { RecordSuppressionCollapsible } from "@/components/public/RecordSuppress
 import type { ProgramGroup } from "@/lib/campus-grouping";
 import { suppressMergedRowCampusBadgesWhenSectionStripShows } from "@/lib/campus-grouping";
 import { contributorEditTargetRowId, isContributorRowOrMergedEditable } from "@/lib/contributor-utils";
-import type { ResolvedFieldValue, ResolvedView, ResolvedViewRow } from "@/lib/config/types";
+import type { ResolvedFieldValue, ResolvedView } from "@/lib/config/types";
 import { fieldBlockOuterClassName } from "@/components/public/FieldBlock";
 import { fieldLabelClassName } from "@/lib/field-typography";
 

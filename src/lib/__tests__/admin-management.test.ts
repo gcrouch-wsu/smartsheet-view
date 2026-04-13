@@ -42,6 +42,13 @@ const sourceConfig: SourceConfig = {
   smartsheetId: 7763577444192132,
 };
 
+const sourceConfigTwo: SourceConfig = {
+  id: "other-programs",
+  label: "Other Programs",
+  sourceType: "sheet",
+  smartsheetId: 1111111111111111,
+};
+
 const viewConfig: ViewConfig = {
   id: "faculty",
   slug: "grad-programs",
@@ -106,9 +113,34 @@ describe("admin management", () => {
     expect(adminStoreMock.saveViewConfig).not.toHaveBeenCalled();
   });
 
+  it("blocks saving a published view when another source already uses that slug", async () => {
+    storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
+    smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });
+    publicViewMock.collectSchemaDriftWarnings.mockReturnValue([]);
+    storeMock.listViewConfigs.mockResolvedValue([
+      {
+        ...viewConfig,
+        id: "other-source-view",
+        sourceId: sourceConfigTwo.id,
+        slug: "shared-page",
+        label: "Other Source View",
+      },
+    ]);
+
+    await expect(
+      saveAdminViewConfig({ ...viewConfig, slug: "shared-page", public: true }),
+    ).rejects.toMatchObject({
+      status: 409,
+      errors: [expect.stringContaining("Published slugs may only belong to one source")],
+    } satisfies Partial<AdminActionError>);
+
+    expect(adminStoreMock.saveViewConfig).not.toHaveBeenCalled();
+  });
+
   it("uses a fresh schema fetch before publishing", async () => {
     storeMock.getViewConfigById.mockResolvedValue(viewConfig);
     storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
+    storeMock.listViewConfigs.mockResolvedValue([viewConfig]);
     smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });
     publicViewMock.collectSchemaDriftWarnings.mockReturnValue([]);
     adminStoreMock.updateViewPublication.mockResolvedValue({ ...viewConfig, public: true });
@@ -118,6 +150,30 @@ describe("admin management", () => {
     expect(smartsheetMock.getSmartsheetSchema).toHaveBeenCalledWith(sourceConfig, { fresh: true });
     expect(publicViewMock.collectSchemaDriftWarnings).toHaveBeenCalledWith(viewConfig, [], sourceConfig);
     expect(adminStoreMock.updateViewPublication).toHaveBeenCalledWith("faculty", true);
+  });
+
+  it("blocks publishing when another source already uses that slug", async () => {
+    const conflictingView: ViewConfig = {
+      ...viewConfig,
+      id: "other-source-view",
+      sourceId: sourceConfigTwo.id,
+      slug: viewConfig.slug,
+      label: "Other Source View",
+      public: true,
+    };
+
+    storeMock.getViewConfigById.mockResolvedValue(viewConfig);
+    storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
+    storeMock.listViewConfigs.mockResolvedValue([viewConfig, conflictingView]);
+    smartsheetMock.getSmartsheetSchema.mockResolvedValue({ columns: [] });
+    publicViewMock.collectSchemaDriftWarnings.mockReturnValue([]);
+
+    await expect(updateAdminViewPublication("faculty", true)).rejects.toMatchObject({
+      status: 409,
+      errors: [expect.stringContaining("Published slugs may only belong to one source")],
+    } satisfies Partial<AdminActionError>);
+
+    expect(adminStoreMock.updateViewPublication).not.toHaveBeenCalled();
   });
 
   it("blocks deleting a source while views still reference it", async () => {

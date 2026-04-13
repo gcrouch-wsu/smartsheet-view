@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { Pool } from "pg";
 import { cookies } from "next/headers";
+import { ensureCurrentAppRoleRls } from "@/lib/db-rls";
 import { buildPgPoolOptions } from "@/lib/pg-connection";
 import { NextResponse } from "next/server";
 import {
@@ -379,8 +380,8 @@ async function ensureManagedAdminsTable() {
         CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_ip_at
         ON admin_login_attempts(ip, attempted_at)
       `);
-      await query(`ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY`);
-      await query(`ALTER TABLE admin_login_attempts ENABLE ROW LEVEL SECURITY`);
+      await ensureCurrentAppRoleRls(query, "admin_users");
+      await ensureCurrentAppRoleRls(query, "admin_login_attempts");
       await migrateFileManagedAdminsToDatabaseIfNeeded();
     })().catch((error) => {
       ensureManagedAdminsTablePromise = null;
