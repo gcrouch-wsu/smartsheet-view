@@ -10,7 +10,7 @@ import {
   isAdminLoginRateLimited,
   recordAdminFailedLoginAttempt,
 } from "@/lib/admin-users";
-import { getTrustedClientIp } from "@/lib/request-ip";
+import { adminAuthRateLimitKey } from "@/lib/request-ip";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
   }
 
-  const ip = getTrustedClientIp(request.headers);
-  if (await isAdminLoginRateLimited(ip)) {
+  const rateLimitKey = adminAuthRateLimitKey(request.headers, username);
+  if (await isAdminLoginRateLimited(rateLimitKey)) {
     return NextResponse.json({ message: ADMIN_LOGIN_TOO_MANY_ATTEMPTS_ERROR }, { status: 429 });
   }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const status = authorization.status ?? 401;
     // Do not count configuration/outage responses as password-guessing attempts (avoids locking admins out during incidents).
     if (status === 401) {
-      await recordAdminFailedLoginAttempt(ip);
+      await recordAdminFailedLoginAttempt(rateLimitKey);
     }
     return NextResponse.json(
       {

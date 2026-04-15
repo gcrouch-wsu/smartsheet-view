@@ -1,10 +1,25 @@
 import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PublicPageSummary, SourceConfig, ViewConfig } from "@/lib/config/types";
+import { normalizePublishedSlug } from "@/lib/slug-normalize";
 import { humanizeSlug } from "@/lib/utils";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
 
 const CONFIG_ROOT = path.join(process.cwd(), "config");
+const MAX_CONFIG_FILE_STEM_LEN = 120;
+const SAFE_CONFIG_FILE_STEM = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+
+function assertSafeConfigFileStem(id: string, label: string) {
+  if (!id) {
+    throw new Error(`${label} is required.`);
+  }
+  if (id.length > MAX_CONFIG_FILE_STEM_LEN) {
+    throw new Error(`${label} is too long (max ${MAX_CONFIG_FILE_STEM_LEN} characters).`);
+  }
+  if (!SAFE_CONFIG_FILE_STEM.test(id)) {
+    throw new Error(`${label} may only contain letters, numbers, hyphens, and underscores.`);
+  }
+}
 
 function stripBom(value: string) {
   return value.replace(/^\uFEFF/, "");
@@ -15,6 +30,7 @@ function configDir(folderName: "sources" | "views") {
 }
 
 function configFilePath(folderName: "sources" | "views", id: string) {
+  assertSafeConfigFileStem(id, "Config id");
   return path.join(configDir(folderName), `${id}.json`);
 }
 
@@ -91,8 +107,11 @@ export async function getViewConfigById(viewId: string) {
 
 export async function getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }) {
   const views = await listViewConfigs();
+  const slugNorm = normalizePublishedSlug(slug);
   return views
-    .filter((view) => (options?.includePrivate || view.public) && view.slug === slug)
+    .filter(
+      (view) => (options?.includePrivate || view.public) && normalizePublishedSlug(view.slug) === slugNorm,
+    )
     .sort((left, right) => (left.tabOrder ?? 999) - (right.tabOrder ?? 999) || left.label.localeCompare(right.label));
 }
 
@@ -102,9 +121,10 @@ export async function listPublicPageSummaries(): Promise<PublicPageSummary[]> {
   const groups = new Map<string, ViewConfig[]>();
 
   for (const view of views.filter((record) => record.public)) {
-    const existing = groups.get(view.slug) ?? [];
+    const key = normalizePublishedSlug(view.slug);
+    const existing = groups.get(key) ?? [];
     existing.push(view);
-    groups.set(view.slug, existing);
+    groups.set(key, existing);
   }
 
   return [...groups.entries()]

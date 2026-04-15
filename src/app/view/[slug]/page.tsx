@@ -11,7 +11,8 @@ import { ViewTabs } from "@/components/public/ViewTabs";
 import { LAYOUT_OPTIONS } from "@/lib/config/options";
 import type { LayoutType } from "@/lib/config/types";
 import { mergeThemeTokens } from "@/lib/config/themes";
-import { ADMIN_SESSION_COOKIE_NAME, readAdminSessionToken } from "@/lib/admin-auth";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/lib/admin-auth";
+import { resolveAdminPrincipalFromSession } from "@/lib/admin-users";
 import {
   CONTRIBUTOR_SESSION_COOKIE_NAME,
   getContributorConfigurationError,
@@ -174,16 +175,17 @@ export default async function PublicViewPage({
 
   if (editingEnabled) {
     const cookieStore = await cookies();
-    const adminSession = await readAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
+    const adminAuth = await resolveAdminPrincipalFromSession(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
 
-    if (adminSession.ok && adminSession.payload) {
+    if (adminAuth.ok && adminAuth.principal) {
       const dataset = await loadContributorDataset(page.sourceConfig, CONTRIBUTOR_DATASET_OPTIONS);
       const built = buildContributorEditingClientConfig(activeViewConfig, dataset.columns, page.sourceConfig);
       if (built) {
         adminUnrestrictedEditing = true;
         editingConfig = built;
         editableRowIds = collectResolvableRowIdsForUnrestrictedEditing(activeView.rows);
-        adminEditingLabel = adminSession.payload.username || "Administrator";
+        adminEditingLabel =
+          (adminAuth.principal.displayName ?? adminAuth.principal.username).trim() || "Administrator";
       }
     }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/admin-api";
 import { AdminActionError, updateAdminViewPublication } from "@/lib/admin-management";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function POST(
   request: Request,
@@ -16,6 +17,7 @@ export async function POST(
 
   try {
     const view = await updateAdminViewPublication(id, Boolean(body.public));
+    revalidatePublicCatalog();
     return NextResponse.json({ view });
   } catch (error) {
     if (error instanceof AdminActionError) {

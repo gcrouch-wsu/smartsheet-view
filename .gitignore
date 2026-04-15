@@ -54,4 +54,5 @@ contributor_instructions.md
 
 # Local / scratch (keep out of repo)
 .claude/
+next_build.md
 *.txt

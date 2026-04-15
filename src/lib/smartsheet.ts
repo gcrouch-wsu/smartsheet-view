@@ -5,10 +5,10 @@ import type {
   SmartsheetRow,
   SourceConfig,
 } from "@/lib/config/types";
+import { listConfiguredSmartsheetConnectionKeys } from "@/lib/smartsheet-connection-keys";
+import { normalizeSmartsheetApiBaseUrl } from "@/lib/smartsheet-api-url";
 
-const DEFAULT_API_BASE_URL = "https://api.smartsheet.com/2.0";
-
-interface ConnectionConfig {
+export interface ConnectionConfig {
   token: string;
   apiBaseUrl: string;
 }
@@ -184,7 +184,7 @@ function parseConnectionsEnv() {
     return new Map(
       Object.entries(parsed).flatMap(([key, value]) => {
         if (typeof value === "string") {
-          return [[key, { token: value, apiBaseUrl: DEFAULT_API_BASE_URL } satisfies ConnectionConfig]];
+          return [[key, { token: value, apiBaseUrl: normalizeSmartsheetApiBaseUrl(undefined) } satisfies ConnectionConfig]];
         }
         if (!value?.token) {
           return [];
@@ -194,7 +194,7 @@ function parseConnectionsEnv() {
             key,
             {
               token: value.token,
-              apiBaseUrl: value.apiBaseUrl?.trim() || DEFAULT_API_BASE_URL,
+              apiBaseUrl: normalizeSmartsheetApiBaseUrl(value.apiBaseUrl),
             } satisfies ConnectionConfig,
           ],
         ];
@@ -210,11 +210,7 @@ function parseConnectionsEnv() {
 }
 
 export function listConfiguredConnectionKeys() {
-  const keys = [...parseConnectionsEnv().keys()];
-  if (process.env.SMARTSHEET_API_TOKEN?.trim() && !keys.includes("default")) {
-    keys.unshift("default");
-  }
-  return keys.length > 0 ? keys : ["default"];
+  return listConfiguredSmartsheetConnectionKeys();
 }
 
 export function hasConfiguredConnection() {
@@ -227,11 +223,21 @@ export function normalizeColumnKey(value: string) {
 
 function resolveConnection(connectionKey = "default", sourceApiBaseUrl?: string): ConnectionConfig {
   const namedConnections = parseConnectionsEnv();
-  const named = namedConnections.get(connectionKey);
+  const keyTrim = (connectionKey ?? "").trim();
+  const key = keyTrim || "default";
+
+  if (key !== "default" && !namedConnections.has(key)) {
+    throw new Error(
+      `Unknown Smartsheet connectionKey "${key}". Add it to SMARTSHEET_CONNECTIONS_JSON or clear connectionKey to use the default token.`,
+    );
+  }
+
+  const named = namedConnections.get(key);
   if (named) {
+    const base = sourceApiBaseUrl?.trim() || named.apiBaseUrl;
     return {
       token: named.token,
-      apiBaseUrl: sourceApiBaseUrl?.trim() || named.apiBaseUrl,
+      apiBaseUrl: normalizeSmartsheetApiBaseUrl(base),
     };
   }
 
@@ -242,9 +248,10 @@ function resolveConnection(connectionKey = "default", sourceApiBaseUrl?: string)
     );
   }
 
+  const base = sourceApiBaseUrl?.trim() || process.env.SMARTSHEET_API_BASE_URL?.trim();
   return {
     token,
-    apiBaseUrl: sourceApiBaseUrl?.trim() || process.env.SMARTSHEET_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL,
+    apiBaseUrl: normalizeSmartsheetApiBaseUrl(base),
   };
 }
 
@@ -744,7 +751,10 @@ export async function testSmartsheetConnection(): Promise<boolean> {
       const named = parseConnectionsEnv();
       const first = named.values().next().value as ConnectionConfig | undefined;
       if (!first) return false;
-      conn = first;
+      conn = {
+        token: first.token,
+        apiBaseUrl: normalizeSmartsheetApiBaseUrl(first.apiBaseUrl),
+      };
     }
     const response = await fetchCurrentUser(conn);
     return response.ok;

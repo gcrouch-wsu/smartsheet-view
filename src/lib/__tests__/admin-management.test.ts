@@ -195,7 +195,7 @@ describe("admin management", () => {
     expect(adminStoreMock.deleteViewConfig).toHaveBeenCalledWith("faculty");
   });
 
-  it("updates slug on sibling views that shared the old slug (same source)", async () => {
+  it("saves only the edited view when slug changes (siblings are not auto-rewritten)", async () => {
     const tabA: ViewConfig = { ...viewConfig, id: "tab-a", slug: "page-x", label: "Tab A" };
     const tabB: ViewConfig = { ...viewConfig, id: "tab-b", slug: "page-x", label: "Tab B", tabOrder: 2 };
     storeMock.getSourceConfigById.mockResolvedValue(sourceConfig);
@@ -215,7 +215,7 @@ describe("admin management", () => {
 
     await saveAdminViewConfig({ ...tabA, slug: "page-y" });
 
+    expect(adminStoreMock.saveViewConfig).toHaveBeenCalledTimes(1);
     expect(adminStoreMock.saveViewConfig).toHaveBeenCalledWith(expect.objectContaining({ id: "tab-a", slug: "page-y" }));
-    expect(adminStoreMock.saveViewConfig).toHaveBeenCalledWith(expect.objectContaining({ id: "tab-b", slug: "page-y" }));
   });
 });

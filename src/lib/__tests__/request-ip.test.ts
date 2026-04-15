@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getPublicOrigin, getTrustedClientIp, shouldTrustProxyHeaders } from "@/lib/request-ip";
+import {
+  contributorPasswordResetRateLimitKey,
+  getPublicOrigin,
+  getTrustedClientIp,
+  shouldTrustProxyHeaders,
+} from "@/lib/request-ip";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -39,6 +44,28 @@ describe("getTrustedClientIp", () => {
   it("returns unknown when no proxy headers are available", () => {
     vi.stubEnv("SMARTSHEETS_VIEW_TRUST_PROXY_HEADERS", "true");
     expect(getTrustedClientIp(new Headers())).toBe("unknown");
+  });
+});
+
+describe("contributorPasswordResetRateLimitKey", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("uses ip-prefixed bucket when proxy IP is trusted", () => {
+    vi.stubEnv("SMARTSHEETS_VIEW_TRUST_PROXY_HEADERS", "true");
+    const h = new Headers();
+    h.set("x-forwarded-for", "203.0.113.2");
+    expect(contributorPasswordResetRateLimitKey(h, "any-token")).toBe("pwreset-ip:203.0.113.2");
+  });
+
+  it("uses token-derived bucket when IP is unknown", () => {
+    const h = new Headers();
+    const a = contributorPasswordResetRateLimitKey(h, "token-a");
+    const b = contributorPasswordResetRateLimitKey(h, "token-b");
+    expect(a).toMatch(/^pwreset:[0-9a-f]+:7$/);
+    expect(b).toMatch(/^pwreset:[0-9a-f]+:7$/);
+    expect(a).not.toBe(b);
   });
 });
 

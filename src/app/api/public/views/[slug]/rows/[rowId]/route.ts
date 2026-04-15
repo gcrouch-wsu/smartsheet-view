@@ -1,7 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { ADMIN_SESSION_COOKIE_NAME, readAdminSessionToken } from "@/lib/admin-auth";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/lib/admin-auth";
+import { resolveAdminPrincipalFromSession } from "@/lib/admin-users";
 import {
   CONTRIBUTOR_SESSION_COOKIE_NAME,
   getContributorConfigurationError,
@@ -38,8 +39,8 @@ export async function PATCH(
 
   const cookieStore = await cookies();
   const contributorSession = await readContributorSessionToken(cookieStore.get(CONTRIBUTOR_SESSION_COOKIE_NAME)?.value);
-  const adminSession = await readAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
-  const isAdminEditor = Boolean(adminSession.ok && adminSession.payload);
+  const adminAuth = await resolveAdminPrincipalFromSession(cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value);
+  const isAdminEditor = Boolean(adminAuth.ok && adminAuth.principal);
   const isContributor = Boolean(contributorSession.ok && contributorSession.payload);
 
   if (!isAdminEditor && !isContributor) {

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveSourceConfig } from "@/lib/config/admin-store";
-import { listSourceConfigs } from "@/lib/config/store";
+import { getSourceConfigById, listSourceConfigs } from "@/lib/config/store";
 import { validateSourceConfig } from "@/lib/config/validation";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function GET() {
   const auth = await requireAdminApiAccess();
@@ -26,6 +27,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });
   }
 
+  const existing = await getSourceConfigById(result.data.id);
+  if (existing) {
+    return NextResponse.json(
+      {
+        error: `A source with ID "${result.data.id}" already exists.`,
+        errors: [`Use a different source id, or update the existing source with PUT /api/admin/sources/${result.data.id}.`],
+      },
+      { status: 409 },
+    );
+  }
+
   await saveSourceConfig(result.data);
+  revalidatePublicCatalog();
   return NextResponse.json({ source: result.data }, { status: 201 });
 }

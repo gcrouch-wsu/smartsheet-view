@@ -76,6 +76,49 @@ export function getTrustedClientIp(requestHeaders: Headers): string {
  * Resolve the public origin used for user-facing absolute links.
  * Prefer an explicit public base URL, otherwise trust forwarded host/proto only on known-safe proxy setups.
  */
+/**
+ * When the client IP cannot be trusted, avoid a shared global bucket: rate-limit per username (admin)
+ * or per email (contributor) so one subnet cannot lock out everyone.
+ */
+export function adminAuthRateLimitKey(headers: Headers, usernameForLimiting: string): string {
+  const ip = getTrustedClientIp(headers);
+  if (ip !== "unknown") {
+    return ip;
+  }
+  const u = usernameForLimiting.trim().toLowerCase();
+  return u ? `username:${u}` : "unknown:no-username";
+}
+
+export function contributorAuthRateLimitKey(headers: Headers, emailForLimiting: string): string {
+  const ip = getTrustedClientIp(headers);
+  if (ip !== "unknown") {
+    return ip;
+  }
+  const e = emailForLimiting.trim().toLowerCase();
+  return e ? `email:${e}` : "unknown:no-email";
+}
+
+/**
+ * Password reset has no email until the token is verified — bucket by IP when trusted,
+ * otherwise by a stable hash of the token so unrelated users do not share one "unknown" bucket.
+ */
+export function contributorPasswordResetRateLimitKey(headers: Headers, resetToken: string): string {
+  const ip = getTrustedClientIp(headers);
+  if (ip !== "unknown") {
+    return `pwreset-ip:${ip}`;
+  }
+  const t = resetToken.trim();
+  if (!t) {
+    return "pwreset:empty-token";
+  }
+  let h = 0;
+  for (let i = 0; i < t.length; i += 1) {
+    h = (h * 31 + t.charCodeAt(i)) | 0;
+  }
+  const bucket = (h >>> 0).toString(16).padStart(8, "0");
+  return `pwreset:${bucket}:${t.length}`;
+}
+
 export function getPublicOrigin(requestHeaders: Headers): string | null {
   const configured = getConfiguredPublicOrigin();
   if (configured) {

@@ -3,6 +3,7 @@ import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveAdminViewConfig, AdminActionError } from "@/lib/admin-management";
 import { listSourceConfigs, listViewConfigs } from "@/lib/config/store";
 import { validateViewConfig } from "@/lib/config/validation";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function GET() {
   const auth = await requireAdminApiAccess();
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const view = await saveAdminViewConfig(result.data, { rejectOnExistingId: true });
+    revalidatePublicCatalog();
     return NextResponse.json({ view }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminActionError) {

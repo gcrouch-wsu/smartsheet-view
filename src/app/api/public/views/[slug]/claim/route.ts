@@ -6,7 +6,6 @@ import {
   CONTRIBUTOR_TOO_MANY_ATTEMPTS_ERROR,
   createContributorSessionToken,
   createContributorUser,
-  getContributorClientIp,
   getContributorConfigurationError,
   getContributorSessionCookieSettings,
   getContributorUserByEmail,
@@ -16,6 +15,7 @@ import {
 } from "@/lib/contributor-auth";
 import { isContributorStillInSheet, isWsuEmail, normalizeContributorEmail } from "@/lib/contributor-utils";
 import { CONTRIBUTOR_DATASET_OPTIONS, loadContributorDataset, loadContributorViewContext } from "@/lib/contributor-view";
+import { contributorAuthRateLimitKey } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 
@@ -38,9 +38,9 @@ export async function POST(
   const body = (await request.json().catch(() => null)) as { email?: unknown; password?: unknown } | null;
   const email = normalizeContributorEmail(typeof body?.email === "string" ? body.email : "");
   const password = typeof body?.password === "string" ? body.password : "";
-  const ip = getContributorClientIp(request.headers);
+  const rateLimitKey = contributorAuthRateLimitKey(request.headers, email);
 
-  if (await isContributorRateLimited(ip)) {
+  if (await isContributorRateLimited(rateLimitKey)) {
     return NextResponse.json({ error: CONTRIBUTOR_TOO_MANY_ATTEMPTS_ERROR }, { status: 429 });
   }
 
@@ -55,12 +55,12 @@ export async function POST(
 
   const passwordError = validateContributorPassword(password);
   if (passwordError) {
-    await recordContributorFailedAttempt(ip);
+    await recordContributorFailedAttempt(rateLimitKey);
     return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
   if (!isWsuEmail(email)) {
-    await recordContributorFailedAttempt(ip);
+    await recordContributorFailedAttempt(rateLimitKey);
     return NextResponse.json({ error: CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR }, { status: 403 });
   }
 
@@ -72,7 +72,7 @@ export async function POST(
 
   const isEligible = isContributorStillInSheet(dataset.rows, email, context.activeView.editing.contactColumnIds);
   if (!isEligible) {
-    await recordContributorFailedAttempt(ip);
+    await recordContributorFailedAttempt(rateLimitKey);
     return NextResponse.json({ error: CONTRIBUTOR_CLAIM_NOT_ELIGIBLE_ERROR }, { status: 403 });
   }
 

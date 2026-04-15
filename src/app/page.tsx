@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getPublicPageSummaries } from "@/lib/public-view";
 import { testSmartsheetConnection } from "@/lib/smartsheet";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [pages, connectionOk] = await Promise.all([
     getPublicPageSummaries(),

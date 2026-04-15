@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/admin-api";
 import { duplicateAdminView, AdminActionError } from "@/lib/admin-management";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function POST(
   _request: Request,
@@ -15,6 +16,7 @@ export async function POST(
 
   try {
     const view = await duplicateAdminView(id);
+    revalidatePublicCatalog();
     return NextResponse.json({ view }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminActionError) {

@@ -51,20 +51,20 @@ function pruneAdminAttemptsMemory(now: number) {
   }
 }
 
-export async function recordAdminFailedLoginAttempt(ip: string): Promise<void> {
+export async function recordAdminFailedLoginAttempt(rateLimitKey: string): Promise<void> {
   if (!getDatabaseUrl()) {
     const now = Date.now();
     pruneAdminAttemptsMemory(now);
-    const times = adminLoginAttemptsMemory.get(ip) ?? [];
+    const times = adminLoginAttemptsMemory.get(rateLimitKey) ?? [];
     times.push(now);
-    adminLoginAttemptsMemory.set(ip, times);
+    adminLoginAttemptsMemory.set(rateLimitKey, times);
     return;
   }
 
   await ensureManagedAdminsTable();
   await query(
     `INSERT INTO admin_login_attempts (ip, attempted_at) VALUES ($1, now())`,
-    [ip],
+    [rateLimitKey],
   );
   const now = Date.now();
   if (now - lastAdminLoginAttemptsDbPruneAt >= ADMIN_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS) {
@@ -73,12 +73,12 @@ export async function recordAdminFailedLoginAttempt(ip: string): Promise<void> {
   }
 }
 
-export async function isAdminLoginRateLimited(ip: string): Promise<boolean> {
+export async function isAdminLoginRateLimited(rateLimitKey: string): Promise<boolean> {
   // In-memory attempts are per serverless instance / process; without DATABASE_URL, limits reset on cold start.
   if (!getDatabaseUrl()) {
     const now = Date.now();
     pruneAdminAttemptsMemory(now);
-    const times = adminLoginAttemptsMemory.get(ip) ?? [];
+    const times = adminLoginAttemptsMemory.get(rateLimitKey) ?? [];
     const windowMs = ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
     const recent = times.filter((t) => now - t < windowMs);
     return recent.length >= ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS;
@@ -90,7 +90,7 @@ export async function isAdminLoginRateLimited(ip: string): Promise<boolean> {
      FROM admin_login_attempts
      WHERE ip = $1
        AND attempted_at > now() - make_interval(mins => $2)`,
-    [ip, ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES],
+    [rateLimitKey, ADMIN_LOGIN_RATE_LIMIT_WINDOW_MINUTES],
   );
   return Number(rows[0]?.count ?? 0) >= ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS;
 }
@@ -217,7 +217,23 @@ function buildAdminUserId(username: string, existingIds: Set<string>) {
   return candidate;
 }
 
+const MAX_MANAGED_ADMIN_FILE_STEM_LEN = 120;
+const SAFE_MANAGED_ADMIN_FILE_STEM = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+
+function assertSafeManagedAdminUserId(id: string) {
+  if (!id) {
+    throw new Error("Managed admin id is required.");
+  }
+  if (id.length > MAX_MANAGED_ADMIN_FILE_STEM_LEN) {
+    throw new Error(`Managed admin id is too long (max ${MAX_MANAGED_ADMIN_FILE_STEM_LEN} characters).`);
+  }
+  if (!SAFE_MANAGED_ADMIN_FILE_STEM.test(id)) {
+    throw new Error("Managed admin id may only contain letters, numbers, hyphens, and underscores.");
+  }
+}
+
 function adminUserFilePath(id: string) {
+  assertSafeManagedAdminUserId(id);
   return path.join(ADMIN_USERS_DIR, `${id}.json`);
 }
 

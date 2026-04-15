@@ -31,9 +31,9 @@ Required environment values:
 
 ### Admin session cookies
 
-Admin sign-in uses **stateless** httpOnly cookies: HMAC-signed with `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`, or with material **derived from** bootstrap username + password when that variable is unset. There is **no** server session table — you cannot revoke one stolen cookie without changing verification for everyone.
+Admin sign-in uses **stateless** httpOnly cookies: HMAC-signed with `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET`, or with material **derived from** bootstrap username + password when that variable is unset. There is **no** server-side session *table*—but each sensitive request still **resolves the principal** (bootstrap env user or **managed** admin from Postgres / local admin-user files). Middleware uses an internal **`/api/admin/verify-session`** check when a cookie is present so deactivated or deleted managed admins lose access promptly, not only after cookie expiry.
 
-- **Production:** Always set `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` to a strong random value (never empty). **Rotating** this secret **immediately** invalidates **all** admin sessions everywhere that uses the new value — use this after incidents or suspected cookie leaks.
+- **Production:** Always set `SMARTSHEETS_VIEW_ADMIN_SESSION_SECRET` to a strong random value (never empty). **Rotating** this secret **immediately** invalidates **all** admin sessions everywhere that uses the new value — use this after incidents or suspected cookie leaks for **bootstrap** sessions; managed admins are also re-checked against live records as above.
 - **If the secret is unset:** Changing the bootstrap admin **password** changes the derived key and **invalidates all admin cookies** — keep that in mind during password rotations.
 - **Multiple environments:** Set the secret per environment (Production, Preview, Development as used). Preview without its own secret falls back to the password-derived model for Preview.
 - **Sign out** in the admin UI only clears the cookie on that browser.
@@ -52,7 +52,7 @@ A source tells the app which Smartsheet sheet or report to read.
 
 When creating a source, enter:
 
-- a Source ID for internal use
+- a Source ID for internal use (letters, numbers, hyphens, underscores only; enforced on save)
 - a Label for the admin and public UI
 - the source type: `sheet` or `report`
 - the numeric Smartsheet ID from the URL

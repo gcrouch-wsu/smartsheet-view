@@ -4,6 +4,9 @@ import {
   CARD_LAYOUT_TEXT_PREFIX,
   FIELD_TEXT_STYLE_VALUES,
 } from "@/lib/config/types";
+import { listConfiguredSmartsheetConnectionKeys } from "@/lib/smartsheet-connection-keys";
+import { validateOptionalSmartsheetApiBaseUrl } from "@/lib/smartsheet-api-url";
+import { normalizePublishedSlug } from "@/lib/slug-normalize";
 import { isValidIanaTimeZone } from "@/lib/display-datetime";
 import { HEADER_BRAND_TEXT_MAX_LENGTH, validateHeaderLogoPair } from "@/lib/header-logo";
 import { isWritableRoleGroup } from "@/lib/role-groups";
@@ -63,6 +66,13 @@ export interface ValidationResult<T> {
   errors: string[];
 }
 
+const MAX_CONFIG_ID_LEN = 120;
+const SAFE_CONFIG_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+const MAX_PUBLIC_SLUG_LEN = 200;
+const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CONNECTION_KEY_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+const MAX_CONNECTION_KEY_LEN = 64;
+
 const LAYOUT_TYPES: LayoutType[] = ["table", "cards", "list", "tabbed", "stacked", "accordion", "list_detail"];
 const RENDER_TYPES: RenderType[] = [
   "text",
@@ -111,6 +121,32 @@ const TRANSFORM_OPS = [
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateConfigId(id: string, fieldLabel: string): string | undefined {
+  if (!id) {
+    return `${fieldLabel} is required.`;
+  }
+  if (id.length > MAX_CONFIG_ID_LEN) {
+    return `${fieldLabel} must be at most ${MAX_CONFIG_ID_LEN} characters.`;
+  }
+  if (!SAFE_CONFIG_ID.test(id)) {
+    return `${fieldLabel} may only use letters, numbers, hyphens, and underscores, and must start with a letter or number.`;
+  }
+  return undefined;
+}
+
+function validatePublicViewSlug(slug: string): string | undefined {
+  if (!slug) {
+    return "View slug is required.";
+  }
+  if (slug.length > MAX_PUBLIC_SLUG_LEN) {
+    return `View slug must be at most ${MAX_PUBLIC_SLUG_LEN} characters.`;
+  }
+  if (!PUBLIC_SLUG_PATTERN.test(slug)) {
+    return 'View slug must be lowercase letters, numbers, and single hyphens between segments (e.g. "graduate-programs").';
+  }
+  return undefined;
 }
 
 function asTrimmedString(value: unknown) {
@@ -299,6 +335,17 @@ function parseSourceRoleGroup(input: unknown, index: number): ValidationResult<S
     errors.push(...dRes.errors);
     if (dRes.data) {
       delimited = dRes.data;
+    }
+  }
+
+  if (mode === "numbered_slots" && slots && slots.length > 0) {
+    const seenSlots = new Set<string>();
+    for (const row of slots) {
+      if (seenSlots.has(row.slot)) {
+        errors.push(`${path}.slots: duplicate slot id "${row.slot}" — each numbered slot must be unique.`);
+        break;
+      }
+      seenSlots.add(row.slot);
     }
   }
 
@@ -1163,6 +1210,11 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
 
   if (!id) {
     errors.push("Source id is required.");
+  } else {
+    const idErr = validateConfigId(id, "Source id");
+    if (idErr) {
+      errors.push(idErr);
+    }
   }
   if (!label) {
     errors.push("Source label is required.");
@@ -1172,6 +1224,27 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
   }
   if (smartsheetId === undefined) {
     errors.push("smartsheetId must be a number.");
+  }
+
+  const connectionKey = asOptionalString(input.connectionKey);
+  if (connectionKey) {
+    if (connectionKey.length > MAX_CONNECTION_KEY_LEN) {
+      errors.push(`connectionKey must be at most ${MAX_CONNECTION_KEY_LEN} characters.`);
+    } else if (!CONNECTION_KEY_PATTERN.test(connectionKey)) {
+      errors.push("connectionKey may only use letters, numbers, hyphens, and underscores.");
+    } else {
+      const configuredKeys = listConfiguredSmartsheetConnectionKeys();
+      if (!configuredKeys.includes(connectionKey)) {
+        errors.push(
+          `connectionKey "${connectionKey}" is not defined. Configured keys: ${configuredKeys.join(", ")}.`,
+        );
+      }
+    }
+  }
+
+  const apiBaseUrlErr = validateOptionalSmartsheetApiBaseUrl(input.apiBaseUrl);
+  if (apiBaseUrlErr) {
+    errors.push(apiBaseUrlErr);
   }
 
   const level = asOptionalNumber(fetchOptionsInput.level);
@@ -1190,6 +1263,13 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
     }
   }
 
+  if (roleGroups.length > 0) {
+    const rgIds = roleGroups.map((g) => g.id);
+    if (new Set(rgIds).size !== rgIds.length) {
+      errors.push("roleGroups: each role group id must be unique.");
+    }
+  }
+
   return {
     success: errors.length === 0,
     errors,
@@ -1200,7 +1280,7 @@ export function validateSourceConfig(input: unknown): ValidationResult<SourceCon
           label,
           sourceType: sourceType as SourceConfig["sourceType"],
           smartsheetId: smartsheetId as number,
-          connectionKey: asOptionalString(input.connectionKey),
+          connectionKey,
           apiBaseUrl: asOptionalString(input.apiBaseUrl),
           cacheTtlSeconds: asOptionalNumber(input.cacheTtlSeconds),
           ...(roleGroups.length > 0 ? { roleGroups } : {}),
@@ -1231,15 +1311,30 @@ export function validateViewConfig(
 
   if (!id) {
     errors.push("View id is required.");
+  } else {
+    const idErr = validateConfigId(id, "View id");
+    if (idErr) {
+      errors.push(idErr);
+    }
   }
   if (!slug) {
     errors.push("View slug is required.");
+  } else {
+    const slugErr = validatePublicViewSlug(slug);
+    if (slugErr) {
+      errors.push(slugErr);
+    }
   }
   if (!sourceId) {
     errors.push("View sourceId is required.");
   }
   if (options?.knownSourceIds?.length && sourceId && !options.knownSourceIds.includes(sourceId)) {
     errors.push(`sourceId \"${sourceId}\" does not match any known source.`);
+  } else if (sourceId) {
+    const sidErr = validateConfigId(sourceId, "View sourceId");
+    if (sidErr) {
+      errors.push(sidErr);
+    }
   }
   if (!label) {
     errors.push("View label is required.");
@@ -1285,6 +1380,13 @@ export function validateViewConfig(
     errors.push("View must define at least one field.");
   }
 
+  if (fields.length > 0) {
+    const keys = fields.map((field) => field.key);
+    if (new Set(keys).size !== keys.length) {
+      errors.push("fields: each field key must be unique.");
+    }
+  }
+
   const fieldKeys = new Set(fields.map((field) => field.key));
   const nonHiddenFieldKeys = new Set(
     fields.filter((field) => field.render.type !== "hidden").map((field) => field.key),
@@ -1328,7 +1430,7 @@ export function validateViewConfig(
       ? undefined
       : {
           id,
-          slug,
+          slug: normalizePublishedSlug(slug),
           sourceId,
           label,
           description: asOptionalString(input.description),

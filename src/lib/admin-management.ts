@@ -22,6 +22,7 @@ import {
   pruneStaleContributorColumnIds,
 } from "@/lib/contributor-utils";
 import { collectSchemaDriftWarnings } from "@/lib/public-view";
+import { normalizePublishedSlug } from "@/lib/slug-normalize";
 import { getSmartsheetSchema } from "@/lib/smartsheet";
 
 export class AdminActionError extends Error {
@@ -91,11 +92,12 @@ async function resolveViewForAdminSave(view: ViewConfig) {
 }
 
 async function assertNoPublishedSlugSourceConflict(view: ViewConfig) {
+  const slugNorm = normalizePublishedSlug(view.slug);
   const conflictingViews = (await listViewConfigs()).filter(
     (existing) =>
       existing.id !== view.id &&
       existing.public &&
-      existing.slug === view.slug &&
+      normalizePublishedSlug(existing.slug) === slugNorm &&
       existing.sourceId !== view.sourceId,
   );
 
@@ -146,25 +148,7 @@ export async function saveAdminViewConfig(
     await assertNoPublishedSlugSourceConflict(viewToSave);
   }
 
-  const previous = await getViewConfigById(viewToSave.id);
-
   await saveViewConfig(viewToSave);
-
-  if (
-    previous &&
-    previous.sourceId === viewToSave.sourceId &&
-    previous.slug !== viewToSave.slug
-  ) {
-    const others = (await listViewConfigs()).filter(
-      (v) =>
-        v.id !== viewToSave.id &&
-        v.sourceId === previous.sourceId &&
-        v.slug === previous.slug,
-    );
-    for (const v of others) {
-      await saveViewConfig({ ...v, slug: viewToSave.slug });
-    }
-  }
 
   return viewToSave;
 }

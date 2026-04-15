@@ -296,12 +296,12 @@ export async function createContributorUser(email: string, password: string) {
 const CONTRIBUTOR_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS = 5 * 60 * 1000;
 let lastContributorLoginAttemptsDbPruneAt = 0;
 
-export async function recordContributorFailedAttempt(ip: string) {
+export async function recordContributorFailedAttempt(rateLimitKey: string) {
   await ensureContributorAuthStorage();
   await queryConfigDb(
     `INSERT INTO contributor_login_attempts (ip, attempted_at)
      VALUES ($1, now())`,
-    [ip],
+    [rateLimitKey],
   );
   const now = Date.now();
   if (now - lastContributorLoginAttemptsDbPruneAt >= CONTRIBUTOR_LOGIN_ATTEMPTS_DB_PRUNE_INTERVAL_MS) {
@@ -321,20 +321,20 @@ export async function pruneContributorFailedAttempts() {
   );
 }
 
-export async function getContributorRecentFailedAttemptCount(ip: string) {
+export async function getContributorRecentFailedAttemptCount(rateLimitKey: string) {
   await ensureContributorAuthStorage();
   const { rows } = await queryConfigDb<{ count: string }>(
     `SELECT COUNT(*)::text AS count
      FROM contributor_login_attempts
      WHERE ip = $1
        AND attempted_at > now() - make_interval(mins => $2)`,
-    [ip, CONTRIBUTOR_RATE_LIMIT_WINDOW_MINUTES],
+    [rateLimitKey, CONTRIBUTOR_RATE_LIMIT_WINDOW_MINUTES],
   );
   return Number(rows[0]?.count ?? 0);
 }
 
-export async function isContributorRateLimited(ip: string) {
-  return (await getContributorRecentFailedAttemptCount(ip)) >= CONTRIBUTOR_RATE_LIMIT_MAX_ATTEMPTS;
+export async function isContributorRateLimited(rateLimitKey: string) {
+  return (await getContributorRecentFailedAttemptCount(rateLimitKey)) >= CONTRIBUTOR_RATE_LIMIT_MAX_ATTEMPTS;
 }
 
 export function getContributorClientIp(requestHeaders: Headers) {

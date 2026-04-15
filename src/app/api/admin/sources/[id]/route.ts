@@ -4,6 +4,7 @@ import { saveSourceConfig } from "@/lib/config/admin-store";
 import { deleteAdminSource, AdminActionError } from "@/lib/admin-management";
 import { getSourceConfigById } from "@/lib/config/store";
 import { validateSourceConfig } from "@/lib/config/validation";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function GET(
   _request: Request,
@@ -34,6 +35,11 @@ export async function PUT(
   }
 
   const { id } = await params;
+  const existing = await getSourceConfigById(id);
+  if (!existing) {
+    return NextResponse.json({ error: `Source "${id}" was not found.` }, { status: 404 });
+  }
+
   const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const result = validateSourceConfig({ ...body, id });
 
@@ -42,6 +48,7 @@ export async function PUT(
   }
 
   await saveSourceConfig(result.data);
+  revalidatePublicCatalog();
   return NextResponse.json({ source: result.data });
 }
 
@@ -58,6 +65,7 @@ export async function DELETE(
 
   try {
     await deleteAdminSource(id);
+    revalidatePublicCatalog();
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof AdminActionError) {

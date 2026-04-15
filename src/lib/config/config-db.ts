@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import type { PublicPageSummary, SourceConfig, ViewConfig } from "@/lib/config/types";
+import { normalizePublishedSlug } from "@/lib/slug-normalize";
 import { humanizeSlug } from "@/lib/utils";
 import { validateSourceConfig, validateViewConfig } from "@/lib/config/validation";
 import { ensureCurrentAppRoleRls } from "@/lib/db-rls";
@@ -143,8 +144,9 @@ export async function getViewConfigById(viewId: string): Promise<ViewConfig | nu
 
 export async function getPublicViewsBySlug(slug: string, options?: { includePrivate?: boolean }): Promise<ViewConfig[]> {
   const views = await listViewConfigs();
+  const slugNorm = normalizePublishedSlug(slug);
   return views
-    .filter((v) => (options?.includePrivate || v.public) && v.slug === slug)
+    .filter((v) => (options?.includePrivate || v.public) && normalizePublishedSlug(v.slug) === slugNorm)
     .sort((a, b) => (a.tabOrder ?? 999) - (b.tabOrder ?? 999) || (a.label ?? "").localeCompare(b.label ?? ""));
 }
 
@@ -154,9 +156,10 @@ export async function listPublicPageSummaries(): Promise<PublicPageSummary[]> {
   const groups = new Map<string, ViewConfig[]>();
 
   for (const view of views.filter((v) => v.public)) {
-    const existing = groups.get(view.slug) ?? [];
+    const key = normalizePublishedSlug(view.slug);
+    const existing = groups.get(key) ?? [];
     existing.push(view);
-    groups.set(view.slug, existing);
+    groups.set(key, existing);
   }
 
   return [...groups.entries()]

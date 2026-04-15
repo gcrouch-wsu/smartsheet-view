@@ -3,6 +3,7 @@ import { requireAdminApiAccess } from "@/lib/admin-api";
 import { saveAdminViewConfig, deleteAdminView, AdminActionError } from "@/lib/admin-management";
 import { getViewConfigById, listSourceConfigs } from "@/lib/config/store";
 import { validateViewConfig } from "@/lib/config/validation";
+import { revalidatePublicCatalog } from "@/lib/revalidate-public-catalog";
 
 export async function GET(
   _request: Request,
@@ -33,6 +34,11 @@ export async function PUT(
   }
 
   const { id } = await params;
+  const existingView = await getViewConfigById(id);
+  if (!existingView) {
+    return NextResponse.json({ error: `View "${id}" was not found.` }, { status: 404 });
+  }
+
   const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
   const sources = await listSourceConfigs();
   const result = validateViewConfig({ ...body, id }, { knownSourceIds: sources.map((source) => source.id), sources });
@@ -40,16 +46,11 @@ export async function PUT(
   if (!result.success || !result.data) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });
   }
-
-  const existingView = await getViewConfigById(id);
-  if (existingView) {
-    result.data.public = existingView.public;
-  } else {
-    result.data.public = false;
-  }
+  result.data.public = existingView.public;
 
   try {
     const view = await saveAdminViewConfig(result.data);
+    revalidatePublicCatalog();
     return NextResponse.json({ view });
   } catch (error) {
     if (error instanceof AdminActionError) {
@@ -76,6 +77,7 @@ export async function DELETE(
 
   try {
     await deleteAdminView(id);
+    revalidatePublicCatalog();
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof AdminActionError) {

@@ -65,7 +65,7 @@ Go to **Admin** > **Sources** and click **Create source**. You will configure:
 
 | Field | Purpose |
 |-------|---------|
-| **Source ID** | Internal identifier for this app. Must be unique, URL-safe (no spaces or special characters). Used in URLs and when linking views. Set once at creation and cannot be changed. Example: `grad-programs` |
+| **Source ID** | Internal identifier for this app. Must be **unique**, use only **letters, numbers, hyphens, and underscores** (server-enforced, max length), and is set at creation. Example: `grad-programs` |
 | **Label** | Display name shown in the admin UI. Can include spaces and punctuation. Can be changed anytime. Example: `Graduate Programs` |
 | **Source type** | Choose **Sheet** or **Report** to match your Smartsheet asset. |
 | **Smartsheet ID** | The numeric ID from Smartsheet. Find it in the sheet/report URL: `https://app.smartsheet.com/sheets/XXXXXXXXXXXXXXX` or `.../reports/XXXXXXXXXXXXXXX` - the long number is the ID. |
@@ -114,7 +114,7 @@ Set these in the Railway service (and any preview/staging environment you use):
 | `DATABASE_URL` | Postgres for durable sources, views, admin users, contributors, and login rate-limit data |
 | `CONTRIBUTOR_SESSION_SECRET` | Signs contributor cookies (required if contributor editing is enabled) |
 | `SMARTSHEET_CONNECTIONS_JSON` | Optional multi-connection Smartsheet config |
-| `SMARTSHEET_API_BASE_URL` | Optional Smartsheet API base URL override |
+| `SMARTSHEET_API_BASE_URL` | Optional Smartsheet API base URL override. Use only Smartsheet’s official API bases, for example `https://api.smartsheet.com/2.0` (US) or `https://api.smartsheet.eu/2.0` (EU); other hosts are rejected. |
 | `SMARTSHEETS_VIEW_PUBLIC_BASE_URL` | Optional explicit external origin for `{{PUBLIC_URL}}` links in custom headers; useful behind unusual proxies or load balancers |
 | `SMARTSHEETS_VIEW_TRUST_PROXY_HEADERS` | Optional override for login rate-limit IP detection and forwarded host/proto trust. Railway / Vercel proxy headers are trusted automatically; set to `true` or `false` explicitly on unusual proxy setups |
 | `SMARTSHEETS_VIEW_DATABASE_INSECURE_SSL` | Optional. Set to `true` only if Postgres TLS verification fails in production and you accept relaxed certificate verification after a security review. Prefer fixing `DATABASE_URL` or provider certificates. |
@@ -155,9 +155,9 @@ Sanitize server-side with **`sanitize-html`** only. Avoid adding **`jsdom`** to 
 - Confirm **contact columns** used for contributor eligibility contain real emails where policy requires it.
 - Smoke test: contributor sign-in, row edit only where allowed, multi-person group save, public page refresh, quick pass on a phone.
 
-## Planned enhancements
+## Roadmap
 
-See **`future_build.md`** for a curated backlog of realistic ideas (not a committed schedule).
+Track optional hardening, operational follow-ups, and product ideas in your issue tracker (or other docs you keep **in this repository** if you want them shared with everyone who clones the project).
 
 ## Project Structure
 

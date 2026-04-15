@@ -134,7 +134,7 @@ const COLUMN_TYPE_SUGGESTIONS: Record<string, { render: ViewFieldConfig["render"
   ABSTRACT_DATETIME: { render: "date", transforms: [{ op: "format_date" }] },
 };
 
-function columnToKey(col: SmartsheetColumn): string {
+function columnTitleToBaseKey(col: SmartsheetColumn): string {
   return col.title
     .trim()
     .toLowerCase()
@@ -142,10 +142,25 @@ function columnToKey(col: SmartsheetColumn): string {
     .replace(/^_|_$/g, "") || `col_${col.id}`;
 }
 
-function columnToField(col: SmartsheetColumn, displayName?: string): ViewFieldConfig {
+function columnToKey(col: SmartsheetColumn, usedKeys: Set<string>): string {
+  const base = columnTitleToBaseKey(col);
+  if (!usedKeys.has(base)) {
+    usedKeys.add(base);
+    return base;
+  }
+  let n = 2;
+  while (usedKeys.has(`${base}_${n}`)) {
+    n += 1;
+  }
+  const key = `${base}_${n}`;
+  usedKeys.add(key);
+  return key;
+}
+
+function columnToField(col: SmartsheetColumn, displayName: string | undefined, usedKeys: Set<string>): ViewFieldConfig {
   const suggestion = COLUMN_TYPE_SUGGESTIONS[col.type ?? "TEXT_NUMBER"] ?? { render: "text" as const };
   return {
-    key: columnToKey(col),
+    key: columnToKey(col, usedKeys),
     label: displayName ?? col.title,
     source: { columnTitle: col.title, columnId: col.id, columnType: col.type },
     transforms: suggestion.transforms ?? [],
@@ -489,19 +504,21 @@ export function ViewBuilder({
         ),
       }));
     } else {
-      setView((current) => ({
-        ...current,
-        fields: [...current.fields, columnToField(col, col.title)],
-      }));
+      setView((current) => {
+        const usedKeys = new Set(current.fields.map((f) => f.key));
+        return {
+          ...current,
+          fields: [...current.fields, columnToField(col, col.title, usedKeys)],
+        };
+      });
     }
   }
 
   function isColumnIncluded(col: SmartsheetColumn): boolean {
-    const key = columnToKey(col);
     return view.fields.some(
       (f) =>
         !isRoleGroupFieldSource(f.source) &&
-        (f.key === key || f.source.columnTitle === col.title || f.source.columnId === col.id),
+        (f.source.columnTitle === col.title || f.source.columnId === col.id),
     );
   }
 
@@ -509,7 +526,7 @@ export function ViewBuilder({
     return view.fields.find(
       (f) =>
         !isRoleGroupFieldSource(f.source) &&
-        (f.key === columnToKey(col) || f.source.columnTitle === col.title || f.source.columnId === col.id),
+        (f.source.columnTitle === col.title || f.source.columnId === col.id),
     );
   }
 
